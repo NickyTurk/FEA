@@ -36,13 +36,13 @@ if __name__ == '__main__':
 
     benchmark = args.benchmark
 
-    functions = [F1, F2, F3, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19, F20] #_benchmarks[benchmark]["function"]
-    function_names = ['F1', 'F2', 'F3', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'F13', 'F14', 'F15', 'F16', 'F17', 'F18', 'F19', 'F20']
-    dimensions = np.arange(start=50, stop=1000, step=50)
+    functions = [F3, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19, F20] #_benchmarks[benchmark]["function"]
+    function_names = ['F3', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'F13', 'F14', 'F15', 'F16', 'F17', 'F18', 'F19', 'F20']
+    dimensions = np.arange(start=100, stop=1000, step=100)
     k = 2
     domain = _benchmarks[benchmark]["interval"]
     for i,f in enumerate(functions):
-        with open('results/' + function_names[i] + '_50_diff_grouping.csv', 'w') as csv_write:
+        with open('results/' + function_names[i] + '_100_diff_grouping.csv', 'w') as csv_write:
 
             csv_writer = csv.writer(csv_write)
             csv_writer.writerow(['DIMENSION', 'NR_GROUPS', 'FACTORS', 'SEPARATE VARS'])
