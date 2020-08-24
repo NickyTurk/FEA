@@ -36,21 +36,24 @@ if __name__ == '__main__':
 
     benchmark = args.benchmark
 
-    functions = [F3, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19, F20] #_benchmarks[benchmark]["function"]
-    function_names = ['F3', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'F13', 'F14', 'F15', 'F16', 'F17', 'F18', 'F19', 'F20']
-    dimensions = np.arange(start=100, stop=1000, step=100)
+    functions = [F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19, F20] #_benchmarks[benchmark]["function"]
+    function_names = ['F9', 'F10', 'F11', 'F12', 'F13', 'F14', 'F15', 'F16', 'F17', 'F18', 'F19', 'F20']
+    dimensions = np.arange(start=10, stop=101, step=10)
+    epsilons = [1e-1,1e-3,1e-6,1e-9]
     k = 2
     domain = _benchmarks[benchmark]["interval"]
     for i,f in enumerate(functions):
-        with open('results/' + function_names[i] + '_100_diff_grouping.csv', 'w') as csv_write:
-
+        with open('results/' + function_names[i] + '_diff_grouping_small_epsilon.csv', 'a') as csv_write:
             csv_writer = csv.writer(csv_write)
-            csv_writer.writerow(['DIMENSION', 'NR_GROUPS', 'FACTORS', 'SEPARATE VARS'])
+            csv_writer.writerow(['FUNCTION', 'DIMENSION','EPSILON', 'NR_GROUPS', 'FACTORS', 'SEPARATE VARS'])
             for d in dimensions:
-                print(d)
-                factors, arbiters, optimizers, neighbors, separate_variables = generate_diff_grouping(f, d, 1e-3)   #  generate_linear_topology(d, k)  generate_diff_grouping(f, d, 1)
-                csv_writer.writerow([str(d), len(factors), factors, separate_variables])
-                print(len(factors))
+                for e in epsilons:
+                    try:
+                        factors, arbiters, optimizers, neighbors, separate_variables = generate_diff_grouping(f, d, e)   #  generate_linear_topology(d, k)  generate_diff_grouping(f, d, 1)
+                    except:
+                        print("small dimensions not supported, being skipped")
+                    else:
+                        csv_writer.writerow([function_names[i], str(d), str(e), len(factors), factors, separate_variables])
 
     '''
     pso_stop = lambda t, s: t == 5
