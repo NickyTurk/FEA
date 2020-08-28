@@ -32,6 +32,7 @@ from benchmarks import _benchmarks
 import numpy as np
 from copy import copy, deepcopy
 
+
 def generate_topology(d):
     """
     Generates the topological references needed for these i+1 problems.
@@ -220,6 +221,12 @@ def generate_duplicated_topology(d, width=2):
     return factors, arbiters, optimizers, neighbors
 
 
+"""
+DIFFERENTIAL GROUPING
+Omidvar et al. 2010
+"""
+
+
 def generate_overlapping_diff_grouping(_function, d, epsilon):
     """
     Use differential grouping approach to determine factors.
@@ -252,7 +259,7 @@ def generate_overlapping_diff_grouping(_function, d, epsilon):
         delta1 = _function(p1) - _function(p2)
         function_evaluations += 2
 
-        for j in range(i+1, size):
+        for j in range(i + 1, size):
             p3 = deepcopy(p1)
             p4 = deepcopy(p2)
             p3[dimensions[j]] = 0  # grabs dimension to compare to, same as index
@@ -284,6 +291,13 @@ def generate_overlapping_diff_grouping(_function, d, epsilon):
 
 
 def generate_diff_grouping(_function, d, epsilon):
+    """
+
+    :param _function:
+    :param d:
+    :param epsilon:
+    :return:
+    """
     size = deepcopy(d)
     dimensions = np.arange(start=0, stop=d)
     curr_dim_idx = 0
@@ -344,3 +358,6 @@ def generate_diff_grouping(_function, d, epsilon):
 
     return factors, arbiters, optimizers, neighbors, separate_variables
 
+"""
+FUZZY CLUSTERING GROUPING
+"""
