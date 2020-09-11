@@ -290,7 +290,7 @@ def generate_overlapping_diff_grouping(_function, d, epsilon):
     return factors, arbiters, optimizers, neighbors
 
 
-def generate_diff_grouping(_function, d, epsilon):
+def generate_diff_grouping(_function, d, epsilon, m=0):
     """
 
     :param _function:
@@ -317,7 +317,10 @@ def generate_diff_grouping(_function, d, epsilon):
         p1 = np.multiply(lbound, np.ones(d))
         p2 = np.multiply(lbound, np.ones(d))  # python does weird things if you set p2 = p1
         p2[curr_dim_idx] = ubound
-        delta1 = _function(p1) - _function(p2)
+        if m == 0:
+            delta1 = _function(p1) - _function(p2)
+        else:
+            delta1 = _function(p1, m_group = m) - _function(p2, m_group = m)
         function_evaluations += 2
 
         for j in range(1, size):
@@ -326,7 +329,10 @@ def generate_diff_grouping(_function, d, epsilon):
             p3[dimensions[j]] = 0  # grabs dimension to compare to, corresponds to python index
             p4[dimensions[j]] = 0
 
-            delta2 = _function(p3) - _function(p4)
+            if m == 0:
+                delta2 = _function(p3) - _function(p4)
+            else:
+                delta2 = _function(p3, m_group = m) - _function(p4, m_group = m)
             function_evaluations += 2
 
             if abs(delta1 - delta2) > epsilon:
@@ -360,4 +366,17 @@ def generate_diff_grouping(_function, d, epsilon):
 
 """
 FUZZY CLUSTERING GROUPING
+"""
+
+"""
+based on variable interaction matrix, create fuzzy hierarchical clustering
+
+Hierarchical clustering based on similarity matrix, joining from bottom using linkage strategy, 
+what if we start linking by looking at at pariwise variable interaction (eg bayes net: mutual information, statistical data: correlation). 
+Take whatever measure you're using and create variable interaction matrix -> creates symmetric matrix (needs to be positive definite!), 
+treat it like a a similarity matrix in HAC, build dendrogram based on matrix, effectively creating clusters. Scott developed FUZZY spectral HAC algorithm. 
+Eigen decomposition of variable interaction matrix, fuzzy c-means creates overlapping factors. 
+Doesn't have to be hierarchical, but might create less factors and larger clusters 
+
+Based on concept of Laplacian matrix; but instead of degree and adjacancy matrix, user interaction and total interaction between variables.  
 """
