@@ -36,23 +36,23 @@ if __name__ == '__main__':
 
     benchmark = args.benchmark
 
-    functions = [F1, F2, F3, F4, F5, F6, F7, F8] #F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19, F20] #_benchmarks[benchmark]["function"]
-    function_names = ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8'] #'F9', 'F10', 'F11', 'F12', 'F13', 'F14', 'F15', 'F16', 'F17', 'F18', 'F19', 'F20']
+    functions = [F14, F15, F16] #F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19, F20] #_benchmarks[benchmark]["function"]
+    function_names = ['F14', 'F15', 'F16'] #'F9', 'F10', 'F11', 'F12', 'F13', 'F14', 'F15', 'F16', 'F17', 'F18', 'F19', 'F20']
     shifted_function = ['F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'F13', 'F14', 'F15', 'F16', 'F17', 'F18']
     dimensions = np.arange(start=10, stop=101, step=10)
     epsilons = [1e-1,1e-3,1e-6,1e-9]
-    m = 4
+    m = 10
     k = 2
     domain = _benchmarks[benchmark]["interval"]
     for i,f in enumerate(functions):
-        with open('results/' + function_names[i] + '_m4_diff_grouping_small_epsilon.csv', 'a') as csv_write:
+        with open('results/' + function_names[i] + '_m4_diff_grouping_small_epsilon.csv', 'w') as csv_write:
             csv_writer = csv.writer(csv_write)
             csv_writer.writerow(['FUNCTION', 'DIMENSION','EPSILON', 'NR_GROUPS', 'FACTORS', 'SEPARATE VARS'] )
             for d in dimensions:
                 for e in epsilons:
                     try:
                         if function_names[i] in shifted_function:
-                            factors, arbiters, optimizers, neighbors, separate_variables = generate_diff_grouping(f, d, e, m = m)   #  generate_linear_topology(d, k)  generate_diff_grouping(f, d, 1)
+                            factors, arbiters, optimizers, neighbors, separate_variables = generate_diff_grouping(f, d, e, m = d)   #  generate_linear_topology(d, k)  generate_diff_grouping(f, d, 1)
                         else:
                             factors, arbiters, optimizers, neighbors, separate_variables = generate_diff_grouping(f, d, e)
                     except:
