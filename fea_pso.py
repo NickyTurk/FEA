@@ -180,7 +180,7 @@ def fea_pso(f, n, domain, all_factors, optimizers, p, fea_times, pso_stop):
         swarms = [share(swarm, solution, f) for swarm in swarms]
         solutions.append(Particle(position=solution, velocity=[], fitness=f(solution)))
     # end for
-    pso.random.reset()
+    # pso.random.reset()
     return solutions
 
 
