@@ -90,7 +90,6 @@ if __name__ == '__main__':
     for filename in filename_list:
         for dim in dimensions:
             factors, function_name = import_single_function_factors(filename, dim)
-            print(type(factors))
             arbiters, optimizers, neighbors = get_factor_info(factors, dim)
 
             f = partial(functions[function_names.index(function_name)], m_group = m)  # retrieve appropriate function
@@ -104,7 +103,7 @@ if __name__ == '__main__':
             print("G=", summary["statistics"])
             print("G=", summary["fitnesses"])
 
-            with open('results/FEA_PSO/' + function_name + '_dim' + str(dim) + '_diff_group_overlapping.csv', 'w') as write_to_csv:
+            with open('results/FEA_PSO/' + function_name + '_dim' + str(dim) + '_diff_group.csv', 'w') as write_to_csv:
                 csv_writer = csv.writer(write_to_csv)
                 csv_writer.writerows(summary["fitnesses"])
 
