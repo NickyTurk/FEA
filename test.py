@@ -1,14 +1,15 @@
 from benchmarks import _benchmarks
 from topology import *
+from stats.read_data import *
 from pso import pso
 from fea_pso import fea_pso
-import argparse
-import random
+import argparse, csv
 from datetime import datetime
 from evaluation import *
 import numpy as np
-import pandas, csv
 from opfunu.cec.cec2010.function import *
+from functools import partial
+
 
 def harness(algorithm, iterations, repeats):
     summary = {}
@@ -24,6 +25,42 @@ def harness(algorithm, iterations, repeats):
         summary["fitnesses"] = fitnesses
     return summary
 
+
+def test_diff_grouping(m, functions, function_names):
+    shifted_function = ['F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'F13', 'F17', 'F18']
+    shifted_error_function = ['F14', 'F15', 'F16']
+    dimensions = np.arange(start=10, stop=101, step=10)
+    epsilons = [1e-1, 1e-3, 1e-6, 1e-9]
+
+    for i, f in enumerate(functions):
+        with open('results/' + function_names[i] + '_overlapping_diff_grouping_small_epsilon.csv', 'w') as csv_write:
+            csv_writer = csv.writer(csv_write)
+            csv_writer.writerow(['FUNCTION', 'DIMENSION', 'EPSILON', 'NR_GROUPS', 'FACTORS', 'SEPARATE VARS'])
+            for d in dimensions:
+                for e in epsilons:
+                    # try:
+                    if function_names[i] in shifted_function:
+                        factors, arbiters, optimizers, neighbors, separate_variables = generate_overlapping_diff_grouping(
+                            f, d, e, m=m)  # generate_linear_topology(d, k)  generate_diff_grouping(f, d, 1)
+
+                    elif function_names[i] in shifted_error_function:
+                        factors, arbiters, optimizers, neighbors, separate_variables = generate_overlapping_diff_grouping(
+                            f, d, e, m=d)  # generate_linear_topology(d, k)  generate_diff_grouping(f, d, 1)
+
+                    else:
+                        factors, arbiters, optimizers, neighbors, separate_variables = generate_overlapping_diff_grouping(
+                            f, d, e)
+                    print(len(factors), factors)
+                    csv_writer.writerow([function_names[i], str(d), str(e), len(factors), factors, separate_variables])
+
+
+def get_factor_info(factors, d):
+    arbiters = nominate_arbiters(factors)
+    optimizers = calculate_optimizers(d, factors)
+    neighbors = determine_neighbors(factors)
+    return arbiters, optimizers, neighbors
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="test out some algies")
     parser.add_argument("--benchmark", help="pick the name of a benchmark function", default="schwefel-1.2")
@@ -36,71 +73,75 @@ if __name__ == '__main__':
 
     benchmark = args.benchmark
 
-    functions = [F14, F15, F16] #F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19, F20] #_benchmarks[benchmark]["function"]
-    function_names = ['F14', 'F15', 'F16'] #'F9', 'F10', 'F11', 'F12', 'F13', 'F14', 'F15', 'F16', 'F17', 'F18', 'F19', 'F20']
-    shifted_function = ['F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'F13', 'F14', 'F15', 'F16', 'F17', 'F18']
-    dimensions = np.arange(start=10, stop=101, step=10)
-    epsilons = [1e-1,1e-3,1e-6,1e-9]
-    m = 10
+    functions = [F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19,
+                 F20]  # _benchmarks[benchmark]["function"]
+    function_names = ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'F13', 'F14', 'F15',
+                      'F16', 'F17', 'F18', 'F19', 'F20']
+
     k = 2
+    m = 4
     domain = _benchmarks[benchmark]["interval"]
-    for i,f in enumerate(functions):
-        with open('results/' + function_names[i] + '_m4_diff_grouping_small_epsilon.csv', 'w') as csv_write:
-            csv_writer = csv.writer(csv_write)
-            csv_writer.writerow(['FUNCTION', 'DIMENSION','EPSILON', 'NR_GROUPS', 'FACTORS', 'SEPARATE VARS'] )
-            for d in dimensions:
-                for e in epsilons:
-                    try:
-                        if function_names[i] in shifted_function:
-                            factors, arbiters, optimizers, neighbors, separate_variables = generate_diff_grouping(f, d, e, m = d)   #  generate_linear_topology(d, k)  generate_diff_grouping(f, d, 1)
-                        else:
-                            factors, arbiters, optimizers, neighbors, separate_variables = generate_diff_grouping(f, d, e)
-                    except:
-                        print("small dimensions not supported, being skipped")
-                    else:
-                        csv_writer.writerow([function_names[i], str(d), str(e), len(factors), factors, separate_variables])
 
-    '''
-    pso_stop = lambda t, s: t == 5
-    p = 100
-    n = 100
-    width = d
+    # test_diff_grouping(4, functions, function_names)
 
-    print("benchmark", benchmark)
-    print( "seed", seed)
+    dimensions = [50, 100]
+    filename_list = get_files_list("F*_overlapping_diff_grouping_small_epsilon.csv")
 
+    for filename in filename_list:
+        for dim in dimensions:
+            factors, function_name = import_single_function_factors(filename, dim)
+            print(type(factors))
+            arbiters, optimizers, neighbors = get_factor_info(factors, dim)
+
+            f = partial(functions[function_names.index(function_name)], m_group = m)  # retrieve appropriate function
+
+            pso_stop = lambda t, s: t == 5
+            p = 100
+            n = 100
+
+            algorithm = lambda: fea_pso(f, dim, domain, factors, optimizers, p, n, pso_stop)
+            summary = harness(algorithm, n, 1)
+            print("G=", summary["statistics"])
+            print("G=", summary["fitnesses"])
+
+            with open('results/FEA_PSO/' + function_name + '_dim' + str(dim) + '_diff_group_overlapping.csv', 'w') as write_to_csv:
+                csv_writer = csv.writer(write_to_csv)
+                csv_writer.writerows(summary["fitnesses"])
+
+    # pso_stop = lambda t, s: t == 5
+    # p = 100
+    # n = 100
+    # # width = d
+    #
+    # algorithm = lambda: pso(f, p * dim, dim, domain, lambda t, s: t == 5)
+    # summary = harness(algorithm, n, 1)
+    # print("G=", summary["statistics"])
+    # print("G=", summary["fitnesses"])
+    #
+    # with open('results/f7_pso.csv', 'w') as write_to_csv:
+    #     csv_writer = csv.writer(write_to_csv)
+    #     csv_writer.writerows(summary["fitnesses"])
+    #
     # random.seed(seed)
-    print("starting PSO")
-    algorithm = lambda: pso(f, p*d, d, domain, lambda t, s: t == 5)
-    summary = harness(algorithm, n, 1)
-    print("G=", summary["statistics"])
-    print("G=", summary["fitnesses"])
+    # print("starting FEA")
+    # algorithm = lambda: fea_pso(f, d, domain, factors, optimizers, p, n, pso_stop)
+    # summary = harness(algorithm, n, 1)
+    # print("G=", summary["statistics"])
+    # print("G=", summary["fitnesses"])
+    #
+    # with open('results/f7_fea_pso_diff_group.csv', 'w') as write_to_csv:
+    #     csv_writer = csv.writer(write_to_csv)
+    #     csv_writer.writerows(summary["fitnesses"])
 
-    with open('results/f7_pso.csv', 'w') as write_to_csv:
-        csv_writer = csv.writer(write_to_csv)
-        csv_writer.writerows(summary["fitnesses"])
-
-    random.seed(seed)
-    print("starting FEA")
-    algorithm = lambda: fea_pso(f, d, domain, factors, optimizers, p, n, pso_stop)
-    summary = harness(algorithm, n, 1)
-    print("G=", summary["statistics"])
-    print("G=", summary["fitnesses"])
-
-    with open('results/f7_fea_pso_diff_group.csv', 'w') as write_to_csv:
-        csv_writer = csv.writer(write_to_csv)
-        csv_writer.writerows(summary["fitnesses"])
-
-    factors, arbiters, optimizers, neighbors = generate_linear_topology(d, k)
-
-    random.seed(seed)
-    print("starting FEA")
-    algorithm = lambda: fea_pso(f, d, domain, factors, optimizers, p, n, pso_stop)
-    summary = harness(algorithm, n, 1)
-    print("G=", summary["statistics"])
-    print("G=", summary["fitnesses"])
-
-    with open('results/f7_fea_pso_linear topology.csv', 'w') as write_to_csv:
-        csv_writer = csv.writer(write_to_csv)
-        csv_writer.writerows(summary["fitnesses"])
-    '''
+    # factors, arbiters, optimizers, neighbors = generate_linear_topology(d, k)
+    #
+    # random.seed(seed)
+    # print("starting FEA")
+    # algorithm = lambda: fea_pso(f, d, domain, factors, optimizers, p, n, pso_stop)
+    # summary = harness(algorithm, n, 1)
+    # print("G=", summary["statistics"])
+    # print("G=", summary["fitnesses"])
+    #
+    # with open('results/f7_fea_pso_linear_topology.csv', 'w') as write_to_csv:
+    #     csv_writer = csv.writer(write_to_csv)
+    #     csv_writer.writerows(summary["fitnesses"])
