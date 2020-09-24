@@ -1,6 +1,6 @@
 from benchmarks import _benchmarks
 from topology import *
-from stats.read_data import *
+from read_data import *
 from pso import pso
 from fea_pso import fea_pso
 import argparse, csv
@@ -84,7 +84,7 @@ if __name__ == '__main__':
 
     # test_diff_grouping(4, functions, function_names)
 
-    dimensions = [50, 100]
+    dimensions = [50]
     filename_list = get_files_list("F*_overlapping_diff_grouping_small_epsilon.csv")
 
     for filename in filename_list:
