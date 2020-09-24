@@ -96,8 +96,8 @@ if __name__ == '__main__':
             f = partial(functions[function_names.index(function_name)], m_group = m)  # retrieve appropriate function
 
             pso_stop = lambda t, s: t == 5
-            p = 100
-            n = 100
+            p = 500
+            n = 10
 
             algorithm = lambda: fea_pso(f, dim, domain, factors, optimizers, p, n, pso_stop)
             summary = harness(algorithm, n, 1)
