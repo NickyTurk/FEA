@@ -28,7 +28,7 @@ def import_single_function_factors(file_name, dim=50):
     fion_name = frame['FUNCTION'].unique()
     max_index = dim_frame['NR_GROUPS'].argmax()
     dim_array = np.array(dim_frame['FACTORS'])
-    return literal_eval(dim_array[max_index]), fion_name
+    return literal_eval(dim_array[max_index]), fion_name[0]
 
 
 if __name__ == '__main__':
