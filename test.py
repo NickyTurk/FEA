@@ -62,7 +62,6 @@ def get_factor_info(factors, d):
 
 
 if __name__ == '__main__':
-    
     parser = argparse.ArgumentParser(description="test out some algies")
     parser.add_argument("--benchmark", help="pick the name of a benchmark function", default="schwefel-1.2")
     parser.add_argument("--seed", help="the random seed to use")
@@ -74,8 +73,8 @@ if __name__ == '__main__':
 
     benchmark = args.benchmark
 
-    functions = [F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19, F20]  # _benchmarks[benchmark]["function"]
-    function_names = ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'F13', 'F14', 'F15', 'F16', 'F17', 'F18', 'F19', 'F20']
+    functions = [F3, F7, F12, F16, F19]  # [F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19,F20] _benchmarks[benchmark]["function"]
+    function_names = ['F3', 'F7', 'F12', 'F16', 'F19'] #['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'F13', 'F14', 'F15', 'F16', 'F17', 'F18', 'F19', 'F20']
 
     k = 2
     m = 4
@@ -83,29 +82,34 @@ if __name__ == '__main__':
 
     # test_diff_grouping(4, functions, function_names)
 
-    dimensions = [50]
-    filename_list = get_files_list("F*_overlapping_diff_grouping_small_epsilon.csv")
+    dimensions = [50, 100]
+    file_extension = "m4_diff_grouping"
+    # file_extension = "overlapping_diff_grouping"
+    filename_list = get_files_list("F*_" + file_extension + "_small_epsilon.csv")
 
     for filename in filename_list:
         print(filename)
         for dim in dimensions:
             factors, function_name = import_single_function_factors(filename, dim)
-            arbiters, optimizers, neighbors = get_factor_info(factors, dim)
+            if function_name in function_names:
+                print('current function ', function_name)
+                arbiters, optimizers, neighbors = get_factor_info(factors, dim)
 
-            f = partial(functions[function_names.index(function_name)], m_group = m)  # retrieve appropriate function
+                f = partial(functions[function_names.index(function_name)], m_group = m)  # retrieve appropriate function
 
-            pso_stop = lambda t, s: t == 5
-            p = 500
-            n = 10
+                pso_stop = lambda t, s: t == 5
+                p = 200
+                n = 10
 
-            algorithm = lambda: fea_pso(f, dim, domain, factors, optimizers, p, n, pso_stop)
-            summary = harness(algorithm, n, 1)
-            print("G=", summary["statistics"])
-            print("G=", summary["fitnesses"])
+                algorithm = lambda: fea_pso(f, dim, domain, factors, optimizers, p, n, pso_stop)
+                summary = harness(algorithm, n, 1)
+                #print("G=", summary["statistics"])
+                #print("G=", summary["fitnesses"])
 
-            with open('results/FEA_PSO/' + function_name + '_dim' + str(dim) + '_diff_group.csv', 'w') as write_to_csv:
-                csv_writer = csv.writer(write_to_csv)
-                csv_writer.writerows(summary["fitnesses"])
+                with open('results/FEA_PSO/' + str(function_name) + '_dim' + str(dim) + file_extension + ".csv", 'w') as write_to_csv:
+                    csv_writer = csv.writer(write_to_csv)
+                    csv_writer.writerow(summary["fitnesses"])
+                    print('printed')
 
     # pso_stop = lambda t, s: t == 5
     # p = 100
