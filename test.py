@@ -62,6 +62,7 @@ def get_factor_info(factors, d):
 
 
 if __name__ == '__main__':
+    
     parser = argparse.ArgumentParser(description="test out some algies")
     parser.add_argument("--benchmark", help="pick the name of a benchmark function", default="schwefel-1.2")
     parser.add_argument("--seed", help="the random seed to use")
@@ -73,10 +74,8 @@ if __name__ == '__main__':
 
     benchmark = args.benchmark
 
-    functions = [F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19,
-                 F20]  # _benchmarks[benchmark]["function"]
-    function_names = ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'F13', 'F14', 'F15',
-                      'F16', 'F17', 'F18', 'F19', 'F20']
+    functions = [F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19, F20]  # _benchmarks[benchmark]["function"]
+    function_names = ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'F13', 'F14', 'F15', 'F16', 'F17', 'F18', 'F19', 'F20']
 
     k = 2
     m = 4
@@ -88,6 +87,7 @@ if __name__ == '__main__':
     filename_list = get_files_list("F*_overlapping_diff_grouping_small_epsilon.csv")
 
     for filename in filename_list:
+        print(filename)
         for dim in dimensions:
             factors, function_name = import_single_function_factors(filename, dim)
             arbiters, optimizers, neighbors = get_factor_info(factors, dim)

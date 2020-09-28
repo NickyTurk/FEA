@@ -17,7 +17,7 @@ def transform_files_to_df(file_regex):
 
 
 def get_files_list(file_regex):
-    path = r'C:/Users/f24n127/Documents/School/FEA/pso/results'
+    path = r'./results'
     return glob.glob(path + '/' + file_regex)
 
 
