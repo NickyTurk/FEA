@@ -73,8 +73,11 @@ if __name__ == '__main__':
 
     benchmark = args.benchmark
 
-    functions = [F3, F7, F12, F16, F19]  # [F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19,F20] _benchmarks[benchmark]["function"]
-    function_names = ['F3', 'F7', 'F12', 'F16', 'F19'] #['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'F13', 'F14', 'F15', 'F16', 'F17', 'F18', 'F19', 'F20']
+    functions = [F1, F4, F9, F17, F20]  # [F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19,F20] _benchmarks[benchmark]["function"]
+    function_names = ['F1', 'F7', 'F9', 'F17', 'F20'] #['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'F13', 'F14', 'F15', 'F16', 'F17', 'F18', 'F19', 'F20']
+
+    no_m_param = ['F1', 'F2', 'F3', 'F19', 'F20']
+    shifted_error_function = ['F14', 'F15', 'F16']
 
     k = 2
     m = 4
@@ -95,7 +98,13 @@ if __name__ == '__main__':
                 print('current function ', function_name)
                 arbiters, optimizers, neighbors = get_factor_info(factors, dim)
 
-                f = partial(functions[function_names.index(function_name)], m_group = m)  # retrieve appropriate function
+                if function_name in no_m_param:
+                    f = functions[function_names.index(function_name)]
+                elif function_name in shifted_error_function:
+                    f = partial(functions[function_names.index(function_name)], m_group=dim)
+                else:
+                    f = partial(functions[function_names.index(function_name)],
+                                m_group=m)  # retrieve appropriate function
 
                 pso_stop = lambda t, s: t == 5
                 p = 200
