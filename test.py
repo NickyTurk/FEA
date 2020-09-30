@@ -70,13 +70,16 @@ if __name__ == '__main__':
     seed = args.seed
     if not seed:
         seed = int(datetime.now().strftime("%S"))
-        
+
     benchmark = args.benchmark
 
-    functions = [F3, F7, F12, F16, F19]  # [F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19,F20] _benchmarks[benchmark]["function"]
-    function_names = ['F3', 'F7', 'F12', 'F16', 'F19'] #['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'F13', 'F14', 'F15', 'F16', 'F17', 'F18', 'F19', 'F20']
-    
+    functions = [F1, F4, F9, F15,
+                 F20]  # [F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19,F20] _benchmarks[benchmark]["function"]
+    function_names = ['F1', 'F4', 'F9', 'F15',
+                      'F20']  # ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'F13', 'F14', 'F15', 'F16', 'F17', 'F18', 'F19', 'F20']
+
     no_m_param = ['F1', 'F2', 'F3', 'F19', 'F20']
+    shifted_error_function = ['F14', 'F15', 'F16']
 
     k = 2
     m = 4
@@ -85,8 +88,8 @@ if __name__ == '__main__':
     # test_diff_grouping(4, functions, function_names)
 
     dimensions = [50, 100]
-    #file_extension = "m4_diff_grouping"
-    file_extension = "overlapping_diff_grouping"
+    file_extension = "m4_diff_grouping"
+    # file_extension = "overlapping_diff_grouping"
     filename_list = get_files_list("F*_" + file_extension + "_small_epsilon.csv")
 
     for filename in filename_list:
@@ -99,8 +102,11 @@ if __name__ == '__main__':
 
                 if function_name in no_m_param:
                     f = functions[function_names.index(function_name)]
+                elif function_name in shifted_error_function:
+                    f = partial(functions[function_names.index(function_name)], m_group=dim)
                 else:
-                    f = partial(functions[function_names.index(function_name)], m_group = m)  # retrieve appropriate function
+                    f = partial(functions[function_names.index(function_name)],
+                                m_group=m)  # retrieve appropriate function
 
                 pso_stop = lambda t, s: t == 5
                 p = 200
@@ -108,10 +114,11 @@ if __name__ == '__main__':
 
                 algorithm = lambda: fea_pso(f, dim, domain, factors, optimizers, p, n, pso_stop)
                 summary = harness(algorithm, n, 1)
-                #print("G=", summary["statistics"])
-                #print("G=", summary["fitnesses"])
+                # print("G=", summary["statistics"])
+                # print("G=", summary["fitnesses"])
 
-                with open('results/FEA_PSO/' + str(function_name) + '_dim' + str(dim) + file_extension + ".csv", 'w') as write_to_csv:
+                with open('results/FEA_PSO/' + str(function_name) + '_dim' + str(dim) + file_extension + ".csv",
+                          'w') as write_to_csv:
                     csv_writer = csv.writer(write_to_csv)
                     csv_writer.writerow(summary["fitnesses"])
                     print('printed')
