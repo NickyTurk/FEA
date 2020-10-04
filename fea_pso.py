@@ -160,14 +160,14 @@ def print_swarms(swarms):
 
 
 # Runs optimization on a single swarm
-def optimize_swarm(swarm, pso_stop, new_swarms, thread_lock):
+def optimize_swarm(swarm, pso_stop, swarm_indx, new_swarms, thread_lock):
     t = 0
     while not pso_stop(t, swarm):
         t = t + 1
         swarm = update_fea_swarm(swarm)
 
     thread_lock.acquire()
-    new_swarms.append(swarm)
+    new_swarms[swarm_indx] = swarm
     thread_lock.release()
 
     return swarm
@@ -190,13 +190,13 @@ def fea_pso(f, n, domain, all_factors, optimizers, p, fea_times, pso_stop):
     # with just f, this should still work well.
     #   swarms = [initialize_fea_swarm( p, n, factors, domain, f) for factors in all_factors]
     for _ in range(fea_times):
-        new_swarms = []
+        new_swarms = [None for _ in range(len(swarms))]  # init blank list so no out of bounds errors
 
         lock = threading.Lock()  # to make access to new_swarms safe (maybe better way to do this)
 
         # Optimize each swarm on new thread
-        # init the threads to run optimize_swarm(swarm, pso_stop, new_swarms, lock)
-        threads = [threading.Thread(target=optimize_swarm, args=(swarm, pso_stop, new_swarms, lock)) for _, swarm in enumerate(swarms)]
+        # init the threads to run optimize_swarm(swarm, pso_stop, indx, new_swarms, lock)
+        threads = [threading.Thread(target=optimize_swarm, args=(swarm, pso_stop, indx, new_swarms, lock)) for indx, swarm in enumerate(swarms)]
 
         # Optimize them!
         for t in threads:
