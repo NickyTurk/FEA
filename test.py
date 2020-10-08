@@ -73,10 +73,8 @@ if __name__ == '__main__':
 
     benchmark = args.benchmark
 
-    functions = [F1, F4, F9, F15,
-                 F20]  # [F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19,F20] _benchmarks[benchmark]["function"]
-    function_names = ['F1', 'F4', 'F9', 'F15',
-                      'F20']  # ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'F13', 'F14', 'F15', 'F16', 'F17', 'F18', 'F19', 'F20']
+    functions = [F3, F5, F9, F15, F19]  # [F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19,F20] _benchmarks[benchmark]["function"]
+    function_names = ['F3', 'F5', 'F9', 'F15', 'F20']  # ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'F13', 'F14', 'F15', 'F16', 'F17', 'F18', 'F19', 'F20']
 
     no_m_param = ['F1', 'F2', 'F3', 'F19', 'F20']
     shifted_error_function = ['F14', 'F15', 'F16']
@@ -121,7 +119,6 @@ if __name__ == '__main__':
                           'w') as write_to_csv:
                     csv_writer = csv.writer(write_to_csv)
                     csv_writer.writerow(summary["fitnesses"])
-                    print('printed')
 
     # pso_stop = lambda t, s: t == 5
     # p = 100
