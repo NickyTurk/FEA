@@ -147,6 +147,7 @@ def update_fea_swarm(swarm):
 
 # This is what Shane does...most of the time. Just start out with a random G.
 def initialize_solution(n, domain, f):
+    print("dimemsnions ", n)
     particle = pso.initialize_particle(n, domain, f)
     return particle.position
 
@@ -183,6 +184,7 @@ fea_times = number of iterations of fea
 pso_stop = lambda pso termination function
 """
 def fea_pso(f, n, domain, all_factors, optimizers, p, fea_times, pso_stop):
+    print("dimensions ", n)
     solution = initialize_solution(n, domain, f)
     solutions = [Particle(position=solution, velocity=[], fitness=f(solution))]
     swarms = [initialize_fea_swarm(p, n, factors, domain, make_factored_fitness_fn(factors, solution, f)) for factors in

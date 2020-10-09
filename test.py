@@ -73,8 +73,12 @@ if __name__ == '__main__':
 
     benchmark = args.benchmark
 
-    functions = [F1, F4, F9, F17, F20]  # [F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19,F20] _benchmarks[benchmark]["function"]
-    function_names = ['F1', 'F7', 'F9', 'F17', 'F20'] #['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'F13', 'F14', 'F15', 'F16', 'F17', 'F18', 'F19', 'F20']
+
+    functions = [F1, F4, F9, F15,
+                 F20]  # [F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19,F20] _benchmarks[benchmark]["function"]
+    function_names = ['F1', 'F4', 'F9', 'F15',
+                      'F20']  # ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'F13', 'F14', 'F15', 'F16', 'F17', 'F18', 'F19', 'F20']
+
 
     no_m_param = ['F1', 'F2', 'F3', 'F19', 'F20']
     shifted_error_function = ['F14', 'F15', 'F16']
@@ -112,10 +116,11 @@ if __name__ == '__main__':
 
                 algorithm = lambda: fea_pso(f, dim, domain, factors, optimizers, p, n, pso_stop)
                 summary = harness(algorithm, n, 1)
-                #print("G=", summary["statistics"])
-                #print("G=", summary["fitnesses"])
+                # print("G=", summary["statistics"])
+                # print("G=", summary["fitnesses"])
 
-                with open('results/FEA_PSO/' + str(function_name) + '_dim' + str(dim) + file_extension + ".csv", 'w') as write_to_csv:
+                with open('results/FEA_PSO/' + str(function_name) + '_dim' + str(dim) + file_extension + ".csv",
+                          'w') as write_to_csv:
                     csv_writer = csv.writer(write_to_csv)
                     csv_writer.writerow(summary["fitnesses"])
                     print('printed')
