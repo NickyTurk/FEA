@@ -3,6 +3,7 @@
 from copy import deepcopy, copy
 from core import Particle, pp
 import threading
+import time
 
 import pso
 from fea_common import *
@@ -191,7 +192,9 @@ def fea_pso(f, n, domain, all_factors, optimizers, p, fea_times, pso_stop):
               all_factors]
     # with just f, this should still work well.
     #   swarms = [initialize_fea_swarm( p, n, factors, domain, f) for factors in all_factors]
+
     for _ in range(fea_times):
+        t_optimize_start = time.time()
         new_swarms = [None for _ in range(len(swarms))]  # init blank list so no out of bounds errors
 
         lock = threading.Lock()  # to make access to new_swarms safe (maybe better way to do this)
@@ -210,8 +213,21 @@ def fea_pso(f, n, domain, all_factors, optimizers, p, fea_times, pso_stop):
 
         # end for
         swarms = new_swarms
+        t_optimize_end = time.time()
+        print("Time for optimize: ")
+        print(t_optimize_end - t_optimize_start)
+        t_compete_start = time.time()
         solution = compete(n, swarms, all_factors, optimizers, f, solution)
+        t_compete_end = time.time()
+        print("Time for compete: ")
+        print(t_compete_end - t_compete_start)
+
+        t_share_start = time.time()
         swarms = [share(swarm, solution, f) for swarm in swarms]
+        t_share_end = time.time()
+
+        print("Time for share: ")
+        print(t_share_end - t_share_start)
         solutions.append(Particle(position=solution, velocity=[], fitness=f(solution)))
     # end for
     # pso.random.reset()
