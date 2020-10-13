@@ -35,9 +35,9 @@ def initialize_particle(n, domain, f):
     * velocity is all 0's of length n.
     * fitness is the value of the supplied function, f, on the position.
     """
-    print("dimemsnions ", n)
+    # print("dimemsnions ", n)
     position = [random.uniform( domain[ 0], domain[1]) for i in range( 0, n)]
-    print(position)
+    # print(position)
     velocity = [0.0 for i in range( 0, n)]
     fitness = f(position)
     return Particle(position, velocity, fitness)
@@ -168,9 +168,9 @@ def find_global_best( personal_bests):
 
 # TODO: the main question here is if Swarm should stay a Dict or be a NamedTuple.
 def initialize_swarm( p, n, domain, f):
-    particles = [initialize_particle( n, domain, f) for i in range( p)]
-    personal_bests = deepcopy( particles) # this *should* work down to primitives.
-    global_best = find_global_best( personal_bests)
+    particles = [initialize_particle( n, domain, f) for i in range(p)]
+    personal_bests = deepcopy(particles) # this *should* work down to primitives.
+    global_best = find_global_best(personal_bests)
     return {"gbest": global_best, "particles": particles, "pbests": personal_bests, "domain": domain}
 # end def
 
@@ -196,39 +196,44 @@ index: index in global particles list where batch starts so order is preserved
 TODO: maybe need lock
 """
 def run_batch(b, updater, new_particles, index):
-    for i in range(len(b)):
-        particle, personal_best = b
-        # Maybe need to lock this, but I doubt it since no thread considers same subset
-        new_particles[index + i] = updater(particle, personal_best)
 
+    # print("Batch Length: " + str(len(b)))
+    # print("New Particles Length: " + str(len(new_particles)))
+    for i in range(len(b)):
+        particle, personal_best = b[i]
+        # Maybe need to lock this, but I doubt it since no thread considers same subset
+        # print("Adding at: " + str(index + i))
+        new_particle = updater(particle, personal_best)
+        new_particles[index + i] = new_particle
 
 
 
 def update_swarm(swarm, f):
-    global_best, particles, personal_bests, domain = pluck( swarm, "gbest", "particles", "pbests", "domain")
+    global_best, particles, personal_bests, domain = pluck(swarm, "gbest", "particles", "pbests", "domain")
 
     v_max = (domain[1] - domain[0]) / 2.0
 
     updater = partial(update_particle, domain, v_max, f, global_best)
 
-    new_particles = [updater(particle, personal_best) for particle, personal_best in zip(particles, personal_bests)]  # parallelize this boi
-
     threads = []
-    batch_size = 10
+    batch_size = 1
     new_particles = [None for _ in particles]  # make blank array so no out of bounds
 
-    for i in range(len(particles)): # switch to numeric iteration for baching of threads
+    for i in range(0, len(particles), batch_size): # switch to numeric iteration for baching of threads
         batch = []
         indx = i
-        for i in range(batch_size):
-            if i >= len(particles):
+        for j in range(batch_size):
+            if i + j >= len(particles):
                 break
-            batch.append((particles[i], personal_bests[i]))
+            batch.append((particles[i + j], personal_bests[i + j]))
         # threading.Thread(target=optimize_swarm, args=(swarm, pso_stop, indx, new_swarms, lock))
         if len(batch) > 0:
-            t = threading.Thread(target=run_batch, args=(b, updater, new_particles, indx))
+            t = threading.Thread(target=run_batch, args=(batch, updater, new_particles, indx))
             threads.append(t)
     # update each batch
+
+    # print("Number of updater threads: " + str(len(threads)))
+
     for t in threads:
         t.start()
     # wait for all batches to finish
