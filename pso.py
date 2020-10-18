@@ -12,11 +12,14 @@
 # named tuples where the possible fields have settled down.
 
 # <codecell>
+import time
+
 from core import pluck, add, mul, sub, dict_merge, Particle, Random
 #import random
 from copy import deepcopy
 from functools import partial
-import threading
+# import threading
+import pathos.pools as Pool
 
 random = Random()
 # <markdowncell>
@@ -195,8 +198,8 @@ index: index in global particles list where batch starts so order is preserved
 
 TODO: maybe need lock
 """
-def run_batch(b, updater, new_particles, index):
-
+def run_batch(params):
+    b, updater, new_particles, index = params
     # print("Batch Length: " + str(len(b)))
     # print("New Particles Length: " + str(len(new_particles)))
     for i in range(len(b)):
@@ -213,11 +216,13 @@ def update_swarm(swarm, f):
 
     v_max = (domain[1] - domain[0]) / 2.0
 
+    t_update_start = time.time()
+
     updater = partial(update_particle, domain, v_max, f, global_best)
 
-    threads = []
     batch_size = 1
     new_particles = [None for _ in particles]  # make blank array so no out of bounds
+    batch_args = []
 
     for i in range(0, len(particles), batch_size): # switch to numeric iteration for baching of threads
         batch = []
@@ -228,25 +233,34 @@ def update_swarm(swarm, f):
             batch.append((particles[i + j], personal_bests[i + j]))
         # threading.Thread(target=optimize_swarm, args=(swarm, pso_stop, indx, new_swarms, lock))
         if len(batch) > 0:
-            t = threading.Thread(target=run_batch, args=(batch, updater, new_particles, indx))
-            threads.append(t)
+            batch_args.append([batch, updater, new_particles, indx])
     # update each batch
 
     # print("Number of updater threads: " + str(len(threads)))
+    pool = Pool.ProcessPool(len(batch_args))
+    pool.close()
+    pool.join()
 
-    for t in threads:
-        t.start()
-    # wait for all batches to finish
-    for t in threads:
-        t.join()
+    t_update_end = time.time()
+    print("\t\tTime to update particles: " + str(t_update_end - t_update_start))
+
+    t_find_start = time.time()
 
     new_personal_bests = find_personal_bests(new_particles, personal_bests)
+
+    t_find_end = time.time()
+    print("\t\tTime to find personal bests: " + str(t_find_end - t_find_start))
 
     #paired_particles = zip( new_particles, new_personal_bests)
     #paired_particles.sort( key=lambda x: x[ 1].fitness)
     #new_particles, new_personal_bests = zip( *paired_particles)
 
+    t_sort_start = time.time()
     sorted_bests = sorted(new_personal_bests, key=lambda x: x.fitness)
+
+    t_sort_end = time.time()
+    print("\t\tTime to sort: " + str(t_sort_end - t_sort_start))
+
     new_global_best = sorted_bests[0]
     new_swarm = {"gbest": new_global_best, "particles": list(new_particles), "pbests": list(new_personal_bests)}
 

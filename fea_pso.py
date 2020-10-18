@@ -2,7 +2,9 @@
 
 from copy import deepcopy, copy
 from core import Particle, pp
-import threading
+# import threading
+import pathos.pools as Pool
+
 import time
 
 import pso
@@ -162,15 +164,16 @@ def print_swarms(swarms):
 
 
 # Runs optimization on a single swarm
-def optimize_swarm(swarm, pso_stop, swarm_indx, new_swarms, thread_lock):
+def optimize_swarm(params):
+    swarm, pso_stop, swarm_indx, new_swarms = params
     t = 0
     while not pso_stop(t, swarm):
         t = t + 1
         swarm = update_fea_swarm(swarm)
 
-    thread_lock.acquire()
+    # thread_lock.acquire()
     new_swarms[swarm_indx] = swarm
-    thread_lock.release()
+    # thread_lock.release()
 
     return swarm
 
@@ -202,19 +205,17 @@ def fea_pso(f, n, domain, all_factors, optimizers, p, fea_times, pso_stop):
         t_optimize_start = time.time()
         new_swarms = [None for _ in range(len(swarms))]  # init blank list so no out of bounds errors
 
-        lock = threading.Lock()  # to make access to new_swarms safe (maybe better way to do this)
+        # lock = threading.Lock()  # to make access to new_swarms safe (maybe better way to do this)
 
         # Optimize each swarm on new thread
         # init the threads to run optimize_swarm(swarm, pso_stop, indx, new_swarms, lock)
-        threads = [threading.Thread(target=optimize_swarm, args=(swarm, pso_stop, indx, new_swarms, lock)) for indx, swarm in enumerate(swarms)]
+        optimize_args = [[swarm, pso_stop, indx, new_swarms] for indx, swarm in enumerate(swarms)]
+        # threads = [threading.Thread(target=optimize_swarm, args=(swarm, pso_stop, indx, new_swarms)) for indx, swarm in enumerate(swarms)]
 
-        # Optimize them!
-        for t in threads:
-            t.start()
-
-        # Wait for everything to finish
-        for t in threads:
-            t.join()
+        pool = Pool.ProcessPool(len(optimize_args))
+        pool.map(optimize_swarm, optimize_args)
+        pool.close()
+        pool.join()
 
         # end for
         swarms = new_swarms
