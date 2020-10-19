@@ -245,14 +245,14 @@ def update_swarm(swarm, f):
 
 
     t_update_end = time.time()
-    print("\t\tTime to update particles: " + str(t_update_end - t_update_start))
+    # print("\t\tTime to update particles: " + str(t_update_end - t_update_start))
 
     t_find_start = time.time()
 
     new_personal_bests = find_personal_bests(new_particles, personal_bests)
 
     t_find_end = time.time()
-    print("\t\tTime to find personal bests: " + str(t_find_end - t_find_start))
+    # print("\t\tTime to find personal bests: " + str(t_find_end - t_find_start))
 
     #paired_particles = zip( new_particles, new_personal_bests)
     #paired_particles.sort( key=lambda x: x[ 1].fitness)
@@ -262,7 +262,7 @@ def update_swarm(swarm, f):
     sorted_bests = sorted(new_personal_bests, key=lambda x: x.fitness)
 
     t_sort_end = time.time()
-    print("\t\tTime to sort: " + str(t_sort_end - t_sort_start))
+    # print("\t\tTime to sort: " + str(t_sort_end - t_sort_start))
 
     new_global_best = sorted_bests[0]
     new_swarm = {"gbest": new_global_best, "particles": list(new_particles), "pbests": list(new_personal_bests)}
