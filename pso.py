@@ -18,8 +18,9 @@ from core import pluck, add, mul, sub, dict_merge, Particle, Random
 #import random
 from copy import deepcopy
 from functools import partial
+from PathosPool import NoDaemonProcessPool
 # import threading
-import pathos.pools as Pool
+# import pathos.pools as Pool
 
 random = Random()
 # <markdowncell>
@@ -237,8 +238,9 @@ def update_swarm(swarm, f):
     # update each batch
 
     # print("Number of updater threads: " + str(len(threads)))
-    pool = Pool.ProcessPool(len(batch_args))
-    pool.close()
+    pool = NoDaemonProcessPool(len(batch_args))
+    pool.map(run_batch, batch_args)
+    # pool.close()
     pool.join()
 
     t_update_end = time.time()

@@ -3,7 +3,8 @@
 from copy import deepcopy, copy
 from core import Particle, pp
 # import threading
-import pathos.pools as Pool
+# import pathos.pools as Pool
+from PathosPool import NoDaemonProcessPool
 
 import time
 
@@ -212,9 +213,9 @@ def fea_pso(f, n, domain, all_factors, optimizers, p, fea_times, pso_stop):
         optimize_args = [[swarm, pso_stop, indx, new_swarms] for indx, swarm in enumerate(swarms)]
         # threads = [threading.Thread(target=optimize_swarm, args=(swarm, pso_stop, indx, new_swarms)) for indx, swarm in enumerate(swarms)]
 
-        pool = Pool.ProcessPool(len(optimize_args))
+        pool = NoDaemonProcessPool(len(optimize_args))
         pool.map(optimize_swarm, optimize_args)
-        pool.close()
+        # pool.close()
         pool.join()
 
         # end for
