@@ -4,7 +4,10 @@ from copy import deepcopy, copy
 from core import Particle, pp
 # import threading
 # import pathos.pools as Pool
-from PathosPool import NoDaemonProcessPool
+# from PathosPool import NoDaemonProcessPool
+import pathos.multiprocessing as mp
+
+from pathos.multiprocessing import ProcessingPool, ThreadingPool
 
 import time
 
@@ -166,14 +169,14 @@ def print_swarms(swarms):
 
 # Runs optimization on a single swarm
 def optimize_swarm(params):
-    swarm, pso_stop, swarm_indx, new_swarms = params
+    swarm, pso_stop = params
     t = 0
     while not pso_stop(t, swarm):
         t = t + 1
+        # print("TIME: " + str(t))
         swarm = update_fea_swarm(swarm)
 
     # thread_lock.acquire()
-    new_swarms[swarm_indx] = swarm
     # thread_lock.release()
 
     return swarm
@@ -210,13 +213,15 @@ def fea_pso(f, n, domain, all_factors, optimizers, p, fea_times, pso_stop):
 
         # Optimize each swarm on new thread
         # init the threads to run optimize_swarm(swarm, pso_stop, indx, new_swarms, lock)
-        optimize_args = [[swarm, pso_stop, indx, new_swarms] for indx, swarm in enumerate(swarms)]
+        optimize_args = [[swarm, pso_stop] for indx, swarm in enumerate(swarms)]
         # threads = [threading.Thread(target=optimize_swarm, args=(swarm, pso_stop, indx, new_swarms)) for indx, swarm in enumerate(swarms)]
 
-        pool = NoDaemonProcessPool(len(optimize_args))
-        pool.map(optimize_swarm, optimize_args)
-        # pool.close()
+        # pool = NoDaemonProcessPool(len(optimize_args))
+        pool = mp.ThreadingPool(int(mp.cpu_count()/2))
+        new_swarms = pool.map(optimize_swarm, optimize_args)
+        pool.close()
         pool.join()
+        pool.restart()
 
         # end for
         swarms = new_swarms

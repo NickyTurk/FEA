@@ -18,9 +18,10 @@ from core import pluck, add, mul, sub, dict_merge, Particle, Random
 #import random
 from copy import deepcopy
 from functools import partial
-from PathosPool import NoDaemonProcessPool
+# from PathosPool import NoDaemonProcessPool
 # import threading
 # import pathos.pools as Pool
+import pathos.multiprocessing as mp
 
 random = Random()
 # <markdowncell>
@@ -199,17 +200,14 @@ index: index in global particles list where batch starts so order is preserved
 
 TODO: maybe need lock
 """
-def run_batch(params):
-    b, updater, new_particles, index = params
+def run_one(params):
+    b, updater = params
     # print("Batch Length: " + str(len(b)))
     # print("New Particles Length: " + str(len(new_particles)))
-    for i in range(len(b)):
-        particle, personal_best = b[i]
-        # Maybe need to lock this, but I doubt it since no thread considers same subset
-        # print("Adding at: " + str(index + i))
-        new_particle = updater(particle, personal_best)
-        new_particles[index + i] = new_particle
 
+    particle, personal_best = b
+    new_particle = updater(particle, personal_best)
+    return new_particle
 
 
 def update_swarm(swarm, f):
@@ -223,25 +221,28 @@ def update_swarm(swarm, f):
 
     batch_size = 1
     new_particles = [None for _ in particles]  # make blank array so no out of bounds
-    batch_args = []
-
-    for i in range(0, len(particles), batch_size): # switch to numeric iteration for baching of threads
-        batch = []
-        indx = i
-        for j in range(batch_size):
-            if i + j >= len(particles):
-                break
-            batch.append((particles[i + j], personal_bests[i + j]))
-        # threading.Thread(target=optimize_swarm, args=(swarm, pso_stop, indx, new_swarms, lock))
-        if len(batch) > 0:
-            batch_args.append([batch, updater, new_particles, indx])
+    # batch_args = []
+    #
+    # for i in range(0, len(particles), batch_size): # switch to numeric iteration for baching of threads
+    #     batch = []
+    #     indx = i
+    #     for j in range(batch_size):
+    #         if i + j >= len(particles):
+    #             break
+    #         batch.append((particles[i + j], personal_bests[i + j]))
+    #     # threading.Thread(target=optimize_swarm, args=(swarm, pso_stop, indx, new_swarms, lock))
+    #     if len(batch) > 0:
+    #         batch_args.append([batch, updater, new_particles, indx])
     # update each batch
 
+    inputs = [[[particles[i], personal_bests[i]], updater] for i in range(len(particles))]
+
     # print("Number of updater threads: " + str(len(threads)))
-    pool = NoDaemonProcessPool(len(batch_args))
-    pool.map(run_batch, batch_args)
-    # pool.close()
+    pool = mp.Pool(int(mp.cpu_count() /2))
+    new_particles = pool.map(run_one, inputs)
+    pool.close()
     pool.join()
+
 
     t_update_end = time.time()
     print("\t\tTime to update particles: " + str(t_update_end - t_update_start))
