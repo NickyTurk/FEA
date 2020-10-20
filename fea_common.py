@@ -1,5 +1,7 @@
 from copy import deepcopy
+import threading
 
+fitness_lock = threading.Lock()
 
 def make_shifted_fitness_fn(f, shift):
     def h(xs):
@@ -15,7 +17,10 @@ def make_factored_fitness_fn(factors, solution, f):
         temp = deepcopy(solution)
         for i, x in zip(factors, xs):
             temp[i] = x
-        return f(temp)
+        # fitness_lock.acquire()
+        ret_me = f(temp)
+        # fitness_lock.release()
+        return ret_me
 
     return h
 
