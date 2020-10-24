@@ -2,7 +2,14 @@
 
 from copy import deepcopy, copy
 from core import Particle, pp
-import threading
+# import threading
+# import pathos.pools as Pool
+# from PathosPool import NoDaemonProcessPool
+import pathos.multiprocessing as mp
+
+from pathos.multiprocessing import ProcessingPool, ThreadingPool
+
+import time
 
 import pso
 from fea_common import *
@@ -147,6 +154,10 @@ def update_fea_swarm(swarm):
 
 # This is what Shane does...most of the time. Just start out with a random G.
 def initialize_solution(n, domain, f):
+<<<<<<< HEAD
+=======
+    # print("dimemsnions ", n)
+>>>>>>> b68aa53da55f1e2d94c62636d26950a470eb7ecd
     particle = pso.initialize_particle(n, domain, f)
     return particle.position
 
@@ -160,17 +171,19 @@ def print_swarms(swarms):
 
 
 # Runs optimization on a single swarm
-def optimize_swarm(swarm, pso_stop, swarm_indx, new_swarms, thread_lock):
+def optimize_swarm(params):
+    swarm, pso_stop = params
     t = 0
     while not pso_stop(t, swarm):
         t = t + 1
+        # print("TIME: " + str(t))
         swarm = update_fea_swarm(swarm)
 
-    thread_lock.acquire()
-    new_swarms[swarm_indx] = swarm
-    thread_lock.release()
+    # thread_lock.acquire()
+    # thread_lock.release()
 
     return swarm
+
 
 """
 f = 
@@ -183,33 +196,56 @@ fea_times = number of iterations of fea
 pso_stop = lambda pso termination function
 """
 def fea_pso(f, n, domain, all_factors, optimizers, p, fea_times, pso_stop):
+<<<<<<< HEAD
+=======
+    print("dimensions ", n)
+    t_init_start = time.time()
+>>>>>>> b68aa53da55f1e2d94c62636d26950a470eb7ecd
     solution = initialize_solution(n, domain, f)
     solutions = [Particle(position=solution, velocity=[], fitness=f(solution))]
     swarms = [initialize_fea_swarm(p, n, factors, domain, make_factored_fitness_fn(factors, solution, f)) for factors in
               all_factors]
+    t_init_end = time.time()
+    print("Time for init")
+    print(t_init_end - t_init_start)
     # with just f, this should still work well.
     #   swarms = [initialize_fea_swarm( p, n, factors, domain, f) for factors in all_factors]
+
     for _ in range(fea_times):
+        t_optimize_start = time.time()
         new_swarms = [None for _ in range(len(swarms))]  # init blank list so no out of bounds errors
 
-        lock = threading.Lock()  # to make access to new_swarms safe (maybe better way to do this)
+        # lock = threading.Lock()  # to make access to new_swarms safe (maybe better way to do this)
 
         # Optimize each swarm on new thread
         # init the threads to run optimize_swarm(swarm, pso_stop, indx, new_swarms, lock)
-        threads = [threading.Thread(target=optimize_swarm, args=(swarm, pso_stop, indx, new_swarms, lock)) for indx, swarm in enumerate(swarms)]
+        optimize_args = [[swarm, pso_stop] for indx, swarm in enumerate(swarms)]
+        # threads = [threading.Thread(target=optimize_swarm, args=(swarm, pso_stop, indx, new_swarms)) for indx, swarm in enumerate(swarms)]
 
-        # Optimize them!
-        for t in threads:
-            t.start()
-
-        # Wait for everything to finish
-        for t in threads:
-            t.join()
+        # pool = NoDaemonProcessPool(len(optimize_args))
+        pool = mp.ThreadingPool(int(mp.cpu_count()/2))
+        new_swarms = pool.map(optimize_swarm, optimize_args)
+        pool.close()
+        pool.join()
+        pool.restart()
 
         # end for
         swarms = new_swarms
+        t_optimize_end = time.time()
+        print("Time for optimize: ")
+        print(t_optimize_end - t_optimize_start)
+        t_compete_start = time.time()
         solution = compete(n, swarms, all_factors, optimizers, f, solution)
+        t_compete_end = time.time()
+        print("Time for compete: ")
+        print(t_compete_end - t_compete_start)
+
+        t_share_start = time.time()
         swarms = [share(swarm, solution, f) for swarm in swarms]
+        t_share_end = time.time()
+
+        print("Time for share: ")
+        print(t_share_end - t_share_start)
         solutions.append(Particle(position=solution, velocity=[], fitness=f(solution)))
     # end for
     # pso.random.reset()

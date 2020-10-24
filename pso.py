@@ -12,10 +12,16 @@
 # named tuples where the possible fields have settled down.
 
 # <codecell>
+import time
+
 from core import pluck, add, mul, sub, dict_merge, Particle, Random
 #import random
 from copy import deepcopy
 from functools import partial
+# from PathosPool import NoDaemonProcessPool
+# import threading
+# import pathos.pools as Pool
+import pathos.multiprocessing as mp
 
 random = Random()
 # <markdowncell>
@@ -34,7 +40,13 @@ def initialize_particle(n, domain, f):
     * velocity is all 0's of length n.
     * fitness is the value of the supplied function, f, on the position.
     """
+<<<<<<< HEAD
     position = [random.uniform( domain[ 0], domain[1]) for i in range( 0, n)]
+=======
+    # print("dimemsnions ", n)
+    position = [random.uniform( domain[ 0], domain[1]) for i in range( 0, n)]
+    # print(position)
+>>>>>>> b68aa53da55f1e2d94c62636d26950a470eb7ecd
     velocity = [0.0 for i in range( 0, n)]
     fitness = f(position)
     return Particle(position, velocity, fitness)
@@ -132,9 +144,9 @@ def update_position( domain, particle, new_velocity):
 
 def update_particle( domain, v_max, f, global_best, particle, personal_best):
     new_velocity = update_velocity(v_max, particle, personal_best, global_best)
-    new_position = update_position( domain, particle, new_velocity)
-    new_fitness = f( new_position)
-    return Particle( new_position, new_velocity, new_fitness)
+    new_position = update_position(domain, particle, new_velocity)
+    new_fitness = f(new_position)
+    return Particle(new_position, new_velocity, new_fitness)
 # end def
 
 def print_particle_positions( swarm):
@@ -165,46 +177,104 @@ def find_global_best( personal_bests):
 
 # TODO: the main question here is if Swarm should stay a Dict or be a NamedTuple.
 def initialize_swarm( p, n, domain, f):
-    particles = [initialize_particle( n, domain, f) for i in range( p)]
-    personal_bests = deepcopy( particles) # this *should* work down to primitives.
-    global_best = find_global_best( personal_bests)
+    particles = [initialize_particle( n, domain, f) for i in range(p)]
+    personal_bests = deepcopy(particles) # this *should* work down to primitives.
+    global_best = find_global_best(personal_bests)
     return {"gbest": global_best, "particles": particles, "pbests": personal_bests, "domain": domain}
 # end def
 
 # <codecell>
 
 def find_personal_bests( particles, personal_bests):
-    def lesser( a, b):
+    def lesser(a, b):
         if a.fitness < b.fitness:
-            return deepcopy( a)
-        return deepcopy( b)
-    return [lesser( a, b) for a,b in zip( particles, personal_bests)]
+            return deepcopy(a)
+        return deepcopy(b)
+    return [lesser(a, b) for a,b in zip(particles, personal_bests)]
 # end def
 
 # <codecell>
 
-def update_swarm( swarm, f):
-    global_best, particles, personal_bests, domain = pluck( swarm, "gbest", "particles", "pbests", "domain")
+"""
+Updates each particle in the batch
+
+updater: the partially filled in function of update_particle
+new_particles: list where output is stored
+index: index in global particles list where batch starts so order is preserved
+
+TODO: maybe need lock
+"""
+def run_one(params):
+    b, updater = params
+    # print("Batch Length: " + str(len(b)))
+    # print("New Particles Length: " + str(len(new_particles)))
+
+    particle, personal_best = b
+    new_particle = updater(particle, personal_best)
+    return new_particle
+
+
+def update_swarm(swarm, f):
+    global_best, particles, personal_bests, domain = pluck(swarm, "gbest", "particles", "pbests", "domain")
 
     v_max = (domain[1] - domain[0]) / 2.0
 
-    updater = partial( update_particle, domain, v_max, f, global_best)
+    t_update_start = time.time()
 
-    new_particles = [updater( particle, personal_best) for particle, personal_best in zip( particles, personal_bests)]
-    new_personal_bests = find_personal_bests( new_particles, personal_bests)
+    updater = partial(update_particle, domain, v_max, f, global_best)
+
+    batch_size = 1
+    new_particles = [None for _ in particles]  # make blank array so no out of bounds
+    # batch_args = []
+    #
+    # for i in range(0, len(particles), batch_size): # switch to numeric iteration for baching of threads
+    #     batch = []
+    #     indx = i
+    #     for j in range(batch_size):
+    #         if i + j >= len(particles):
+    #             break
+    #         batch.append((particles[i + j], personal_bests[i + j]))
+    #     # threading.Thread(target=optimize_swarm, args=(swarm, pso_stop, indx, new_swarms, lock))
+    #     if len(batch) > 0:
+    #         batch_args.append([batch, updater, new_particles, indx])
+    # update each batch
+
+    inputs = [[[particles[i], personal_bests[i]], updater] for i in range(len(particles))]
+
+    # print("Number of updater threads: " + str(len(threads)))
+    pool = mp.Pool(int(mp.cpu_count() /2))
+    new_particles = pool.map(run_one, inputs)
+    pool.close()
+    pool.join()
+
+
+    t_update_end = time.time()
+    # print("\t\tTime to update particles: " + str(t_update_end - t_update_start))
+
+    t_find_start = time.time()
+
+    new_personal_bests = find_personal_bests(new_particles, personal_bests)
+
+    t_find_end = time.time()
+    # print("\t\tTime to find personal bests: " + str(t_find_end - t_find_start))
 
     #paired_particles = zip( new_particles, new_personal_bests)
     #paired_particles.sort( key=lambda x: x[ 1].fitness)
     #new_particles, new_personal_bests = zip( *paired_particles)
 
-    sorted_bests = sorted( new_personal_bests, key=lambda x: x.fitness)
-    new_global_best = sorted_bests[ 0]
-    new_swarm = {"gbest": new_global_best, "particles": list( new_particles), "pbests": list( new_personal_bests)}
+    t_sort_start = time.time()
+    sorted_bests = sorted(new_personal_bests, key=lambda x: x.fitness)
+
+    t_sort_end = time.time()
+    # print("\t\tTime to sort: " + str(t_sort_end - t_sort_start))
+
+    new_global_best = sorted_bests[0]
+    new_swarm = {"gbest": new_global_best, "particles": list(new_particles), "pbests": list(new_personal_bests)}
 
     # if swarm has any metadata/context/etc., this makes sure we preserve it. `dict_merge` makes a
     # copy so this is effectively an immutable operation to one level (it is a shallow copy).
 #    print(random.calls(), random.random())
-    return dict_merge( swarm, new_swarm)
+    return dict_merge(swarm, new_swarm)
 # end def
 
 # <codecell>
