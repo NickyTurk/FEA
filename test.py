@@ -8,7 +8,6 @@ from datetime import datetime
 from evaluation import *
 import numpy as np
 from opfunu.cec.cec2010.function import *
-
 from functools import partial
 
 
@@ -86,9 +85,9 @@ if __name__ == '__main__':
 
     # test_diff_grouping(4, functions, function_names)
 
-    dimensions = [50,100]
-    file_extension = "m4_diff_grouping"
-    #file_extension = "overlapping_diff_grouping"
+    dimensions = [50, 100]
+    # file_extension = "m4_diff_grouping"
+    file_extension = "overlapping_diff_grouping"
     filename_list = get_files_list("F*_" + file_extension + "_small_epsilon.csv")
 
     for filename in filename_list:
@@ -119,7 +118,6 @@ if __name__ == '__main__':
                 with open('results/FEA_PSO/' + str(function_name) + '_dim' + str(dim) + file_extension + ".csv", 'w') as write_to_csv:
                     csv_writer = csv.writer(write_to_csv)
                     csv_writer.writerow(summary["fitnesses"])
-                    print('printed')
 
     # pso_stop = lambda t, s: t == 5
     # p = 100
