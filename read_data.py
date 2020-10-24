@@ -21,14 +21,22 @@ def get_files_list(file_regex):
     return glob.glob(path + '/' + file_regex)
 
 
-def import_single_function_factors(file_name, dim=50):
+
+def import_single_function_factors(file_name, dim=50, epsilon=0):
 
     frame = pd.read_csv(file_name, header=0)
     dim_frame = frame.loc[frame['DIMENSION'] == dim]
     fion_name = frame['FUNCTION'].unique()
-    max_index = dim_frame['NR_GROUPS'].argmax()
     dim_array = np.array(dim_frame['FACTORS'])
-    return literal_eval(dim_array[max_index]), fion_name[0]
+
+    if epsilon ==0:
+        index = dim_frame['NR_GROUPS'].argmax()
+        factors = literal_eval(dim_array[index])
+    else:
+        epsilon_row = dim_frame.loc[dim_frame['EPSILON'] == epsilon]
+        factors = literal_eval(np.array(epsilon_row['FACTORS'])[0])
+
+    return factors, fion_name[0]
 
 
 if __name__ == '__main__':

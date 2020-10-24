@@ -200,8 +200,8 @@ def fea_pso(f, n, domain, all_factors, optimizers, p, fea_times, pso_stop):
     swarms = [initialize_fea_swarm(p, n, factors, domain, make_factored_fitness_fn(factors, solution, f)) for factors in
               all_factors]
     t_init_end = time.time()
-    print("Time for init")
-    print(t_init_end - t_init_start)
+    #print("Time for init")
+    #print(t_init_end - t_init_start)
     # with just f, this should still work well.
     #   swarms = [initialize_fea_swarm( p, n, factors, domain, f) for factors in all_factors]
 
@@ -226,20 +226,20 @@ def fea_pso(f, n, domain, all_factors, optimizers, p, fea_times, pso_stop):
         # end for
         swarms = new_swarms
         t_optimize_end = time.time()
-        print("Time for optimize: ")
-        print(t_optimize_end - t_optimize_start)
+        #print("Time for optimize: ")
+        #print(t_optimize_end - t_optimize_start)
         t_compete_start = time.time()
         solution = compete(n, swarms, all_factors, optimizers, f, solution)
         t_compete_end = time.time()
-        print("Time for compete: ")
-        print(t_compete_end - t_compete_start)
+        #print("Time for compete: ")
+        #print(t_compete_end - t_compete_start)
 
         t_share_start = time.time()
         swarms = [share(swarm, solution, f) for swarm in swarms]
         t_share_end = time.time()
 
-        print("Time for share: ")
-        print(t_share_end - t_share_start)
+        #print("Time for share: ")
+        #print(t_share_end - t_share_start)
         solutions.append(Particle(position=solution, velocity=[], fitness=f(solution)))
     # end for
     # pso.random.reset()
