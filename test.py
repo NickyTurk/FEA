@@ -73,13 +73,8 @@ if __name__ == '__main__':
 
     benchmark = args.benchmark
 
-<<<<<<< HEAD
     functions = [F3, F5, F9, F19]  # [F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19,F20] _benchmarks[benchmark]["function"]
     function_names = ['F3', 'F5', 'F9', 'F20']  # ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'F13', 'F14', 'F15', 'F16', 'F17', 'F18', 'F19', 'F20']
-=======
-    functions = [F3, F7, F11, F17, F20]  # [F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15, F16, F17, F18, F19,F20] _benchmarks[benchmark]["function"]
-    function_names = ['F3', 'F7', 'F11', 'F17', 'F20'] #['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'F13', 'F14', 'F15', 'F16', 'F17', 'F18', 'F19', 'F20']
->>>>>>> b68aa53da55f1e2d94c62636d26950a470eb7ecd
 
     no_m_param = ['F1', 'F2', 'F3', 'F19', 'F20']
     shifted_error_function = ['F14', 'F15', 'F16']
@@ -90,13 +85,8 @@ if __name__ == '__main__':
 
     # test_diff_grouping(4, functions, function_names)
 
-<<<<<<< HEAD
     dimensions = [50, 100]
     # file_extension = "m4_diff_grouping"
-=======
-    dimensions = [50,100]
-    #file_extension = "m4_diff_grouping"
->>>>>>> b68aa53da55f1e2d94c62636d26950a470eb7ecd
     file_extension = "overlapping_diff_grouping"
     filename_list = get_files_list("F*_" + file_extension + "_small_epsilon.csv")
 
