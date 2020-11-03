@@ -119,15 +119,15 @@ if __name__ == '__main__':
     benchmark = args.benchmark
 
     bench = Benchmark()
-    F3 = bench.get_function(3) # Ackley Function
+    #F3 = bench.get_function(3) # Ackley Function
     F6 = bench.get_function(6) # Partially Additively with a separable subcomponent, Ackley
     F10 = bench.get_function(10) # Partially Additively with no separable subcomponents, Ackley
     F12 = bench.get_function(12) # overlapping, Rosenbrock
-    F15 = bench.get_function(15) # Schwefel
+    #F15 = bench.get_function(15) # Schwefel
 
-    functions = [F3, F6, F10, F12, F15]
+    functions = [F6, F10, F12]
 
-    function_names = ['F3', 'F6', 'F10', 'F12', 'F15']
+    function_names = ['F6', 'F10', 'F12']
 
     k = 2
     m = 4

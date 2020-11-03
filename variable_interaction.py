@@ -7,11 +7,12 @@ import numpy as np
 import copy
 from minepy import MINE
 from deap.benchmarks import *
+from networkx.convert_matrix import *
+import networkx as nx
+import matplotlib.pyplot as plt
+from clustering import *
 
 class MEE:
-    """
-
-    """
     def __init__(self, f, d, ub, lb, n, a, b, delta):
         self.f = f
         self.d = d
@@ -21,15 +22,13 @@ class MEE:
         self.a = a
         self.b = b
         self.delta = delta
+        self.IM = np.zeros((self.d, self.d))
 
     def direct_IM(self):
         """
-        Fill out the Interaction Matrix (IM) with directly interacting variables as per
-        Sun, Kirley, & Halgamuge (2017). Quantifying  variable  interactions  in  continuous optimization problems.
+        algorithm outline
         :return: direct_IM
         """
-        # initialize IM dxd
-        IM = np.zeros((self.d, self.d))
 
         # for each dimension
         for i in range(self.d):
@@ -46,8 +45,8 @@ class MEE:
                     y_1 = self.f(x)
                     x[i] = x[i] + self.delta
                     y_2 = self.f(x)
-                    print(y_1)
-                    print(y_2)
+                    # print(y_1)
+                    # print(y_2)
                     de[k] = (y_2[0] - y_1[0])/self.delta
 
                 avg_de = np.mean(de)
@@ -59,17 +58,29 @@ class MEE:
                 mine = MINE()
                 mine.compute_score(de, x_j)
                 mic = mine.mic()
-                if mic < self.a:
-                    IM[i,j] = 1
-                    IM[j,i] = 1
-        self.direct = IM
-        return IM
+                if mic > self.a:
+                    self.IM[i,j] = 1
+                    self.IM[j,i] = 1
+
+    def strongly_connected_comps(self):
+        IM_graph = nx.to_networkx_graph(self.IM, create_using=nx.DiGraph)
+        strongly_connected_components = nx.algorithms.components.strongly_connected_components(IM_graph)
+        for component in strongly_connected_components:
+            component =  list(component)
+            for i in range(len(component)):
+                for j in range(i+1, len(component)):
+                    self.IM[component[i],component[j]] = 1
+                    self.IM[component[j],component[i]] = 1
+
+        print(self.IM)
+
+
 
 
 if __name__ == '__main__':
-
-    mee = MEE(sphere, 3, np.ones(3)*100, np.ones(3)*-100, 50, 0.2, 0.001, 0.000001)
+    d = 10
+    mee = MEE(sphere, d, np.ones(d)*100, np.ones(d)*-100, 50, 0.1, 0.0001, 0.000001)
     mee.direct_IM()
-    print(mee.direct)
-    # def f(x):
-    #     return deap.benchmarks.sphere()
+    print(np.array(mee.IM))
+    mee.strongly_connected_comps()
+    spectral = Spectral(np.array(mee.IM), 3).assign_clusters()
