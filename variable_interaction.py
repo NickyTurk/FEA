@@ -9,8 +9,6 @@ from minepy import MINE
 from deap.benchmarks import *
 from networkx.convert_matrix import *
 import networkx as nx
-import matplotlib.pyplot as plt
-from clustering import *
 
 class MEE:
     def __init__(self, f, d, ub, lb, n, a, b, delta):
@@ -83,4 +81,3 @@ if __name__ == '__main__':
     mee.direct_IM()
     print(np.array(mee.IM))
     mee.strongly_connected_comps()
-    spectral = Spectral(np.array(mee.IM), 3).assign_clusters()
