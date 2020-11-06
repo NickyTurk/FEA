@@ -93,7 +93,6 @@ if __name__ == '__main__':
     filename_list = get_files_list("F*_" + file_extension + "_small_epsilon.csv")
 
     for filename in filename_list:
-        print(filename)
         for dim in dimensions:
             factors, function_name = import_single_function_factors(filename, dim)
             if function_name in function_names:
