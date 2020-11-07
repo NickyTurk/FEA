@@ -34,9 +34,11 @@ def initialize_particle(n, domain, f):
     * velocity is all 0's of length n.
     * fitness is the value of the supplied function, f, on the position.
     """
-    # print("dimemsnions ", n)
     position = [random.uniform( domain[ 0], domain[1]) for i in range( 0, n)]
     # print(position)
+
+    position = [random.uniform( domain[ 0], domain[1]) for i in range( 0, n)]
+
     velocity = [0.0 for i in range( 0, n)]
     fitness = f(position)
     return Particle(position, velocity, fitness)
