@@ -36,29 +36,17 @@ def test_diff_grouping(function_names, m=0):
     bench = Benchmark()
 
     for i, f_name in enumerate(function_names):
-        with open('results/2013/' + f_name + '_2013_overlapping_diff_grouping.csv', 'w') as csv_write:
+        with open('results/2013/' + f_name + '_2013_diff_grouping.csv', 'w') as csv_write:
             csv_writer = csv.writer(csv_write)
             csv_writer.writerow(['FUNCTION', 'DIMENSION', 'EPSILON', 'NR_GROUPS', 'FACTORS', 'SEPARATE VARS'])
             for d in dimensions:
                 for e in epsilons:
-                    # try:
-                    # if function_names[i] in shifted_function:
-                    #     factors, arbiters, optimizers, neighbors, separate_variables = generate_overlapping_diff_grouping(
-                    #         f, d, e, m=m)  # generate_linear_topology(d, k)  generate_diff_grouping(f, d, 1)
-                    #
-                    # elif function_names[i] in shifted_error_function:
-                    #     factors, arbiters, optimizers, neighbors, separate_variables = generate_overlapping_diff_grouping(
-                    #         f, d, e, m=d)  # generate_linear_topology(d, k)  generate_diff_grouping(f, d, 1)
-                    #
-                    # else: 
                     f_int = int(''.join(list(filter(str.isdigit, f_name))))
-                    print(f_int)
-
                     f = bench.get_function(f_int)
 
-                    factors, arbiters, optimizers, neighbors, separate_variables = generate_overlapping_diff_grouping(
+                    factors, arbiters, optimizers, neighbors, separate_variables = generate_diff_grouping(
                         f, d, e)
-                    # print(len(factors), factors)
+                    
                     csv_writer.writerow([function_names[i], str(d), str(e), len(factors), factors, separate_variables])
 
 
@@ -84,8 +72,7 @@ def test_optimization(dimensions, function_names):
                 #f = partial(functions[function_names.index(function_name)], m_group=m)  # retrieve appropriate function
 
                 f_int = int(''.join(list(filter(str.isdigit, function_name))))
-                print(f_int)
-
+                
                 f = bench.get_function(f_int)
                 info = bench.get_info(f_int)
                 domain = (info['lower'], info['upper'])
@@ -124,14 +111,6 @@ if __name__ == '__main__':
         seed = int(datetime.now().strftime("%S"))
 
     benchmark = args.benchmark
-
-    bench = Benchmark()
-    F3 = bench.get_function(3) # Ackley Function
-    F6 = bench.get_function(6) # Partially Additively with a separable subcomponent, Ackley
-    F10 = bench.get_function(10) # Partially Additively with no separable subcomponents, Ackley
-    F12 = bench.get_function(12) # overlapping, Rosenbrock
-    F15 = bench.get_function(15) # Schwefel
-
     functions = [F6, F10, F12]
 
     function_names = ['F6', 'F10', 'F12']
