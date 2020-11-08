@@ -11,7 +11,7 @@ import numpy as np
 import time, skfuzzy
 from abc import ABC, abstractmethod
 import copy
-from minepy import MINE
+# from minepy import MINE
 from deap.benchmarks import *
 from networkx.convert_matrix import *
 import networkx as nx

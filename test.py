@@ -11,6 +11,9 @@ from opfunu.cec.cec2010.function import *
 from cec2013lsgo.cec2013 import Benchmark
 from functools import partial
 
+from variable_interaction import MEE
+from deap.benchmarks import *
+
 
 def harness(algorithm, iterations, repeats):
     summary = {}
@@ -76,7 +79,7 @@ def test_optimization(dimensions, function_names):
                 # else:
                 #f = partial(functions[function_names.index(function_name)], m_group=m)  # retrieve appropriate function
 
-                f_int = int(filter(str.isdigit, function_name))
+                f_int = int(''.join(filter(str.isdigit, function_name)))
                 print(f_int)
 
                 f = bench.get_function(f_int)
@@ -106,6 +109,28 @@ def get_factor_info(factors, d):
     return arbiters, optimizers, neighbors
 
 
+def test_var_int(function_name):
+    bench = Benchmark()
+    f_int = int(''.join(filter(str.isdigit, function_name)))
+    print(f_int)
+
+    f = bench.get_function(f_int)
+    info = bench.get_info(f_int)
+    domain = (info['lower'], info['upper'])
+    print(domain)
+
+    d = 50
+
+
+    mee = MEE(f, d, np.ones(d)*100, np.ones(d)*-100, 50, 0.3, 0.0001, 0.000001)
+    mee.direct_IM()
+    print(np.array(mee.IM))
+    mee.strongly_connected_comps()
+    print()
+
+
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="test out some algies")
     parser.add_argument("--benchmark", help="pick the name of a benchmark function", default="schwefel-1.2")
@@ -132,8 +157,10 @@ if __name__ == '__main__':
     k = 2
     m = 4
 
-    test_diff_grouping(functions, function_names)
-
+    test_var_int('F6')
+    # test_diff_grouping(functions, function_names)
+    # for function_name in function_names:
+    #     test_var_int(function_name)
     dimensions = [50,100]
     #test_optimization(dimensions, function_names)
 
