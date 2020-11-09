@@ -107,7 +107,7 @@ def get_factor_info(factors, d):
 
 
 def test_var_int(function_name):
-    data = ''
+    matricies = ''
 
     bench = Benchmark()
     f_int = int(''.join(filter(str.isdigit, function_name)))
@@ -121,27 +121,38 @@ def test_var_int(function_name):
     d = 50
 
     interactions = []
-    sizes = [100, 50, 10]
+    sizes = [100, 100, 50, 50, 10, 10]
+    totals = []
 
     for s in sizes:
         mee = MEE(f, d, np.ones(d)*s, np.ones(d)*-s, 50, 0.3, 0.0001, 0.000001)
         mee.direct_IM()
-        data += '\n'
-        data += 'Search: ' + str(s) + 'x' + str(s) + ' around origin'
-        data += np_to_str(mee.IM)  # I couldn't figure out how to get full representation of np array so made own function
-        data += '\n'
+        matricies += '\n'
+        matricies += 'Search: ' + str(s) + 'x' + str(s) + ' around origin\n'
+        s, total = np_to_str(mee.IM)
+        matricies += s  # I couldn't figure out how to get full representation of np array so made own function
+        matricies += '\n'
         interactions.append(mee.IM)
+        totals.append(total)
         print(np.array(mee.IM))
         # mee.strongly_connected_comps()
         print()
 
     norms = []
-    data += '\n\nNorms:\n'
+    data = ''
+    data += 'Norms:\n'
     for var_int in interactions:
         diff = interactions[0]-var_int
         norms.append(la.norm(diff))
     data += str(norms)
     print(norms)
+
+    data += '\nTotals:\n'
+    data += str(totals)
+    print(totals)
+
+    data += '\n\n\n'
+    data += matricies
 
     with open('SpaceSearch/' + function_name + '.txt', 'w') as f:
         f.write(data)
@@ -150,12 +161,14 @@ def test_var_int(function_name):
 
 def np_to_str(x):
     s = ''
+    total = 0
     for i in range(len(x)):
         for j in range(len(x[i])):
+            total += x[i][j]
             s += str(x[i][j])
             s += '\t'
         s += '\n'
-    return s
+    return s,total
 
 
 
