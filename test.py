@@ -13,6 +13,7 @@ from functools import partial
 
 from variable_interaction import MEE
 from deap.benchmarks import *
+from numpy import linalg as la
 
 
 def harness(algorithm, iterations, repeats):
@@ -106,6 +107,8 @@ def get_factor_info(factors, d):
 
 
 def test_var_int(function_name):
+    data = ''
+
     bench = Benchmark()
     f_int = int(''.join(filter(str.isdigit, function_name)))
     print(f_int)
@@ -117,12 +120,42 @@ def test_var_int(function_name):
 
     d = 50
 
+    interactions = []
+    sizes = [100, 50, 10]
 
-    mee = MEE(f, d, np.ones(d)*100, np.ones(d)*-100, 50, 0.3, 0.0001, 0.000001)
-    mee.direct_IM()
-    print(np.array(mee.IM))
-    mee.strongly_connected_comps()
-    print()
+    for s in sizes:
+        mee = MEE(f, d, np.ones(d)*s, np.ones(d)*-s, 50, 0.3, 0.0001, 0.000001)
+        mee.direct_IM()
+        data += '\n'
+        data += 'Search: ' + str(s) + 'x' + str(s) + ' around origin'
+        data += np_to_str(mee.IM)  # I couldn't figure out how to get full representation of np array so made own function
+        data += '\n'
+        interactions.append(mee.IM)
+        print(np.array(mee.IM))
+        # mee.strongly_connected_comps()
+        print()
+
+    norms = []
+    data += '\n\nNorms:\n'
+    for var_int in interactions:
+        diff = interactions[0]-var_int
+        norms.append(la.norm(diff))
+    data += str(norms)
+    print(norms)
+
+    with open('SpaceSearch/' + function_name + '.txt', 'w') as f:
+        f.write(data)
+
+
+
+def np_to_str(x):
+    s = ''
+    for i in range(len(x)):
+        for j in range(len(x[i])):
+            s += str(x[i][j])
+            s += '\t'
+        s += '\n'
+    return s
 
 
 
@@ -145,12 +178,12 @@ if __name__ == '__main__':
     k = 2
     m = 4
 
-    test_var_int('F6')
+    # test_var_int('F6')
     # test_diff_grouping(functions, function_names)
-    # for function_name in function_names:
-    #     test_var_int(function_name)
+    for function_name in function_names:
+        test_var_int(function_name)
 
-    test_diff_grouping(function_names)
+    # test_diff_grouping(function_names)
 
 
     dimensions = [50,100]
