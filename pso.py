@@ -296,7 +296,7 @@ if __name__ == "__main__":
 
     for name in names[:1]:
         with open("results/" + name + "-pso.json", "w") as outfile:
-            print("working on", name)
+            # print("working on", name)
             summary = {"name": name}
             fitnesses = []
             for trial in range(0, 50):
