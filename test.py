@@ -73,7 +73,6 @@ def test_optimization(dimensions, function_names):
                 f = bench.get_function(f_int)
                 info = bench.get_info(f_int)
                 domain = (info['lower'], info['upper'])
-                print(domain)
 
                 pso_stop = lambda t, s: t == 10
                 p = 400
@@ -87,6 +86,26 @@ def test_optimization(dimensions, function_names):
                     csv_writer = csv.writer(write_to_csv)
                     csv_writer.writerow(summary["fitnesses"])
                     print('printed')
+
+def test_pso(function_name, p, dim):
+    with open("results/pso/" + function_name + "_pso.csv", "w") as write_to_csv:
+        csv_writer = csv.writer(write_to_csv)
+        print('current function ', function_name)
+        f_int = int(''.join(list(filter(str.isdigit, function_name))))
+        f = bench.get_function(f_int)
+        info = bench.get_info(f_int)
+        domain = (info['lower'], info['upper'])
+
+        summary = {"name": function_name}
+        fitnesses = []
+        result = pso(f, p, dim, domain, lambda t, f: t == 100)
+        fitnesses.append(result[-1].fitness)
+        bootstrap = create_bootstrap_function(250)
+        replications = bootstrap(fitnesses)
+        statistics = analyze_bootstrap_sample(replications)
+        summary["statistics"] = statistics
+        summary["fitnesses"] = fitnesses
+        csv_writer.writerow(summary["fitnesses"])
 
 
 def get_factor_info(factors, d):
@@ -172,38 +191,19 @@ if __name__ == '__main__':
     benchmark = args.benchmark
     functions = [F6, F10, F12]
 
-    function_names = ['F12'] #'F6', 'F7', 'F10', 'F11',
-
-    k = 2
-    m = 4
+    function_names = ['F12'] #'F6', 'F7', 'F10', 'F11',S
 
     # test_var_int('F6')
+    dimensions = [50]
 
-    solution = np.array([54.17907981066105, -81.29932796440022, -54.83959174207751, -74.26855949545245, 67.3197270995056, 93.00900939377559,
-     -45.50648254930236, 47.179106977536094, -84.77226689955808, -53.331812351900695, -6.47687692796886,
-     25.705557128737325, 36.86484832305888, 71.76418298810756, -23.321800501231877, -82.65536763451573,
-     54.21870582334469, 94.29977725867164, 52.546584440881105, 21.82192675552521])
-
-    print(solution)
-
-    bench = Benchmark()
-
-    from numpy.random import rand
-    info = bench.get_info(1)
-    sol = info['lower'] + rand(200) * (info['upper'] - info['lower'])
-    f = bench.get_function(12)
-    print(sol)
-    print(f(sol))
-
-    '''
     for function_name in function_names:
         #test_var_int(function_name)
 
-        #test_diff_grouping(function_names)
+        test_pso(function_name, 200, dimensions[0])
+    
+    #test_diff_grouping(function_names)
+    #test_optimization(dimensions, function_names)
 
-        dimensions = [20]
-        test_optimization(dimensions, function_names)
-    '''
 
     # pso_stop = lambda t, s: t == 5
     # p = 100

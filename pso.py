@@ -271,8 +271,8 @@ def update_swarm(swarm, f):
 
 # <codecell>
 
-def pso( f, p, n, domain, stop):
-    swarm = initialize_swarm(p, n, domain, f)
+def pso( f, p, dim, domain, stop):
+    swarm = initialize_swarm(p, dim, domain, f)
     gbest = swarm[ "gbest"]
     result = [gbest]
     t = 0
