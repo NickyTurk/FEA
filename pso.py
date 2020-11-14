@@ -15,12 +15,9 @@
 import time
 
 from core import pluck, add, mul, sub, dict_merge, Particle, Random
-#import random
+import numpy as np
 from copy import deepcopy
 from functools import partial
-# from PathosPool import NoDaemonProcessPool
-# import threading
-# import pathos.pools as Pool
 import pathos.multiprocessing as mp
 
 random = Random()
@@ -40,9 +37,10 @@ def initialize_particle(n, domain, f):
     * velocity is all 0's of length n.
     * fitness is the value of the supplied function, f, on the position.
     """
-    position = [random.uniform( domain[ 0], domain[1]) for i in range( 0, n)]
+    position = [random.uniform(domain[0], domain[1]) for i in range(0, n)]
+    print('position', position)
     velocity = [0.0 for i in range( 0, n)]
-    fitness = f(position)
+    fitness = f(np.array(position))
     return Particle(position, velocity, fitness)
 
 
@@ -139,7 +137,7 @@ def update_position( domain, particle, new_velocity):
 def update_particle( domain, v_max, f, global_best, particle, personal_best):
     new_velocity = update_velocity(v_max, particle, personal_best, global_best)
     new_position = update_position(domain, particle, new_velocity)
-    new_fitness = f(new_position)
+    new_fitness = f(np.array(new_position))
     return Particle(new_position, new_velocity, new_fitness)
 # end def
 

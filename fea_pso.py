@@ -2,9 +2,7 @@
 
 from copy import deepcopy, copy
 from core import Particle, pp
-# import threading
-# import pathos.pools as Pool
-# from PathosPool import NoDaemonProcessPool
+import numpy as np
 import pathos.multiprocessing as mp
 
 from pathos.multiprocessing import ProcessingPool, ThreadingPool
@@ -49,10 +47,10 @@ from fea_common import *
 def compete(n, swarms, factors, optimizers, f, solution):
     solution = copy(solution)
     variables = list(range(n))
-    best_fitness = f(solution)
+    best_fitness = f(np.array(solution))
     for i in variables:
         #        print "start", i, map( lambda v: "%.4f" % v, solution)
-        best_fitness = f(solution)
+        best_fitness = f(np.array(solution))
         best_value = solution[i]
         for swarm_idx in optimizers[i]:
             swarm = swarms[swarm_idx]
@@ -60,7 +58,7 @@ def compete(n, swarms, factors, optimizers, f, solution):
             candidate_x = swarm["gbest"].position[decoder(i)]
             #            print("",swarm_idx,candidate_x)
             solution[i] = candidate_x
-            candidate_fitness = f(solution)
+            candidate_fitness = f(np.array(solution))
             if candidate_fitness < best_fitness:
                 best_fitness = candidate_fitness
                 best_value = candidate_x
@@ -96,7 +94,7 @@ def extract_factors_from_solution(factors, solution):
 # end def
 
 def reevaluate_pbests(f, pbests):
-    return [Particle(pb.position, pb.velocity, f(pb.position)) for pb in pbests]
+    return [Particle(pb.position, pb.velocity, f(np.array(pb.position))) for pb in pbests]
 
 
 # end def
@@ -155,6 +153,7 @@ def update_fea_swarm(swarm):
 # This is what Shane does...most of the time. Just start out with a random G.
 def initialize_solution(n, domain, f):
     particle = pso.initialize_particle(n, domain, f)
+    print("initializtion fitness", particle.fitness)
     return particle.position
 
 
@@ -194,7 +193,7 @@ pso_stop = lambda pso termination function
 def fea_pso(f, n, domain, all_factors, optimizers, p, fea_times, pso_stop):
     #t_init_start = time.time()
     solution = initialize_solution(n, domain, f)
-    solutions = [Particle(position=solution, velocity=[], fitness=f(solution))]
+    solutions = [Particle(position=solution, velocity=[], fitness=f(np.array(solution)))]
     swarms = [initialize_fea_swarm(p, n, factors, domain, make_factored_fitness_fn(factors, solution, f)) for factors in
               all_factors]
     #t_init_end = time.time()
@@ -228,6 +227,7 @@ def fea_pso(f, n, domain, all_factors, optimizers, p, fea_times, pso_stop):
         #print(t_optimize_end - t_optimize_start)
         #t_compete_start = time.time()
         solution = compete(n, swarms, all_factors, optimizers, f, solution)
+        print(solution)
         #t_compete_end = time.time()
         #print("Time for compete: ")
         #print(t_compete_end - t_compete_start)
@@ -238,7 +238,7 @@ def fea_pso(f, n, domain, all_factors, optimizers, p, fea_times, pso_stop):
 
         #print("Time for share: ")
         #print(t_share_end - t_share_start)
-        solutions.append(Particle(position=solution, velocity=[], fitness=f(solution)))
+        solutions.append(Particle(position=solution, velocity=[], fitness=f(np.array(solution))))
     # end for
     # pso.random.reset()
     return solutions

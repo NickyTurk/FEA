@@ -17,6 +17,7 @@ from networkx.convert_matrix import *
 import networkx as nx
 import matplotlib.pyplot as plt
 import scipy as sp
+import hdbscan
 
 class Cluster(ABC):
     '''
@@ -38,7 +39,22 @@ class Cluster(ABC):
 
         pass
 
-class Kmeans(Cluster):
+    def return_factors(self, cluster_probs, threshold):
+        factors = []
+        outliers = np.arange(len(cluster_probs[0, :]))
+        for i in range(len(cluster_probs)):  # get nr of clusters based on matrix containing info
+            cluster = []
+            for j in range(len(cluster_probs[i, :])):
+                if cluster_probs[i, j] > threshold:
+                    cluster.append(j)
+
+            factors.append(cluster)
+        outliers = set(outliers) - set.union(*map(set, factors))
+        factors.append(list(outliers))
+
+        return factors
+
+class FuzzyKmeans(Cluster):
     '''
     Implementation of the fuzzy k-means clustering algorithm using
     the scikit learn fuzzy implementation
@@ -46,13 +62,14 @@ class Kmeans(Cluster):
 
     def __init__(self, data, k=3):
         self.k = k
+        self.soft_clusters = None
         super().__init__(data)
 
     def assign_clusters(self):
         cntr, u, u0, d, jm, p, fpc = skfuzzy.cluster.cmeans(self.data.T, self.k, 2, error=0.005, maxiter=1000,
                                                             init=None)
         u_pred, u0, d, jm, p, fpc = skfuzzy.cluster.cmeans_predict(self.data.T, cntr, 2, error=0.005, maxiter=1000)
-        return u_pred
+        self.soft_clusters = u_pred
 
 class HDbscan(Cluster):
     '''
@@ -62,6 +79,7 @@ class HDbscan(Cluster):
     def __init__(self, data, min_points=4, e=0.5):
         self.min_points = min_points
         self.e = e
+        self.soft_clusters = None
         super().__init__(data)
 
     def assign_clusters(self):
@@ -70,7 +88,10 @@ class HDbscan(Cluster):
         and return an array of the cluster assignments
         '''
 
-        pass
+        clustering = hdbscan.HDBSCAN(min_cluster_size=self.min_points, prediction_data=True).fit(self.data)
+        self.soft_clusters = hdbscan.all_points_membership_vectors(clustering)
+
+
 
 class Spectral(Cluster):
     '''
@@ -82,7 +103,7 @@ class Spectral(Cluster):
         self.IM = IM
         self.k = num_clusters
         self.IM_graph = nx.to_networkx_graph(self.IM, create_using=nx.Graph)
-        self.k_means_clusters = None
+        self.soft_clusters = None
 
     def assign_clusters(self):
         '''
@@ -106,24 +127,24 @@ class Spectral(Cluster):
         self.eig_vectors = np.transpose(self.eig_vectors[k_arr])
 
         # run fuzzy kmeans with the eigen vectors
-        self.k_means_clusters = Kmeans(self.eig_vectors, self.k).assign_clusters()
-        print(self.k_means_clusters)
+        self.soft_clusters = FuzzyKmeans(self.eig_vectors, self.k).assign_clusters()
+        # print(self.soft_clusters)
 
-    def return_factors(self, threshold= 0.75):
-        factors = []
-        outliers = np.arange(len(self.k_means_clusters[0,:]))
-        for i in range(self.k):
-            cluster = []
-            for j in range(len(self.k_means_clusters[i,:])):
-                if self.k_means_clusters[i,j] > threshold:
-                    cluster.append(j)
-
-            factors.append(cluster)
-        outliers = set(outliers) - set.union(*map(set, factors))
-        factors.append(list(outliers))
-
-
-        return factors
+    # def return_factors(self, threshold= 0.75):
+    #     factors = []
+    #     outliers = np.arange(len(self.soft_clusters[0,:]))
+    #     for i in range(self.k):
+    #         cluster = []
+    #         for j in range(len(self.soft_clusters[i,:])):
+    #             if self.soft_clusters[i,j] > threshold:
+    #                 cluster.append(j)
+    #
+    #         factors.append(cluster)
+    #     outliers = set(outliers) - set.union(*map(set, factors))
+    #     factors.append(list(outliers))
+    #
+    #
+    #     return factors
 
 if __name__ == '__main__':
     pass

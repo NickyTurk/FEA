@@ -7,12 +7,14 @@ import numpy as np
 import copy
 from minepy import MINE
 from deap.benchmarks import *
+from cec2013lsgo.cec2013 import Benchmark
 from networkx.convert_matrix import *
 import networkx as nx
 
 class MEE:
     def __init__(self, f, d, ub, lb, n, a, b, delta):
         self.f = f
+        print(self.f)
         self.d = d
         self.ub = ub
         self.lb = lb
@@ -41,6 +43,7 @@ class MEE:
                     x = copy.deepcopy(x_0)
                     x[j] = x_j[k]
                     y_1 = self.f(x)
+                    print(y_1)
                     x[i] = x[i] + self.delta
                     y_2 = self.f(x)
                     # print(y_1)
@@ -86,7 +89,9 @@ if __name__ == '__main__':
     ubounds[4] *= 0.1
     lbounds[3] *= 0.1
     lbounds[4] *= 0.1
-    mee = MEE(sphere, d, ubounds, lbounds, 50, 0.1, 0.0001, 0.000001)
+    bench = Benchmark()
+    f = bench.get_function(12)
+    mee = MEE(f, d, ubounds, lbounds, 50, 0.1, 0.0001, 0.000001)
     mee.direct_IM()
     print(np.array(mee.IM))
     mee.strongly_connected_comps()
