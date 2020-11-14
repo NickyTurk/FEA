@@ -87,15 +87,17 @@ def test_optimization(dimensions, function_names):
                     csv_writer.writerow(summary["fitnesses"])
                     print('printed')
 
-def test_pso(function_name, p, dim):
+def test_pso(function_name, p, dim, f = None):
     with open("results/pso/" + function_name + "_pso.csv", "w") as write_to_csv:
         csv_writer = csv.writer(write_to_csv)
         print('current function ', function_name)
-        f_int = int(''.join(list(filter(str.isdigit, function_name))))
-        f = bench.get_function(f_int)
-        info = bench.get_info(f_int)
-        domain = (info['lower'], info['upper'])
-
+        if f is None:
+            f_int = int(''.join(list(filter(str.isdigit, function_name))))
+            f = bench.get_function(f_int)
+            info = bench.get_info(f_int)
+            domain = (info['lower'], info['upper'])
+        else:
+            domain = (-32,32)
         summary = {"name": function_name}
         fitnesses = []
         result = pso(f, p, dim, domain, lambda t, f: t == 100)
@@ -191,15 +193,16 @@ if __name__ == '__main__':
     benchmark = args.benchmark
     functions = [F6, F10, F12]
 
-    function_names = ['F12'] #'F6', 'F7', 'F10', 'F11',S
+    function_names = ['F1', 'F3', 'F5', 'F9', 'F11','F17', 'F19', 'F20'] #'F6', 'F7', 'F10', 'F11',S
+    cec2010_functions = [F1, F3, F5, F9, F11, F17, F19, F20]
 
     # test_var_int('F6')
     dimensions = [50]
 
-    for function_name in function_names:
+    for i,function_name in enumerate(function_names):
         #test_var_int(function_name)
-
-        test_pso(function_name, 200, dimensions[0])
+        f = cec2010_functions[i]
+        test_pso(function_name, 200, dimensions[0], f)
     
     #test_diff_grouping(function_names)
     #test_optimization(dimensions, function_names)
