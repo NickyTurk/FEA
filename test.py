@@ -127,7 +127,6 @@ def test_var_int(function_name):
     f = bench.get_function(f_int)
     info = bench.get_info(f_int)
     domain = (info['lower'], info['upper'])
-    print(domain)
 
     d = 50
 
@@ -199,8 +198,19 @@ if __name__ == '__main__':
     # test_var_int('F6')
     dimensions = [50]
 
+    no_m_param = ['F1', 'F2', 'F3', 'F19', 'F20']
+    shifted_error_function = ['F14', 'F15', 'F16']
+    m=4
+
     for i,function_name in enumerate(function_names):
         #test_var_int(function_name)
+
+        if function_name in no_m_param:
+            f = cec2010_functions[i]
+        elif function_name in shifted_error_function:
+            f = partial(cec2010_functions[i], m_group=dimensions[0])
+        else:
+            f = partial(cec2010_functions[i], m_group=m) 
         f = cec2010_functions[i]
         test_pso(function_name, 200, dimensions[0], f)
     

@@ -153,7 +153,7 @@ def update_fea_swarm(swarm):
 # This is what Shane does...most of the time. Just start out with a random G.
 def initialize_solution(n, domain, f):
     particle = pso.initialize_particle(n, domain, f)
-    print("initializtion fitness", particle.fitness)
+    # print("initializtion fitness", particle.fitness)
     return particle.position
 
 
