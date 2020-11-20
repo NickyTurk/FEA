@@ -211,7 +211,6 @@ if __name__ == '__main__':
             f = partial(cec2010_functions[i], m_group=dimensions[0])
         else:
             f = partial(cec2010_functions[i], m_group=m) 
-        f = cec2010_functions[i]
         test_pso(function_name, 200, dimensions[0], f)
     
     #test_diff_grouping(function_names)

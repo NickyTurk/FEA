@@ -4,10 +4,12 @@ VI method TBD, mutual information?
 """
 
 import numpy as np
+from numpy import linalg as la
+import math
 import copy
 from minepy import MINE
 from deap.benchmarks import *
-from cec2013lsgo.cec2013 import Benchmark
+# from cec2013lsgo.cec2013 import Benchmark
 from networkx.convert_matrix import *
 import networkx as nx
 
@@ -79,19 +81,115 @@ class MEE:
         print(self.IM)
 
 
+class CMA:
+    # f: function optimizing
+    # dim: number dimentions (n)
+    # k: number individuals each generation
+    # u: number individuals to keep each gen
+    def __init__(self, f, dim):
+        self.dim = dim
+        self.f = f
+        pass
+
+    # Copied from Matlab implementation in (Completely Derandomized Self-Adaptation in Evolution Strategies)
+    # Lamb ~ 4 + floor(3log(N)), mu ~ floor(lamb/2)
+    def cmaes(self, lamb, mu):
+        N = self.dim
+
+        # Stopping criteria
+        maxeval = 300*(N + 2)^2
+        stopfit = 10**-10
+
+        xmeanw = np.ones((N, 1))  # Object parameter start (weighted mean)
+
+        # Step size
+        sigma = 1.0
+        minsigma = 10^-15
+
+        arweights = np.log((lamb + 1)/2) - np.log([i for i in range(1, mu + 1)])  # for recombination
+
+        # Adaptation
+        cc = 4/(N+4)
+        ccov = 2/((N + np.sqrt(2))**2)
+        cs = cc
+        damp = 1/cs + 1
+
+        # Dynamic
+        # TODO: fix B,D so they are the bounds of the function
+        B = np.identity(N)
+        D = np.identity(N)
+        BD = np.matmul(B,D)
+        C = np.matmul(BD, np.transpose(BD))
+        pc = np.zeros((N,1))
+        ps = np.copy(pc)
+        cw = sum(arweights)/la.norm(arweights)
+        chiN = np.sqrt(N) * (1 - 1/(4*N) + 1/(21*(N**2)))
+
+        # Generation loop
+        counteval = 0
+        arfitness = np.zeros(lamb)
+        arfitness[0] = 2*abs(stopfit)
+        arz = []
+        arx = []
+        tups = []
+        while arfitness[0] > stopfit & counteval < maxeval:
+            # Generate lambda offspring
+            for k in range(lamb):
+                # TODO, make sure x inside bounds
+                arz.append(np.random.randn(N))
+                x = xmeanw + sigma * (np.matmul(BD, arz[k]))
+                arx.append(x)
+                arfitness[k] = self.f(x)
+            tups = [(i, arx[i]) for i in range(len(arx))]
+            tups = sorted(tups, key=lambda t: t[1], reverse=True)
+
+            zmeanw = np.ones((N,1))
+            for i in range(len(xmeanw)):
+                xmeanw = arx[tups[i][0]] * arweights[i]
+                zmeanw = arz[tups[i][0]] * arweights[i]
+
+            #Adapt covariance
+            pc = (1-cc)*pc + (np.sqrt(cc * (2-cc)) * cw) * (np.matmul(BD, zmeanw))
+            C = (1 - ccov) * C + ccov * np.matmul(pc, np.transpose(pc))
+
+            # adapt sigma
+            ps = (1-cs)*ps + (sqrt(cs * (2 - cs)) * cw) * (np.matmul(B, zmeanw))
+            sigma = sigma * np.exp((la.norm(ps) - chiN)/chiN/damp)
+
+            if counteval / lamb % N/10 < 1:
+                C = np.triu(C) + np.transpose(np.triu(C,1))
+                D,B = la.eig(C)
+                D = np.diag(np.sqrt(np.diag(D)))
+                BD = np.matmul(B,D)
+
+        return arx[tups[0][0]]
+
+
+
+
+def cigar(x):
+    f = x[0]**2
+    b = 10**6
+    for i in range(1, len(x)):
+        f += b * x[i]**2
+    return f
 
 
 if __name__ == '__main__':
-    d = 10
-    ubounds = np.ones(d)*100
-    lbounds = np.ones(d)*-100
-    ubounds[3] *= 0.1
-    ubounds[4] *= 0.1
-    lbounds[3] *= 0.1
-    lbounds[4] *= 0.1
-    bench = Benchmark()
-    f = bench.get_function(12)
-    mee = MEE(f, d, ubounds, lbounds, 50, 0.1, 0.0001, 0.000001)
-    mee.direct_IM()
-    print(np.array(mee.IM))
-    mee.strongly_connected_comps()
+    cmaes = CMA(cigar, 10)
+    l = 4 + np.floor(3 * np.log(10))
+    u = np.floor(l/2)
+    cmaes.cmaes(l,u)
+    # d = 10
+    # ubounds = np.ones(d)*100
+    # lbounds = np.ones(d)*-100
+    # ubounds[3] *= 0.1
+    # ubounds[4] *= 0.1
+    # lbounds[3] *= 0.1
+    # lbounds[4] *= 0.1
+    # bench = Benchmark()
+    # f = bench.get_function(12)
+    # mee = MEE(f, d, ubounds, lbounds, 50, 0.1, 0.0001, 0.000001)
+    # mee.direct_IM()
+    # print(np.array(mee.IM))
+    # mee.strongly_connected_comps()
