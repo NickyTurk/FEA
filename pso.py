@@ -168,6 +168,8 @@ def find_global_best( personal_bests):
 # <codecell>
 
 # TODO: the main question here is if Swarm should stay a Dict or be a NamedTuple.
+# p = population
+# n = factor size
 def initialize_swarm( p, n, domain, f):
     particles = [initialize_particle( n, domain, f) for i in range(p)]
     personal_bests = deepcopy(particles) # this *should* work down to primitives.
@@ -211,8 +213,6 @@ def update_swarm(swarm, f):
 
     v_max = (domain[1] - domain[0]) / 2.0
 
-    t_update_start = time.time()
-
     updater = partial(update_particle, domain, v_max, f, global_best)
 
     batch_size = 1
@@ -239,26 +239,13 @@ def update_swarm(swarm, f):
     pool.close()
     pool.join()
 
-
-    t_update_end = time.time()
-    # print("\t\tTime to update particles: " + str(t_update_end - t_update_start))
-
-    t_find_start = time.time()
-
     new_personal_bests = find_personal_bests(new_particles, personal_bests)
-
-    t_find_end = time.time()
-    # print("\t\tTime to find personal bests: " + str(t_find_end - t_find_start))
 
     #paired_particles = zip( new_particles, new_personal_bests)
     #paired_particles.sort( key=lambda x: x[ 1].fitness)
     #new_particles, new_personal_bests = zip( *paired_particles)
 
-    t_sort_start = time.time()
     sorted_bests = sorted(new_personal_bests, key=lambda x: x.fitness)
-
-    t_sort_end = time.time()
-    # print("\t\tTime to sort: " + str(t_sort_end - t_sort_start))
 
     new_global_best = sorted_bests[0]
     new_swarm = {"gbest": new_global_best, "particles": list(new_particles), "pbests": list(new_personal_bests)}
@@ -270,9 +257,10 @@ def update_swarm(swarm, f):
 # end def
 
 # <codecell>
-
-def pso( f, p, dim, domain, stop):
-    swarm = initialize_swarm(p, dim, domain, f)
+# p = population
+# n = factor size
+def pso( f, p, n, domain, stop):
+    swarm = initialize_swarm(p, n, domain, f)
     gbest = swarm[ "gbest"]
     result = [gbest]
     t = 0
@@ -282,7 +270,7 @@ def pso( f, p, dim, domain, stop):
         gbest = swarm["gbest"]
         result.append(gbest)
     return result
-# end def
+    
 
 if __name__ == "__main__":
     from benchmarks import benchmarks

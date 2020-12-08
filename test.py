@@ -6,14 +6,16 @@ from fea_pso import fea_pso
 import argparse, csv
 from datetime import datetime
 from evaluation import *
+from clustering import *
 import numpy as np
 from opfunu.cec.cec2010.function import *
 # from cec2013lsgo.cec2013 import Benchmark
 from functools import partial
 
 from variable_interaction import MEE
-from deap.benchmarks import *
 from numpy import linalg as la
+
+
 
 
 def harness(algorithm, iterations, repeats):
@@ -87,27 +89,27 @@ def test_optimization(dimensions, function_names):
                     csv_writer.writerow(summary["fitnesses"])
                     print('printed')
 
-def test_pso(function_name, p, dim, f = None):
-    with open("results/pso/" + function_name + "_pso.csv", "w") as write_to_csv:
-        csv_writer = csv.writer(write_to_csv)
-        print('current function ', function_name)
-        if f is None:
-            f_int = int(''.join(list(filter(str.isdigit, function_name))))
-            f = bench.get_function(f_int)
-            info = bench.get_info(f_int)
-            domain = (info['lower'], info['upper'])
-        else:
-            domain = (-32,32)
-        summary = {"name": function_name}
-        fitnesses = []
-        result = pso(f, p, dim, domain, lambda t, f: t == 100)
+def test_pso(function_name, p, dim, t = 100, function = None):
+    # if function is None:
+    #     f_int = int(''.join(list(filter(str.isdigit, function_name))))
+    #     f = function
+    #     #f = bench.get_function(f_int)
+    #     #info = bench.get_info(f_int)
+    #     #domain = (info['lower'], info['upper'])
+    # else:
+    f = function
+    domain = (-32,32)
+    summary = {"name": function_name}
+    fitnesses = []
+    for i in range(10):
+        result = pso(f, p, dim, domain, lambda t, f: t == t)
         fitnesses.append(result[-1].fitness)
-        bootstrap = create_bootstrap_function(250)
-        replications = bootstrap(fitnesses)
-        statistics = analyze_bootstrap_sample(replications)
-        summary["statistics"] = statistics
-        summary["fitnesses"] = fitnesses
-        csv_writer.writerow(summary["fitnesses"])
+    bootstrap = create_bootstrap_function(250)
+    replications = bootstrap(fitnesses)
+    statistics = analyze_bootstrap_sample(replications)
+    summary["statistics"] = statistics
+    summary["fitnesses"] = fitnesses
+    return summary
 
 
 def get_factor_info(factors, d):
@@ -159,6 +161,28 @@ def test_var_int(f, name):
     with open('SpaceSearch/' + name + '.txt', 'w') as f:
         f.write(data)
 
+def MEE_factors(function_name, function, dim, fuzzy_cluster_threshold, mic_thr = 0.1, de_thr = 0.001):
+    ub = np.ones(dim) * 100
+    lb = np.ones(dim) * -100
+    a = mic_thr #mic threshold 
+    b = de_thr #de threshold 
+    delta = 0.000001 #account for variations
+    sample_size = dim*4
+
+
+    # caluclate MEE
+    mee = MEE(function, dim, ub, lb, sample_size, a, b, delta)
+    mee.direct_IM()
+
+    mee.strongly_connected_comps()
+
+    # run spectral on adjacency/interaction matrix
+    spectral = Spectral(np.array(mee.IM), 3)
+    spectral.assign_clusters()
+    spectral_factors = spectral.return_factors(spectral.soft_clusters, threshold= fuzzy_cluster_threshold)
+    return spectral_factors
+
+
 def np_to_str(x):
     s = ''
     total = 0
@@ -204,9 +228,23 @@ if __name__ == '__main__':
             f = partial(cec2010_functions[i], m_group=dimensions[0])
         else:
             f = partial(cec2010_functions[i], m_group=m)
-        test_var_int(f, function_name)
+
+        # test_var_int(f, function_name)
         # test_pso(function_name, 200, dimensions[0], f)
 
+        with open("results/spectral_factors/" + function_name + "_spectral.csv", "w") as write_to_csv:
+            csv_writer = csv.writer(write_to_csv)
+            csv_writer.writerow(['function', 'dim', 'fuzzy_threshold', 'nr_groups', 'factors'])
+            for dim in [10,20,30,40,50,60,70,80,90,100]: 
+                for fzz_thr in [0.6,0.7,0.8, 0.9]:
+                    print('function ', function_name, 'dim: ', str(dim))
+                    factors = MEE_factors(function_name, f, dim, fzz_thr)
+                    to_write = [function_name, str(dim), str(fzz_thr), str(len(factors)), str(factors)]
+                    csv_writer.writerow(to_write)
+                    print(to_write)
+
+
+    
     #test_diff_grouping(function_names)
     #test_optimization(dimensions, function_names)
 
