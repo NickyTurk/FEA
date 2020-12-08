@@ -8,7 +8,7 @@ from datetime import datetime
 from evaluation import *
 import numpy as np
 from opfunu.cec.cec2010.function import *
-from cec2013lsgo.cec2013 import Benchmark
+# from cec2013lsgo.cec2013 import Benchmark
 from functools import partial
 
 from variable_interaction import MEE
@@ -117,25 +117,17 @@ def get_factor_info(factors, d):
     return arbiters, optimizers, neighbors
 
 
-def test_var_int(function_name):
+def test_var_int(f, name):
     matricies = ''
 
-    bench = Benchmark()
-    f_int = int(''.join(filter(str.isdigit, function_name)))
-    print(f_int)
-
-    f = bench.get_function(f_int)
-    info = bench.get_info(f_int)
-    domain = (info['lower'], info['upper'])
-
-    d = 50
+    d = 10
 
     interactions = []
-    sizes = [100, 100, 50, 50, 10, 10]
+    sizes = [50, 50, 20, 20, 10, 10, 5, 5]
     totals = []
 
     for s in sizes:
-        mee = MEE(f, d, np.ones(d)*s, np.ones(d)*-s, 50, 0.3, 0.0001, 0.000001)
+        mee = MEE(f, d, np.ones(d)*s, np.ones(d)*-s, 10000, 0.3, 0.0001, 0.000001)
         mee.direct_IM()
         matricies += '\n'
         matricies += 'Search: ' + str(s) + 'x' + str(s) + ' around origin\n'
@@ -164,7 +156,7 @@ def test_var_int(function_name):
     data += '\n\n\n'
     data += matricies
 
-    with open('SpaceSearch/' + function_name + '.txt', 'w') as f:
+    with open('SpaceSearch/' + name + '.txt', 'w') as f:
         f.write(data)
 
 def np_to_str(x):
@@ -196,23 +188,25 @@ if __name__ == '__main__':
     cec2010_functions = [F1, F3, F5, F9, F11, F17, F19, F20]
 
     # test_var_int('F6')
-    dimensions = [50]
+    dimensions = [10]
 
     no_m_param = ['F1', 'F2', 'F3', 'F19', 'F20']
     shifted_error_function = ['F14', 'F15', 'F16']
-    m=4
+    m = 4
 
     for i,function_name in enumerate(function_names):
         #test_var_int(function_name)
+        print(function_name)
 
         if function_name in no_m_param:
             f = cec2010_functions[i]
         elif function_name in shifted_error_function:
             f = partial(cec2010_functions[i], m_group=dimensions[0])
         else:
-            f = partial(cec2010_functions[i], m_group=m) 
-        test_pso(function_name, 200, dimensions[0], f)
-    
+            f = partial(cec2010_functions[i], m_group=m)
+        test_var_int(f, function_name)
+        # test_pso(function_name, 200, dimensions[0], f)
+
     #test_diff_grouping(function_names)
     #test_optimization(dimensions, function_names)
 

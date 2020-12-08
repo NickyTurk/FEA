@@ -45,15 +45,13 @@ class MEE:
                     x = copy.deepcopy(x_0)
                     x[j] = x_j[k]
                     y_1 = self.f(x)
-                    print(y_1)
+                    # print(y_1)
                     x[i] = x[i] + self.delta
                     y_2 = self.f(x)
                     # print(y_1)
                     # print(y_2)
-                    if(type(y_2) == type(0.1)):
-                        de[k] = (y_2 - y_1)/self.delta
-                    else:
-                        de[k] = (y_2[0] - y_1[0])/self.delta
+                    de[k] = (y_2 - y_1)/self.delta
+
 
                 avg_de = np.mean(de)
 
