@@ -26,7 +26,9 @@ class TestOptimization():
             file_extension = "m4_diff_grouping_small_epsilon"
         elif factor_topology == 'ODG': 
             file_extension = "overlapping_diff_grouping_small_epsilon"
-        self.filename = "diff_grouping/" + self.function_name + "_" + file_extension + ".csv"
+        elif factor_topology == 'spectral':
+            file_extension = "spectral"
+        self.filename = "factors/" + self.function_name + "_" + file_extension + ".csv"
 
         no_m_param = ['F1', 'F2', 'F3', 'F19', 'F20']
         shifted_error_function = ['F14', 'F15', 'F16']
@@ -41,7 +43,7 @@ class TestOptimization():
 
         self.domain = [-50, 50]
     
-    def harness(self,algorithm, iterations, repeats):
+    def harness(self,algorithm, iterations, repeats=10):
         summary = {}
         fitnesses = []
         for trial in range(0, iterations):
@@ -65,20 +67,12 @@ class TestOptimization():
         factors, function_name = import_single_function_factors(self.filename, self.dim)
         arbiters, optimizers, neighbors = self.get_factor_info(factors, self.dim)
         algorithm = lambda: fea_pso(self.f, self.dim, self.domain, factors, optimizers, pop, fea_iterations, lambda t, s: t == pso_iterations)
-        summary = self.harness(algorithm, fea_iterations, 1)
+        summary = self.harness(algorithm, fea_iterations, 10)
         return summary
     
     def test_pso(self, pop, iterations):
-        summary = {"name": self.function_name}
-        fitnesses = []
-        for i in range(10):
-            result = pso(self.f, pop, self.dim, self.domain, lambda t, f: t == iterations)
-            fitnesses.append(result[-1].fitness)
-        bootstrap = create_bootstrap_function(250)
-        replications = bootstrap(fitnesses)
-        statistics = analyze_bootstrap_sample(replications)
-        summary["statistics"] = statistics
-        summary["fitnesses"] = fitnesses
+        algorithm = lambda: pso(self.f, pop, self.dim, self.domain, lambda t, f: t == iterations)
+        summary = self.harness(algorithm, iterations, 250)
         return summary
 
 if __name__ == '__main__':

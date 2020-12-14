@@ -35,7 +35,6 @@ def get_files_list(file_regex, subfolder = ''):
     return glob.glob(path + '/' + file_regex)
 
 
-
 def import_single_function_factors(file_name, dim=50, epsilon=0):
 
     frame = pd.read_csv(file_name, header=0)
