@@ -1,23 +1,37 @@
 import pandas as pd
 import numpy as np
-import glob
+import glob, re
 from ast import literal_eval
 
 
-def transform_files_to_df(file_regex):
-    all_files = get_files_list(file_regex)
+def transform_files_to_df(file_regex, subfolder = '', header = True):
+    all_files = get_files_list(file_regex, subfolder)
 
     li = []
 
     for filename in all_files:
-        df = pd.read_csv(filename, index_col=None, header=0)
-        li.append(df)
+        if header:
+            df = pd.read_csv(filename, index_col=None, header=0, converters={'fitness': eval})
+            if 'function' not in df.columns:
+                function_nr = re.findall(r"F([0-9]+?)(?=\_)", filename) 
+                f_int = ''.join(list(filter(str.isdigit, function_nr[0])))
+                df['function'] = 'F' + f_int
+            li.append(df)
+        else:
+            df = pd.read_csv(filename, index_col=None, header=None, converters={'fitness': eval})
+            function_nr = re.findall(r"F([0-9]+?)(?=\_)", filename) 
+            f_int = ''.join(list(filter(str.isdigit, function_nr[0])))
+            df['function'] = 'F' + f_int
+            li.append(df)
 
     return pd.concat(li, axis=0, ignore_index=True)
 
 
-def get_files_list(file_regex):
-    path = r'./results'
+def get_files_list(file_regex, subfolder = ''):
+    if not subfolder:
+        path = r'./results'
+    else:
+        path = './results/' + subfolder
     return glob.glob(path + '/' + file_regex)
 
 
@@ -40,6 +54,7 @@ def import_single_function_factors(file_name, dim=50, epsilon=0):
 
 
 if __name__ == '__main__':
-    transform_files_to_df("F*_m4_diff_grouping_small_epsilon.csv")
+    #transform_files_to_df("F*_m4_diff_grouping_small_epsilon.csv")
     # import_single_function_factors("F1_m4_diff_grouping_small_epsilon.csv", 50)
+    print(transform_files_to_df("F*_pso_param.csv", subfolder = "pso_50"))
 
