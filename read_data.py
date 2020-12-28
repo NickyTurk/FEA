@@ -38,6 +38,8 @@ def get_files_list(file_regex, subfolder = ''):
 def import_single_function_factors(file_name, dim=50, epsilon=0):
 
     frame = pd.read_csv(file_name, header=0)
+    frame.columns = map(str.upper, frame.columns)
+    frame.rename(columns = {'DIM': "DIMENSION"}, errors='ignore')
     dim_frame = frame.loc[frame['DIMENSION'] == dim]
     fion_name = frame['FUNCTION'].unique()
     dim_array = np.array(dim_frame['FACTORS'])

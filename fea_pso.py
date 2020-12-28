@@ -67,7 +67,7 @@ def compete(n, swarms, factors, optimizers, f, solution):
         solution[i] = best_value
     #        print("end  ", i, map( lambda v: "%.4f" % v, solution))
     # end for
-    print("best fitness after competition: ", best_fitness)
+    # print("best fitness after competition: ", best_fitness)
     return solution
 
 
@@ -201,6 +201,7 @@ def fea_pso(f, n, domain, all_factors, optimizers, p, fea_times, pso_stop):
     #   swarms = [initialize_fea_swarm( p, n, factors, domain, f) for factors in all_factors]
 
     for _ in range(fea_times):
+        print('fea loop: ', _)
         #t_optimize_start = time.time()
         new_swarms = [None for _ in range(len(swarms))]  # init blank list so no out of bounds errors
 

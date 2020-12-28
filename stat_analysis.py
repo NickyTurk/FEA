@@ -3,6 +3,7 @@ import re, os
 import matplotlib.pyplot as plt
 import read_data
 import numpy as np
+from scipy.stats import ttest_ind
 from statistics import *
 from ast import literal_eval
 
@@ -20,7 +21,7 @@ class OptimizationAnalysis():
         fea = read_data.transform_files_to_df("F*_dim" + str(self.dim) + "overlapping_diff_grouping.csv", subfolder = "FEA_PSO", header = False)
         ccea = read_data.transform_files_to_df("F*_dim" + str(self.dim) + "m4_diff_grouping.csv", subfolder = "FEA_PSO", header = False)
 
-        functions = ['F5', 'F11', 'F17']
+        functions = ['F3', 'F5', 'F11', 'F17']
 
         for f in functions:
             print(f)
@@ -31,15 +32,23 @@ class OptimizationAnalysis():
             min_pso_idx = avg_fitness.index(min(avg_fitness))
             min_pso_avg = min(avg_fitness)
             print('pso: ', min_pso_avg)
-            min_pso_row = pso_values.iloc[[min_pso_idx]]
+            pso_row = pso_values.iloc[[min_pso_idx]]
+            pso_fitnesses = pso_row['fitness'].to_numpy()[0]
 
             fea_values = fea.loc[fea['function'] == f]
-            fea_avg = np.mean(np.array(fea_values.iloc[0,0:9]))
+            fea_fitnesses = np.array(fea_values.iloc[0,0:9])
+            fea_avg = np.mean(fea_fitnesses)
             print('fea odg: ', fea_avg)
 
             ccea_values = ccea.loc[ccea['function'] == f]
-            ccea_avg = np.mean(np.array(ccea_values.iloc[0,0:9]))
-            print('ccea dg: ', ccea_avg)         
+            ccea_fitnesses = np.array(ccea_values.iloc[0,0:9])
+            ccea_avg = np.mean(ccea_fitnesses)
+            print('ccea dg: ', ccea_avg)  
+
+            print('pso vs fea: ', ttest_ind(pso_fitnesses, fea_fitnesses))
+            print('pso vs ccea: ', ttest_ind(pso_fitnesses, ccea_fitnesses))
+            print('ccea vs fea: ', ttest_ind(ccea_fitnesses, fea_fitnesses))
+
 
 
 class FactorAnalysis():
