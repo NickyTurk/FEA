@@ -12,7 +12,7 @@ from opfunu.cec.cec2010.function import *
 # from cec2013lsgo.cec2013 import Benchmark
 from functools import partial
 
-from variable_interaction import MEE
+from variable_interaction import MEE, MEE_groups
 from numpy import linalg as la
 
 
@@ -131,25 +131,17 @@ def get_factor_info(factors, d):
     return arbiters, optimizers, neighbors
 
 
-def test_var_int(function_name):
+def test_var_int(f, name):
     matricies = ''
 
-    bench = Benchmark()
-    f_int = int(''.join(filter(str.isdigit, function_name)))
-    print(f_int)
-
-    f = bench.get_function(f_int)
-    info = bench.get_info(f_int)
-    domain = (info['lower'], info['upper'])
-
-    d = 50
+    d = 10
 
     interactions = []
-    sizes = [100, 100, 50, 50, 10, 10]
+    sizes = [50, 50, 20, 20, 10, 10, 5, 5]
     totals = []
 
     for s in sizes:
-        mee = MEE(f, d, np.ones(d)*s, np.ones(d)*-s, 50, 0.3, 0.0001, 0.000001)
+        mee = MEE(f, d, np.ones(d)*s, np.ones(d)*-s, 10000, 0.3, 0.0001, 0.000001)
         mee.direct_IM()
         matricies += '\n'
         matricies += 'Search: ' + str(s) + 'x' + str(s) + ' around origin\n'
@@ -178,17 +170,28 @@ def test_var_int(function_name):
     data += '\n\n\n'
     data += matricies
 
-    with open('SpaceSearch/' + function_name + '.txt', 'w') as f:
+    with open('SpaceSearch/' + name + '.txt', 'w') as f:
         f.write(data)
 
-def MEE_factors(function_name, function, dim, fuzzy_cluster_threshold, mic_thr = 0.1, de_thr = 0.001):
+
+def MEE_factors(function_name, function, dim, direct_thr = 0.8, indirect_thr = 0.5, de_thr = 0.001):
     ub = np.ones(dim) * 100
     lb = np.ones(dim) * -100
-    a = mic_thr #mic threshold 
-    b = de_thr #de threshold 
-    delta = 0.000001 #account for variations
+    delta = 0.000001  # account for variations
     sample_size = dim*4
 
+    # caluclate MEE
+    mee = MEE_groups(function, dim, ub, lb, sample_size, direct_thr, indirect_thr, de_thr, delta)
+    return mee.create_groups()
+
+
+def fuzzy_MEE_factors(function_name, function, dim, fuzzy_cluster_threshold, mic_thr = 0.1, de_thr = 0.001):
+    ub = np.ones(dim) * 100
+    lb = np.ones(dim) * -100
+    a = mic_thr  # mic threshold
+    b = de_thr  # de threshold
+    delta = 0.000001  # account for variations
+    sample_size = dim*4
 
     # caluclate MEE
     mee = MEE(function, dim, ub, lb, sample_size, a, b, delta)
@@ -232,13 +235,14 @@ if __name__ == '__main__':
     cec2010_functions = [F3]#, F5, F9, F11, F17, F19, F20]
 
     # test_var_int('F6')
+
     dimensions = [50, 100]
     populations = [500,1000]
     iteration = 200
 
     no_m_param = ['F1', 'F2', 'F3', 'F19', 'F20']
     shifted_error_function = ['F14', 'F15', 'F16']
-    m=4
+    m = 4
 
     # for i,function_name in enumerate(function_names):
     #     #test_var_int(function_name)
@@ -266,8 +270,6 @@ if __name__ == '__main__':
             #         csv_writer.writerow(to_write)
             #         print(to_write)
 
-
-    
     #test_diff_grouping(function_names)
     test_optimization(dimensions, function_names, cec2010_functions)
 
