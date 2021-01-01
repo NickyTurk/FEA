@@ -12,7 +12,7 @@ from opfunu.cec.cec2010.function import *
 # from cec2013lsgo.cec2013 import Benchmark
 from functools import partial
 
-from variable_interaction import MEE, MEE_groups
+from variable_interaction import MEE, MEET
 from numpy import linalg as la
 
 
@@ -174,15 +174,17 @@ def test_var_int(f, name):
         f.write(data)
 
 
-def MEE_factors(function_name, function, dim, direct_thr = 0.8, indirect_thr = 0.5, de_thr = 0.001):
+def MEET_factors(function, dim, de_thr = 0.001):
     ub = np.ones(dim) * 100
     lb = np.ones(dim) * -100
     delta = 0.000001  # account for variations
     sample_size = dim*4
 
     # caluclate MEE
-    mee = MEE_groups(function, dim, ub, lb, sample_size, direct_thr, indirect_thr, de_thr, delta)
-    return mee.create_groups()
+    mee = MEET(function, dim, ub, lb, sample_size, de_thr, delta)
+    mee.compute_interaction()
+    mee.assign_factors()
+    return mee.factors
 
 
 def fuzzy_MEE_factors(function_name, function, dim, fuzzy_cluster_threshold, mic_thr = 0.1, de_thr = 0.001):
@@ -243,6 +245,10 @@ if __name__ == '__main__':
     no_m_param = ['F1', 'F2', 'F3', 'F19', 'F20']
     shifted_error_function = ['F14', 'F15', 'F16']
     m = 4
+
+    MEET_factors(F3, 10)
+
+    exit(1)
 
     # for i,function_name in enumerate(function_names):
     #     #test_var_int(function_name)
