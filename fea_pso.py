@@ -67,7 +67,7 @@ def compete(n, swarms, factors, optimizers, f, solution):
         solution[i] = best_value
     #        print("end  ", i, map( lambda v: "%.4f" % v, solution))
     # end for
-    print("best fitness after competition: ", best_fitness)
+    # print("best fitness after competition: ", best_fitness)
     return solution
 
 
@@ -181,14 +181,14 @@ def optimize_swarm(params):
 
 
 """
-f = 
+f = function
 n = the dimension
 domain
 factors
 optimizors
 p = number of particles
 fea_times = number of iterations of fea
-pso_stop = lambda pso termination function
+pso_stop = lambda pso termination function, currently just runs PSO x times
 """
 def fea_pso(f, n, domain, all_factors, optimizers, p, fea_times, pso_stop):
     #t_init_start = time.time()
@@ -196,13 +196,12 @@ def fea_pso(f, n, domain, all_factors, optimizers, p, fea_times, pso_stop):
     solutions = [Particle(position=solution, velocity=[], fitness=f(np.array(solution)))]
     swarms = [initialize_fea_swarm(p, n, factors, domain, make_factored_fitness_fn(factors, solution, f)) for factors in
               all_factors]
-    #t_init_end = time.time()
-    #print("Time for init")
-    #print(t_init_end - t_init_start)
+
     # with just f, this should still work well.
     #   swarms = [initialize_fea_swarm( p, n, factors, domain, f) for factors in all_factors]
 
     for _ in range(fea_times):
+        print('fea loop: ', _)
         #t_optimize_start = time.time()
         new_swarms = [None for _ in range(len(swarms))]  # init blank list so no out of bounds errors
 
@@ -222,22 +221,10 @@ def fea_pso(f, n, domain, all_factors, optimizers, p, fea_times, pso_stop):
 
         # end for
         swarms = new_swarms
-        #t_optimize_end = time.time()
-        #print("Time for optimize: ")
-        #print(t_optimize_end - t_optimize_start)
-        #t_compete_start = time.time()
         solution = compete(n, swarms, all_factors, optimizers, f, solution)
         print(solution)
-        #t_compete_end = time.time()
-        #print("Time for compete: ")
-        #print(t_compete_end - t_compete_start)
 
-        #t_share_start = time.time()
         swarms = [share(swarm, solution, f) for swarm in swarms]
-        #t_share_end = time.time()
-
-        #print("Time for share: ")
-        #print(t_share_end - t_share_start)
         solutions.append(Particle(position=solution, velocity=[], fitness=f(np.array(solution))))
     # end for
     # pso.random.reset()
@@ -247,17 +234,16 @@ def fea_pso(f, n, domain, all_factors, optimizers, p, fea_times, pso_stop):
 # end def
 
 if __name__ == "__main__":
-    from benchmarks import benchmarks
     from evaluation import create_bootstrap_function, analyze_bootstrap_sample
     from topology import generate_linear_topology
     import random
     import json
 
-    p = 10
-    d = 32
-    k = 2
-    i = 5
-    j = 20
+    p = 10 # population
+    d = 32 # dimensions
+    k = 2 # factor size
+    i = 5 # pso stop
+    j = 20 # fea times
 
     factors, arbiters, optimizers, neighbors = generate_linear_topology(d, k)
 
