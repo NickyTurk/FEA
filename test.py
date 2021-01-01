@@ -12,7 +12,7 @@ from opfunu.cec.cec2010.function import *
 # from cec2013lsgo.cec2013 import Benchmark
 from functools import partial
 
-from variable_interaction import MEE
+from variable_interaction import MEE, MEE_groups
 from numpy import linalg as la
 
 
@@ -161,14 +161,25 @@ def test_var_int(f, name):
     with open('SpaceSearch/' + name + '.txt', 'w') as f:
         f.write(data)
 
-def MEE_factors(function_name, function, dim, fuzzy_cluster_threshold, mic_thr = 0.1, de_thr = 0.001):
+
+def MEE_factors(function_name, function, dim, direct_thr = 0.8, indirect_thr = 0.5, de_thr = 0.001):
     ub = np.ones(dim) * 100
     lb = np.ones(dim) * -100
-    a = mic_thr #mic threshold 
-    b = de_thr #de threshold 
-    delta = 0.000001 #account for variations
+    delta = 0.000001  # account for variations
     sample_size = dim*4
 
+    # caluclate MEE
+    mee = MEE_groups(function, dim, ub, lb, sample_size, direct_thr, indirect_thr, de_thr, delta)
+    return mee.create_groups()
+
+
+def fuzzy_MEE_factors(function_name, function, dim, fuzzy_cluster_threshold, mic_thr = 0.1, de_thr = 0.001):
+    ub = np.ones(dim) * 100
+    lb = np.ones(dim) * -100
+    a = mic_thr  # mic threshold
+    b = de_thr  # de threshold
+    delta = 0.000001  # account for variations
+    sample_size = dim*4
 
     # caluclate MEE
     mee = MEE(function, dim, ub, lb, sample_size, a, b, delta)
@@ -238,7 +249,7 @@ if __name__ == '__main__':
             for dim in [10,20,30,40,50,60,70,80,90,100]: 
                 for fzz_thr in [0.6,0.7,0.8, 0.9]:
                     print('function ', function_name, 'dim: ', str(dim))
-                    factors = MEE_factors(function_name, f, dim, fzz_thr)
+                    factors = MEE_factors(function_name, f, dim)
                     to_write = [function_name, str(dim), str(fzz_thr), str(len(factors)), str(factors)]
                     csv_writer.writerow(to_write)
                     print(to_write)

@@ -17,7 +17,7 @@ from networkx.convert_matrix import *
 import networkx as nx
 import matplotlib.pyplot as plt
 import scipy as sp
-import hdbscan
+# import hdbscan
 
 class Cluster(ABC):
     '''
@@ -52,9 +52,9 @@ class Cluster(ABC):
             factors.append(tuple(cluster))
         outliers = set(outliers) - set.union(*map(set, factors))
         factors.append(tuple(outliers))
-        
 
         return factors
+
 
 class FuzzyKmeans(Cluster):
     '''
@@ -70,9 +70,11 @@ class FuzzyKmeans(Cluster):
     def assign_clusters(self):
         cntr, u, u0, d, jm, p, fpc = skfuzzy.cluster.cmeans(self.data.T, self.k, 2, error=0.005, maxiter=1000,
                                                             init=None)
+        # I think u_pred = u from line above since using same data, so next line not needed
         u_pred, u0, d, jm, p, fpc = skfuzzy.cluster.cmeans_predict(self.data.T, cntr, 2, error=0.005, maxiter=1000)
         self.soft_clusters = u_pred
         return self.soft_clusters
+
 
 ### DIDNT WORK FOR THIS PROJECT
 class HDbscan(Cluster):
