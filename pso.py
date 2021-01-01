@@ -215,8 +215,8 @@ def update_swarm(swarm, f):
 
     updater = partial(update_particle, domain, v_max, f, global_best)
 
-    batch_size = 1
-    new_particles = [None for _ in particles]  # make blank array so no out of bounds
+    #batch_size = 1
+    new_particles = [updater(particle, personal_best) for particle, personal_best in zip (particles, personal_bests)]#[None for _ in particles]  # make blank array so no out of bounds
     # batch_args = []
     #
     # for i in range(0, len(particles), batch_size): # switch to numeric iteration for baching of threads
@@ -231,13 +231,13 @@ def update_swarm(swarm, f):
     #         batch_args.append([batch, updater, new_particles, indx])
     # update each batch
 
-    inputs = [[[particles[i], personal_bests[i]], updater] for i in range(len(particles))]
+    #inputs = [[[particles[i], personal_bests[i]], updater] for i in range(len(particles))]
 
     # print("Number of updater threads: " + str(len(threads)))
-    pool = mp.Pool(int(mp.cpu_count() /2))
-    new_particles = pool.map(run_one, inputs)
-    pool.close()
-    pool.join()
+    #pool = mp.Pool(int(mp.cpu_count() /2))
+    # new_particles = pool.map(run_one, inputs)
+    #pool.close()
+    #pool.join()
 
     new_personal_bests = find_personal_bests(new_particles, personal_bests)
 

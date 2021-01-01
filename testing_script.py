@@ -75,27 +75,27 @@ class TestOptimization():
     
     def test_pso(self, pop, iterations):
         algorithm = lambda: pso(self.f, pop, self.dim, self.domain, lambda t, f: t == iterations)
-        summary = self.harness(algorithm, iterations, 50)
+        summary = self.harness(algorithm, iterations, 10)
         return summary
 
 if __name__ == '__main__':
-    function_nrs = [17,19]
+    function_nrs = [5,11,17,19]
     for nr in function_nrs:
         test_opt = TestOptimization(dim=20, function_number=nr, factor_topology='ODG', DG_epsilon=0.001) 
-        '''
+        
         with open('results/pso_20/' + str(test_opt.function_name) + '_pso_param.csv', 'a') as write_to_csv:
             csv_writer = csv.writer(write_to_csv)
             csv_writer.writerow(['function', 'dim', 'population', 'iterations', 'fitnesses', 'stats'])
-            for pop in [500,1000]:
+            for pop in [500]:
                 print('function nr: ', nr)
                 summary = test_opt.test_pso(pop, 200)
                 to_write = [str(test_opt.function_name), str(test_opt.dim), str(pop), str(200), summary["fitnesses"], summary["statistics"]]
                 csv_writer.writerow(to_write)
-        '''
         
+        """
         with open('results/FEA_PSO/' + str(test_opt.function_name) + '_dim' + str(test_opt.dim) + test_opt.file_extension + ".csv", 'a') as write_to_csv:
             print('function nr: ', nr)
             summary = test_opt.test_fea(pso_iterations=10, pop=500, fea_iterations=10)
             csv_writer = csv.writer(write_to_csv)
             csv_writer.writerow(summary["fitnesses"])
-        
+        """
