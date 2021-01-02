@@ -22,12 +22,12 @@ def harness(algorithm, iterations, repeats):
     for trial in range(0, iterations):
         result = algorithm()
         fitnesses.append(result[-1][2])
-        bootstrap = create_bootstrap_function(repeats)
-        replications = bootstrap(fitnesses)
-        statistics = analyze_bootstrap_sample(replications)
-        summary["statistics"] = statistics
-        summary["bootstrap"] = replications
-        summary["fitnesses"] = fitnesses
+    bootstrap = create_bootstrap_function(repeats)
+    replications = bootstrap(fitnesses)
+    statistics = analyze_bootstrap_sample(replications)
+    summary["statistics"] = statistics
+    summary["bootstrap"] = replications
+    summary["fitnesses"] = fitnesses
     return summary
 
 
