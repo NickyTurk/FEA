@@ -77,24 +77,20 @@ class MEE:
                     self.IM[component[j], component[i]] = 1
 
 
-class MEE_groups:
-    def __init__(self, f, d, ub, lb, n, direct_thresh, indirect_thresh, de_thresh, delta):
+class MEET:
+    def __init__(self, f, d, ub, lb, n, de_thresh, delta):
         self.f = f
         print(self.f)
         self.d = d
         self.ub = ub
         self.lb = lb
         self.n = n
-        self.direct_thresh = direct_thresh  # direct interaction threshold
-        self.indirect_thresh = indirect_thresh  # indirect interaction threshold (overlapping groups)
         self.de_thresh = de_thresh  # diff equation (de) threshold
         self.delta = delta  # account for small variations
-        self.direct_IM = np.zeros((self.d, self.d))
-        self.indirect_IM = np.zeros((self.d, self.d))
         self.mic = np.zeros((self.d, self.d))
 
-
-    def create_groups(self):
+    # Computes the MIC table using MEE
+    def compute_interaction(self):
         """
         Calculates the Direct Interaction Matrix based on MIC
         """
@@ -125,80 +121,27 @@ class MEE_groups:
                 mine.compute_score(de, x_j)
                 mic = mine.mic()
                 self.mic[i, j] = mic
-                if mic > self.direct_thresh:  # direct threshold should make several disconnected components in graph
-                    self.direct_IM[i, j] = 1
-                    self.direct_IM[j, i] = 1
+                # self.mic[j, i] = mic
 
-                if mic > self.indirect_thresh:  # indirect threshold. Should add overlap to disconnected components
-                    self.indirect_IM[i, j] = 1
-                    self.indirect_IM[j, i] = 1
 
-        self.dynamic_thresh(2)  # reassigns dynamic threshold so that graph has 2 groups
-        self.assign_groups()
+    def assign_factors(self):
+        # create directed graph with edge weights in MIC table
+        # Create MAXimal spanning tree from this graph
+        # Factors (groups) are adjacent nodes in the tree
 
-        return self.groups
+        G = nx.from_numpy_array(self.mic)
+        T = nx.maximum_spanning_tree(G)
 
-    def dynamic_thresh(self, num_disjoint):
-        best_thresh = 0
-        best_groups = 1
-        best_IM = np.zeros((self.d, self.d))
-        for thresh in np.linspace(0, 1, 21):  # should make points separated by 0.05
-            print(thresh)
-            IM = np.zeros((self.d, self.d))
-            disjoint = 0
-            for i in range(self.d):
-                for j in range(i + 1, self.d):
-                    if self.mic[i, j] > thresh:  # direct threshold should make several disconnected components in graph
-                        IM[i, j] = 1
-                        IM[j, i] = 1
+        factors = []
 
-            direct_graph = nx.to_networkx_graph(IM, create_using=nx.DiGraph)
-            disjoint_groups = nx.algorithms.components.strongly_connected_components(direct_graph)
-            nodes_in_disjoint = set()
-            for g in disjoint_groups:
-                if len(g) > 1:
-                    disjoint += 1
-                    nodes_in_disjoint = nodes_in_disjoint.union(set(g))
+        for node in list(T.nodes):  # each dimension
+            factor = list(T.neighbors(node)) # adjacent nodes
+            factor.append(node)  # add itself to the group
+            factors.append(factor)
 
-            if num_disjoint - disjoint <= num_disjoint - best_groups:  # select by closest to target number of groups
-                # could down-select here for fewer nodes in the disjoint (more overlap) or opposite
-                best_groups = disjoint
-                best_thresh = thresh
-                best_IM = IM
+        self.factors = factors
+        return factors
 
-        print('return')
-        self.direct_IM = best_IM
-        return IM
-
-    def assign_groups(self):
-        # Groups have been made. We can use direct_IM as adjacency graph with disconnected components
-        direct_graph = nx.to_networkx_graph(self.direct_IM, create_using=nx.DiGraph)
-        disjoint_groups = nx.algorithms.components.strongly_connected_components(direct_graph)
-        nodes_in_disjoint = set()
-        disjoint_list = []
-        for g in disjoint_groups:
-            disjoint_list.append(g)
-            if len(g) > 1:
-                nodes_in_disjoint = nodes_in_disjoint.union(g)
-            else:
-                print('Disjoint Dim: ' + str(list(g)))
-        # nodes_in_disjoint = set([dim for component in disjoint_groups for dim in component])  # flattens disjoint_groups then makes set of it
-
-        indirect_graph = nx.to_networkx_graph(self.indirect_IM, create_using=nx.DiGraph)
-        components = nx.algorithms.components.strongly_connected_components(indirect_graph)
-
-        self.groups = []
-
-        for c in components:
-            for g in disjoint_list:
-                print(c)
-                print(g)
-                set_g = set(g)
-                set_c = set(c)
-                if len(set_c.intersection(set_g)) > 0:  # shares nodes so combine
-                    overlapping_dims = set_c - nodes_in_disjoint
-                    group = set_g.union(overlapping_dims)
-                    self.groups.append(group)
 
 
 
