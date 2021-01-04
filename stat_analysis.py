@@ -17,27 +17,30 @@ def mkdir(path):
 
 class OptimizationAnalysis():
 
-    def __init__(self, dim= 50):
+    def __init__(self, dim= 20, functions = ['F3', 'F5', 'F11', 'F17']):
         self.dim = dim
+        self.functions = functions
 
     def avg_fitness(self):
-        pso = read_data.transform_files_to_df("F*_pso_param.csv", subfolder = "pso_"+str(self.dim))
-        fea = read_data.transform_files_to_df("F*_dim" + str(self.dim) + "overlapping_diff_grouping.csv", subfolder = "FEA_PSO", header = False)
-        ccea = read_data.transform_files_to_df("F*_dim" + str(self.dim) + "m4_diff_grouping.csv", subfolder = "FEA_PSO", header = False)
+        # pso = read_data.transform_files_to_df("F*_pso_param.csv", subfolder = "pso_"+str(self.dim))
+        # fea = read_data.transform_files_to_df("F*_dim" + str(self.dim) + "overlapping_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO", header = False)
+        # ccea = read_data.transform_files_to_df("F*_dim" + str(self.dim) + "m4_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO", header = False)
 
-        functions = ['F3', 'F5', 'F11', 'F17']
+        for f in self.functions:
+            pso = read_data.transform_files_to_df(f + "_pso_param.csv", subfolder = "pso_"+str(self.dim))
+            fea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "overlapping_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO", header = False)
+            ccea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "m4_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO", header = False)
 
-        for f in functions:
             print(f)
             pso_values = pso.loc[pso['function'] == f]
             avg_fitness =  []
-            for fitness in pso_values['fitness']:
+            for fitness in pso_values['fitnesses']:
                 avg_fitness.append(np.mean(fitness))
             min_pso_idx = avg_fitness.index(min(avg_fitness))
             min_pso_avg = min(avg_fitness)
             print('pso: ', min_pso_avg)
             pso_row = pso_values.iloc[[min_pso_idx]]
-            pso_fitnesses = pso_row['fitness'].to_numpy()[0]
+            pso_fitnesses = pso_row['fitnesses'].to_numpy()[0]
 
             fea_values = fea.loc[fea['function'] == f]
             fea_fitnesses = np.array(fea_values.iloc[0,0:9])
@@ -177,9 +180,10 @@ class FactorAnalysis():
     #     parse_file(s)
 
 if __name__ == '__main__':
-    # optimization = OptimizationAnalysis()
-    # optimization.avg_fitness()
+    optimization = OptimizationAnalysis()
+    optimization.avg_fitness()
 
+    """
     filename = "results\\factors\\" + "F1" + "_m4_diff_grouping_small_epsilon.csv"
 
     dataframe = pd.read_csv(filename)
@@ -189,3 +193,4 @@ if __name__ == '__main__':
     small_ep = dataframe.loc[dataframe['EPSILON'] == min(dataframe['EPSILON'])]
     fa = FactorAnalysis()
     fa.graph_factors(small_ep)
+    """

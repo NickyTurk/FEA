@@ -80,9 +80,9 @@ class TestOptimization():
         return summary
 
 if __name__ == '__main__':
-    function_nrs = [17,19]
+    function_nrs = [3]
     for nr in function_nrs:
-        test_opt = TestOptimization(dim=20, function_number=nr, factor_topology='spectral', DG_epsilon=0.001) 
+        test_opt = TestOptimization(dim=50, function_number=nr, factor_topology='spectral', DG_epsilon=0.001) 
         '''
         with open('results/pso_20/' + str(test_opt.function_name) + '_pso_param.csv', 'a') as write_to_csv:
             csv_writer = csv.writer(write_to_csv)
