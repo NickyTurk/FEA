@@ -87,13 +87,13 @@ if __name__ == '__main__':
         with open('results/pso_20/' + str(test_opt.function_name) + '_pso_param.csv', 'a') as write_to_csv:
             csv_writer = csv.writer(write_to_csv)
             csv_writer.writerow(['function', 'dim', 'population', 'iterations', 'fitnesses', 'stats'])
-            for pop in [500,1000]:
+            for pop in [500]:
                 print('function nr: ', nr)
                 summary = test_opt.test_pso(pop, 200)
                 to_write = [str(test_opt.function_name), str(test_opt.dim), str(pop), str(200), summary["fitnesses"], summary["statistics"]]
                 csv_writer.writerow(to_write)
-        '''
         
+        ''' 
         with open('results/FEA_PSO/' + str(test_opt.function_name) + '_dim' + str(test_opt.dim) + test_opt.file_extension + ".csv", 'a') as write_to_csv:
             print('function nr: ', nr)
             summary = test_opt.test_fea(pso_iterations=10, pop=500, fea_iterations=10)
