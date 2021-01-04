@@ -30,6 +30,7 @@ class TestOptimization():
             self.file_extension = "overlapping_diff_grouping_small_epsilon"
             self.filename = "results/factors/" + self.function_name + "_" + self.file_extension + ".csv"
         elif factor_topology == 'spectral':
+            self.DG_epsilon = 0
             self.file_extension = "spectral"
             self.filename = "results/spectral_factors/" + self.function_name + "_" + self.file_extension + ".csv"
 
@@ -46,18 +47,18 @@ class TestOptimization():
 
         self.domain = [-50, 50]
     
-    def harness(self,algorithm, iterations, repeats=2):
+    def harness(self,algorithm, iterations=10, repeats=1):
         summary = {}
         fitnesses = []
         for trial in range(0, iterations):
             result = algorithm()
             fitnesses.append(result[-1][2])
-            bootstrap = create_bootstrap_function(repeats)
-            replications = bootstrap(fitnesses)
-            statistics = analyze_bootstrap_sample(replications)
-            summary["statistics"] = statistics
-            summary["bootstrap"] = replications
-            summary["fitnesses"] = fitnesses
+        bootstrap = create_bootstrap_function(repeats)
+        replications = bootstrap(fitnesses)
+        statistics = analyze_bootstrap_sample(replications)
+        summary["statistics"] = statistics
+        summary["bootstrap"] = replications
+        summary["fitnesses"] = fitnesses
         return summary
 
     def get_factor_info(self, factors, d):
@@ -70,18 +71,18 @@ class TestOptimization():
         factors, function_name = import_single_function_factors(self.filename, self.dim, epsilon=self.DG_epsilon)
         arbiters, optimizers, neighbors = self.get_factor_info(factors, self.dim)
         algorithm = lambda: fea_pso(self.f, self.dim, self.domain, factors, optimizers, pop, fea_iterations, lambda t, s: t == pso_iterations)
-        summary = self.harness(algorithm, fea_iterations, 10)
+        summary = self.harness(algorithm)
         return summary
     
     def test_pso(self, pop, iterations):
         algorithm = lambda: pso(self.f, pop, self.dim, self.domain, lambda t, f: t == iterations)
-        summary = self.harness(algorithm, iterations, 50)
+        summary = self.harness(algorithm)
         return summary
 
 if __name__ == '__main__':
     function_nrs = [17,19]
     for nr in function_nrs:
-        test_opt = TestOptimization(dim=20, function_number=nr, factor_topology='ODG', DG_epsilon=0.001) 
+        test_opt = TestOptimization(dim=20, function_number=nr, factor_topology='spectral', DG_epsilon=0.001) 
         '''
         with open('results/pso_20/' + str(test_opt.function_name) + '_pso_param.csv', 'a') as write_to_csv:
             csv_writer = csv.writer(write_to_csv)
