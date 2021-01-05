@@ -176,6 +176,15 @@ class FactorAnalysis():
     #     print(s)
     #     parse_file(s)
 
+
+    """
+    Factor analysis:
+    Number of Factors
+    Variables per Factor (size) min max avg sd
+    num factors var belongs to (min max avg sd)
+    size of overlap (pairwise)
+    """
+
 if __name__ == '__main__':
     # optimization = OptimizationAnalysis()
     # optimization.avg_fitness()
