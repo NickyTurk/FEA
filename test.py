@@ -233,8 +233,8 @@ if __name__ == '__main__':
     benchmark = args.benchmark
     functions = [F6, F10, F12]
 
-    function_names = ['F3']#, 'F5', 'F9', 'F11','F17', 'F19', 'F20'] #'F6', 'F7', 'F10', 'F11',S
-    cec2010_functions = [F3]#, F5, F9, F11, F17, F19, F20]
+    function_names = ['F3', 'F5', 'F9', 'F11','F17', 'F19', 'F20'] #'F6', 'F7', 'F10', 'F11',S
+    cec2010_functions = [F3, F5, F9, F11, F17, F19, F20]
 
     # test_var_int('F6')
 
@@ -246,35 +246,38 @@ if __name__ == '__main__':
     shifted_error_function = ['F14', 'F15', 'F16']
     m = 4
 
-    MEET_factors(F3, 10)
+    # MEET_factors(F3, 10)
 
-    exit(1)
+    # exit(1)
 
-    # for i,function_name in enumerate(function_names):
-    #     #test_var_int(function_name)
+    for i,function_name in enumerate(function_names):
+        #test_var_int(function_name)
 
-    #     if function_name in no_m_param:
-    #         f = cec2010_functions[i]
-    #     elif function_name in shifted_error_function:
-    #         f = partial(cec2010_functions[i], m_group=dim)
-    #     else:
-    #         f = partial(cec2010_functions[i], m_group=m) 
-        # with open("results/spectral_factors/" + function_name + "_spectral.csv", "a") as write_to_csv:
-            # csv_writer = csv.writer(write_to_csv)
+        if function_name in no_m_param:
+            f = cec2010_functions[i]
+        elif function_name in shifted_error_function:
+            f = partial(cec2010_functions[i], m_group=dim)
+        else:
+            f = partial(cec2010_functions[i], m_group=m)
+
+        with open("results/meet_factors/" + function_name + "_meet.csv", "a") as write_to_csv:
+            csv_writer = csv.writer(write_to_csv)
             # csv_writer.writerow(['function', 'dim', 'population', 'iterations', 'fitnesses', 'stats'])
             # for pop in populations:
             #     print(function_name, ' pop: ', str(pop))
             #     summary = test_pso(function_name, pop, dim, t=iteration, function=f)
             #     to_write = [function_name, str(dim), str(pop), str(iteration), summary["fitnesses"], summary["statistics"]]
             #     csv_writer.writerow(to_write)
-            # csv_writer.writerow(['function', 'dim', 'fuzzy_threshold', 'nr_groups', 'factors'])
-            # for dim in [20,50]: 
-            #     for fzz_thr in [0.6,0.7,0.8]:
-            #         print('function ', function_name, 'dim: ', str(dim))
-            #         factors = MEE_factors(function_name, f, dim, fzz_thr)
-            #         to_write = [function_name, str(dim), str(fzz_thr), str(len(factors)), str(factors)]
-            #         csv_writer.writerow(to_write)
-            #         print(to_write)
+            csv_writer.writerow(['function', 'dim', 'nr_groups', 'factors'])
+            for dim in [20,50]:
+                print('function ', function_name, 'dim: ', str(dim))
+                factors = MEET_factors(f, dim)
+                to_write = [function_name, str(dim), str(len(factors)), str(factors)]
+                csv_writer.writerow(to_write)
+                print(to_write)
+
+    print('ALL DONE')
+    exit(13)
 
     #test_diff_grouping(function_names)
     test_optimization(dimensions, function_names, cec2010_functions)
