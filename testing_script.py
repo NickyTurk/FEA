@@ -46,7 +46,7 @@ class TestOptimization():
 
         self.domain = [-50, 50]
     
-    def harness(self,algorithm, iterations, repeats=1):
+    def harness(self,algorithm, iterations=10, repeats=1):
         summary = {}
         fitnesses = []
         for trial in range(0, iterations):
@@ -70,12 +70,12 @@ class TestOptimization():
         factors, function_name = import_single_function_factors(self.filename, self.dim, epsilon=self.DG_epsilon)
         arbiters, optimizers, neighbors = self.get_factor_info(factors, self.dim)
         algorithm = lambda: fea_pso(self.f, self.dim, self.domain, factors, optimizers, pop, fea_iterations, lambda t, s: t == pso_iterations)
-        summary = self.harness(algorithm, fea_iterations, 1)
+        summary = self.harness(algorithm, iterations=2)
         return summary
     
     def test_pso(self, pop, iterations):
         algorithm = lambda: pso(self.f, pop, self.dim, self.domain, lambda t, f: t == iterations)
-        summary = self.harness(algorithm, iterations, 10)
+        summary = self.harness(algorithm)
         return summary
 
 if __name__ == '__main__':
