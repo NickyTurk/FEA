@@ -12,8 +12,8 @@ def make_shifted_fitness_fn(f, shift):
 
 
 def make_factored_fitness_fn(factors, solution, f):
+    temp = deepcopy(solution)
     def h(xs):
-        temp = deepcopy(solution)
         for i, x in zip(factors, xs):
             temp[i] = x
         ret_me = f(np.array(temp))
