@@ -103,7 +103,7 @@ class FactorAnalysis():
                 print('\n---------------------------------------------------\n')
 
     def factor_group_size(self, dimension, epsilon):
-        factors, fion_name = read_data.import_single_function_factors(self.filename, dimension, epsilon)
+        factors, fion_name = read_data.import_single_function_factors('results/'+self.filename, dimension, epsilon)
         group_sizes = []
         for f in factors:
             group_sizes.append(len(f))
@@ -113,7 +113,7 @@ class FactorAnalysis():
 
 
     def overlap_in_factors(self, dimension, epsilon):
-        factors, fion_name = read_data.import_single_function_factors(self.filename, dimension, epsilon)
+        factors, fion_name = read_data.import_single_function_factors('results/'+self.filename, dimension, epsilon)
         for i, factor in enumerate(factors):
             print('factor: ', i)
             for j, fac2 in enumerate(factors[i+1:]):
@@ -122,7 +122,7 @@ class FactorAnalysis():
                     print('overlapping factor: ', i+j, 'overlapping variables: ', overlap)
 
     def overlap_element_count(self, dimension, epsilon):
-        factors, fion_name = read_data.import_single_function_factors(self.filename, dimension, epsilon)
+        factors, fion_name = read_data.import_single_function_factors('results/'+self.filename, dimension, epsilon)
         chained_factors = list(chain(*factors))
         counts = collections.Counter(chained_factors)
         print(counts)
