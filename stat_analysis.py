@@ -89,14 +89,28 @@ class FactorAnalysis():
 
         return frame, epsilons, functions, dimensions
 
-    def factor_stats_per_function(self):
+    def factor_nr_groups_per_function(self):
         frame, epsilons, functions, dimensions = self.get_frame_and_attributes()
         for f in functions:
             if f in self.functions_run:
+                print('\n---------------------------------------------------\n')
                 print('function: ', f)
+                print('\n---------------------------------------------------\n')
                 fion_frame = frame.loc[frame['function'] == f]
-                print(np.mean(fion_frame['NR_GROUPS'].values.tolist()))
-                print(np.std(fion_frame['NR_GROUPS'].values.tolist()))
+                print('across all epsilons and dimensions\n--------------------------------------\n')
+                print('avg nr groups: ', np.mean(fion_frame['NR_GROUPS'].values.tolist()))
+                print('stdev of nr groups: ', np.std(fion_frame['NR_GROUPS'].values.tolist()))
+                print('\n---------------------------------------------------\n')
+
+    def factor_group_size(self, dimension, epsilon):
+        factors, fion_name = read_data.import_single_function_factors(self.filename, dimension, epsilon)
+        group_sizes = []
+        for f in factors:
+            group_sizes.append(len(f))
+        print('stats for dimension ', str(dimension), ' and epsilon ', str(epsilon), '\n---------------------------------------------------\n')
+        print('avg group size: ', np.mean(group_sizes))
+        print('stdev of group size: ', np.std(group_sizes))
+
 
     def overlap_in_factors(self, dimension, epsilon):
         factors, fion_name = read_data.import_single_function_factors(self.filename, dimension, epsilon)
@@ -247,9 +261,10 @@ if __name__ == '__main__':
     # optimization.avg_fitness()
 
     fctAnl = FactorAnalysis("factors/F11_overlapping_diff_grouping_small_epsilon.csv")
-    #fctAnl.factor_stats_per_function()
+    fctAnl.factor_nr_groups_per_function()
+    fctAnl.factor_group_size(50, 0.001)
     #fctAnl.overlap_in_factors(50, 0.001)
-    fctAnl.overlap_element_count(20, 0.001)
+    fctAnl.overlap_element_count(50, 0.001)
 
     """
     filename = "results\\factors\\" + "F1" + "_m4_diff_grouping_small_epsilon.csv"
