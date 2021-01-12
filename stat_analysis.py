@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 import read_data
 import numpy as np
 from scipy.stats import ttest_ind
-from statistics import *
+from itertools import chain
+import collections
 from ast import literal_eval
 
 import colorsys
@@ -17,7 +18,7 @@ def mkdir(path):
 
 class OptimizationAnalysis():
 
-    def __init__(self, dim= 20, functions = ['F3', 'F5', 'F11', 'F17']):
+    def __init__(self, dim= 20, functions = ['F3', 'F5', 'F11']):
         self.dim = dim
         self.functions = functions
 
@@ -30,6 +31,7 @@ class OptimizationAnalysis():
             pso = read_data.transform_files_to_df(f + "_pso_param.csv", subfolder = "pso_"+str(self.dim))
             fea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "overlapping_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO", header = False)
             ccea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "m4_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO", header = False)
+            # spectral = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "spectral.csv", subfolder="FEA_PSO", header=False)
 
             print(f)
             pso_values = pso.loc[pso['function'] == f]
@@ -38,27 +40,79 @@ class OptimizationAnalysis():
                 avg_fitness.append(np.mean(fitness))
             min_pso_idx = avg_fitness.index(min(avg_fitness))
             min_pso_avg = min(avg_fitness)
-            print('pso: ', min_pso_avg)
             pso_row = pso_values.iloc[[min_pso_idx]]
             pso_fitnesses = pso_row['fitnesses'].to_numpy()[0]
+            pso_std = np.std(pso_fitnesses)
+            print('pso: ', min_pso_avg, 'pso std: ', pso_std)
 
             fea_values = fea.loc[fea['function'] == f]
             fea_fitnesses = np.array(fea_values.iloc[0,0:9])
             fea_avg = np.mean(fea_fitnesses)
-            print('fea odg: ', fea_avg)
+            fea_std = np.std(fea_fitnesses)
+            print('fea odg: ', fea_avg, 'fea odg std: ', fea_std)
 
             ccea_values = ccea.loc[ccea['function'] == f]
             ccea_fitnesses = np.array(ccea_values.iloc[0,0:9])
             ccea_avg = np.mean(ccea_fitnesses)
-            print('ccea dg: ', ccea_avg)  
+            ccea_std = np.std(ccea_fitnesses)
+            print('ccea dg: ', ccea_avg, 'ccea dg std: ', ccea_std)
+
+            # spectral_values = spectral.loc[ccea['function'] == f]
+            # spectral_fitnesses = np.array(spectral_values.iloc[0, 0:9])
+            # spectral_avg = np.mean(spectral_fitnesses)
+            # spectral_std = np.std(spectral_fitnesses)
+            # print('spectral dg: ', spectral_avg, 'spectral std: ', spectral_std)
 
             print('pso vs fea: ', ttest_ind(pso_fitnesses, fea_fitnesses))
             print('pso vs ccea: ', ttest_ind(pso_fitnesses, ccea_fitnesses))
             print('ccea vs fea: ', ttest_ind(ccea_fitnesses, fea_fitnesses))
 
+            # print('spectral vs pso: ',  ttest_ind(pso_fitnesses, spectral_fitnesses))
+            # print('spectral vs fea: ', ttest_ind(fea_fitnesses, spectral_fitnesses))
+            # print('spectral vs ccea: ', ttest_ind(ccea_fitnesses, spectral_fitnesses))
+
 
 
 class FactorAnalysis():
+
+    def __init__(self, filename):
+        self.filename = filename
+        self.functions_run = ['F3', 'F5', 'F11', 'F17', 'F19']
+        pass
+
+    def get_frame_and_attributes(self):
+        frame = read_data.transform_files_to_df(self.filename)
+
+        epsilons = frame.EPSILON.unique()
+        functions = frame.FUNCTION.unique()
+        dimensions = frame.DIMENSION.unique()
+
+        return frame, epsilons, functions, dimensions
+
+    def factor_stats_per_function(self):
+        frame, epsilons, functions, dimensions = self.get_frame_and_attributes()
+        for f in functions:
+            if f in self.functions_run:
+                print('function: ', f)
+                fion_frame = frame.loc[frame['function'] == f]
+                print(np.mean(fion_frame['NR_GROUPS'].values.tolist()))
+                print(np.std(fion_frame['NR_GROUPS'].values.tolist()))
+
+    def overlap_in_factors(self, dimension, epsilon):
+        factors, fion_name = read_data.import_single_function_factors(self.filename, dimension, epsilon)
+        for i, factor in enumerate(factors):
+            print('factor: ', i)
+            for j, fac2 in enumerate(factors[i+1:]):
+                overlap = list(set(factor) & set(fac2))
+                if overlap:
+                    print('overlapping factor: ', i+j, 'overlapping variables: ', overlap)
+
+    def overlap_element_count(self, dimension, epsilon):
+        factors, fion_name = read_data.import_single_function_factors(self.filename, dimension, epsilon)
+        chained_factors = list(chain(*factors))
+        counts = collections.Counter(chained_factors)
+        print(counts)
+
 
     # Fac is string of format [(0,1,2),(3,4),(4,5,6,7)]
     # Turn this into list of tuples
@@ -189,8 +243,13 @@ class FactorAnalysis():
     """
 
 if __name__ == '__main__':
-    optimization = OptimizationAnalysis()
-    optimization.avg_fitness()
+    # optimization = OptimizationAnalysis()
+    # optimization.avg_fitness()
+
+    fctAnl = FactorAnalysis("factors/F11_overlapping_diff_grouping_small_epsilon.csv")
+    #fctAnl.factor_stats_per_function()
+    #fctAnl.overlap_in_factors(50, 0.001)
+    fctAnl.overlap_element_count(20, 0.001)
 
     """
     filename = "results\\factors\\" + "F1" + "_m4_diff_grouping_small_epsilon.csv"
