@@ -47,7 +47,7 @@ class TestOptimization():
 
         self.domain = [-50, 50]
     
-    def harness(self,algorithm, iterations=8, repeats=1):
+    def harness(self,algorithm, iterations=1, repeats=1):
         summary = {}
         fitnesses = []
         for trial in range(0, iterations):

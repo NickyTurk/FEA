@@ -6,9 +6,7 @@ from ast import literal_eval
 
 def transform_files_to_df(file_regex, subfolder = '', header = True):
     all_files = get_files_list(file_regex, subfolder)
-
     li = []
-    print(all_files)
 
     for filename in all_files:
         if header:
@@ -41,7 +39,7 @@ def import_single_function_factors(file_name, dim=50, epsilon=0):
     frame = pd.read_csv(file_name, header=0)
     frame.columns = map(str.upper, frame.columns)
     frame = frame.rename(columns = {"DIM": "DIMENSION"}, errors="ignore")
-    dim_frame = frame.loc[frame['DIMENSION'] == dim]
+    dim_frame = frame.loc[frame['DIMENSION'] == int(dim)]
     fion_name = frame['FUNCTION'].unique()
     dim_array = np.array(dim_frame['FACTORS'])
 
