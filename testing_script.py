@@ -17,7 +17,7 @@ from numpy import linalg as la
 
 class TestOptimization():
 
-    def __init__(self, dim, function_number, factor_topology = 'DG', DG_epsilon = 0):
+    def __init__(self, dim, function_number, factor_topology = 'MEET', DG_epsilon = 0):
         self.dim = dim
         self.cec2010_functions = [F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, 15, F16, F17, F18, F19, F20]
         self.function_name = 'F' + str(function_number)
@@ -33,6 +33,10 @@ class TestOptimization():
             self.DG_epsilon = 0
             self.file_extension = "spectral"
             self.filename = "results/spectral_factors/" + self.function_name + "_" + self.file_extension + ".csv"
+        elif factor_topology == 'MEET':
+            self.DG_epsilon = 0
+            self.file_extension = "meet"
+            self.filename = "results/meet_factors/" + self.function_name + "_" + self.file_extension + ".csv"
 
         no_m_param = ['F1', 'F2', 'F3', 'F19', 'F20']
         shifted_error_function = ['F14', 'F15', 'F16']
@@ -83,7 +87,7 @@ if __name__ == '__main__':
     function_nrs = [19]
 
     for nr in function_nrs:
-        test_opt = TestOptimization(dim=50, function_number=nr, factor_topology='ODG', DG_epsilon=0.001) 
+        test_opt = TestOptimization(dim=20, function_number=nr, factor_topology='MEET', DG_epsilon=0.001)
         '''
         with open('results/pso_20/' + str(test_opt.function_name) + '_pso_param.csv', 'a') as write_to_csv:
             csv_writer = csv.writer(write_to_csv)
