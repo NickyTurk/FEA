@@ -187,6 +187,91 @@ class FactorAnalysis():
     num factors var belongs to (min max avg sd)
     size of overlap (pairwise)
     """
+    # df is the dataframe with the factors
+    def factor_stats(self, df):
+        output = []
+
+        num_factors = []
+        variables_p_factor = []
+        num_factors_var_in = []
+        size_overlap_vars = []
+        size_overlap_factors = []
+
+        for indx, row in df.iterrows():
+            groups = row['FACTORS']
+            factors = self.parse_factors(groups)
+            dims = int(row['DIMENSION'])
+
+            num_factors.append(len(factors))
+
+            factor_sizes = [len(f) for f in factors]
+            variables_p_factor.append((min(factor_sizes), max(factor_sizes), sum(factor_sizes)/len(factor_sizes), np.std(factor_sizes)))
+
+            var_in = []
+
+            for var in range(dims):
+                var_in.append(0)
+                for f in factors:
+                    if var in f:
+                        var_in[var] += 1
+
+            num_factors_var_in.append((min(var_in), max(var_in), sum(var_in)/len(var_in), np.std(var_in)))
+
+            overlaps = []
+            for i,f in enumerate(factors):
+                overlaps.append((0,0))
+                for g in factors:
+                    if g == f:
+                        continue
+                    set_f = set(f)
+                    set_g = set(g)
+                    intersect = set_f.intersection(set_g)
+                    if len(intersect) == 0:
+                        continue
+                    t = overlaps[i]
+                    t[0] += len(intersect)  # number overlapping variables
+                    t[1] += 1  # number of factors overlap with
+                    overlaps[i] = t
+
+            num_overlap_vars = [x[0] for x in overlaps]
+            num_overlap_factors = [x[1] for x in overlaps]
+
+            size_overlap_vars.append((min(num_overlap_vars), max(num_overlap_vars), sum(num_overlap_vars)/len(num_overlap_vars), np.std(num_overlap_vars)))
+            size_overlap_factors.append((min(num_overlap_factors), max(num_overlap_factors), sum(num_overlap_factors)/len(num_overlap_factors), np.std(num_overlap_factors)))
+
+
+            # Num Factors, Vars/fac min, max, avg, sd, num factors var min, max, avg, sd, size overlap vars min, max, avg, sd, size overlap factors min, max, avg, sd
+            out = [num_overlap_factors,
+                      variables_p_factor[0],variables_p_factor[1], variables_p_factor[2], variables_p_factor[3],
+                      num_factors_var_in[0],num_factors_var_in[1], num_factors_var_in[2], num_factors_var_in[3],
+                      size_overlap_vars[0],size_overlap_vars[1], size_overlap_vars[2], size_overlap_vars[3],
+                      size_overlap_factors[0],size_overlap_factors[1], size_overlap_factors[2], size_overlap_factors[3]]
+            output.append(out)
+
+        # Output results into a dataframe
+
+        # Can copy df if want so not modifying, but is not used elsewhere so we can modify directly
+        
+        df['Number Factors'] = [x[0] for x in output]
+        df['Min Vars per Factor'] = [x[1] for x in output]
+        df['Max Vars per Factor'] = [x[2] for x in output]
+        df['Avg Vars per Factor'] = [x[3] for x in output]
+        df['Std Vars per Factor'] = [x[4] for x in output]
+        df['Min Num Factors Var is in'] = [x[5] for x in output]
+        df['Max Num Factors Var is in'] = [x[6] for x in output]
+        df['Avg Num Factors Var is in'] = [x[7] for x in output]
+        df['Std Num Factors Var is in'] = [x[8] for x in output]
+        df['Min Num Overlapping Vars per Factor'] = [x[9] for x in output]
+        df['Max Num Overlapping Vars per Factor'] = [x[10] for x in output]
+        df['Avg Num Overlapping Vars per Factor'] = [x[11] for x in output]
+        df['Std Num Overlapping Vars per Factor'] = [x[12] for x in output]
+        df['Min Num Overlapping Factors'] = [x[13] for x in output]
+        df['Max Num Overlapping Factors'] = [x[13] for x in output]
+        df['Avg Num Overlapping Factors'] = [x[14] for x in output]
+        df['Std Num Overlapping Factors'] = [x[15] for x in output]
+
+        return df
+
 
 if __name__ == '__main__':
     optimization = OptimizationAnalysis()
