@@ -2,13 +2,11 @@ import networkx as nx
 import pandas as pd
 import re, os
 import matplotlib.pyplot as plt
-import matplotlib
 import read_data
 import numpy as np
-from scipy.stats import ttest_ind
+from scipy.stats import ttest_ind, f_oneway
 from itertools import chain
 import collections
-from ast import literal_eval
 
 import colorsys
 import itertools
@@ -19,7 +17,7 @@ def mkdir(path):
 
 class OptimizationAnalysis():
 
-    def __init__(self, dim= 50, functions = ['F19']): #'F3', 'F5', 'F11', 'F17'
+    def __init__(self, dim= 50, functions = ['F3', 'F5', 'F11', 'F17','F19']): #'F3', 'F5', 'F11', 'F17'
         self.dim = dim
         self.functions = functions
 
@@ -30,19 +28,19 @@ class OptimizationAnalysis():
 
         for f in self.functions:
             pso = read_data.transform_files_to_df(f + "_pso_param.csv", subfolder = "pso_"+str(self.dim))
-            #fea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "overlapping_diff_grouping.csv", subfolder = "FEA_PSO", header = False)
-            ccea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "m4_diff_grouping.csv", subfolder = "FEA_PSO", header = False)
+            fea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "overlapping_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO", header = False)
+            ccea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "m4_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO", header = False)
             spectral = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "spectral.csv", subfolder="FEA_PSO", header=False)
 
             print(f)
             pso_values = pso.loc[pso['function'] == f]
             avg_fitness =  []
-            for fitness in pso_values['fitness']:
+            for fitness in pso_values['fitnesses']:
                 avg_fitness.append(np.mean(fitness))
             min_pso_idx = avg_fitness.index(min(avg_fitness))
             min_pso_avg = min(avg_fitness)
             pso_row = pso_values.iloc[[min_pso_idx]]
-            pso_fitnesses = pso_row['fitness'].to_numpy()[0]
+            pso_fitnesses = pso_row['fitnesses'].to_numpy()[0]
             pso_std = np.std(pso_fitnesses)
             print('pso: ', min_pso_avg, 'pso std: ', pso_std)
 
@@ -52,24 +50,27 @@ class OptimizationAnalysis():
             ccea_std = np.std(ccea_fitnesses)
             print('ccea dg: ', ccea_avg, 'ccea dg std: ', ccea_std)
 
-            # fea_values = fea.loc[fea['function'] == f]
-            # fea_fitnesses = np.array(fea_values.iloc[0,0:9])
-            # fea_avg = np.mean(fea_fitnesses)
-            # fea_std = np.std(fea_fitnesses)
-            # print('fea odg: ', fea_avg, 'fea odg std: ', fea_std)
+            fea_values = fea.loc[fea['function'] == f]
+            fea_fitnesses = np.array(fea_values.iloc[0,0:9])
+            fea_avg = np.mean(fea_fitnesses)
+            fea_std = np.std(fea_fitnesses)
+            print('fea odg: ', fea_avg, 'fea odg std: ', fea_std)
 
             spectral_values = spectral.loc[ccea['function'] == f]
             spectral_fitnesses = np.array(spectral_values.iloc[0, 0:9])
             spectral_avg = np.mean(spectral_fitnesses)
             spectral_std = np.std(spectral_fitnesses)
+
+            print('ANOVA: \n', f_oneway(pso_fitnesses, ccea_fitnesses, fea_fitnesses, spectral_fitnesses))
+
             print('spectral dg: ', spectral_avg, 'spectral std: ', spectral_std)
 
-            #print('pso vs fea: ', ttest_ind(pso_fitnesses, fea_fitnesses))
+            print('pso vs fea: ', ttest_ind(pso_fitnesses, fea_fitnesses))
             print('pso vs ccea: ', ttest_ind(pso_fitnesses, ccea_fitnesses))
-            #print('ccea vs fea: ', ttest_ind(ccea_fitnesses, fea_fitnesses))
+            print('ccea vs fea: ', ttest_ind(ccea_fitnesses, fea_fitnesses))
 
             print('spectral vs pso: ',  ttest_ind(pso_fitnesses, spectral_fitnesses))
-            #print('spectral vs fea: ', ttest_ind(fea_fitnesses, spectral_fitnesses))
+            print('spectral vs fea: ', ttest_ind(fea_fitnesses, spectral_fitnesses))
             print('spectral vs ccea: ', ttest_ind(ccea_fitnesses, spectral_fitnesses))
 
 class FactorAnalysis():
@@ -97,22 +98,22 @@ class FactorAnalysis():
         plt.figure()
 
         data_b = sizes[0]
-        bpr = plt.boxplot(data_b, positions=np.array(range(len(data_b))) * len(sizes) - .8, sym='', widths=.5)
+        bpr = plt.boxplot(data_b, positions=np.array(range(len(data_b))) * len(sizes), sym='', widths=.8)
         set_box_color(bpr, '#d95f02')
-        plt.plot([], c='#d95f02', label='ODG')
+        # plt.plot([], c='#d95f02', label='ODG')
 
-        data_c = sizes[1]
-        bpm = plt.boxplot(data_c, positions=np.array(range(len(data_c))) * len(sizes), sym='', widths=0.5)
-        set_box_color(bpm, '#7570b3')
-        plt.plot([], c='#7570b3', label='Spectral')
+        # data_c = sizes[1]
+        # bpm = plt.boxplot(data_c, positions=np.array(range(len(data_c))) * len(sizes), sym='', widths=0.5)
+        # set_box_color(bpm, '#7570b3')
+        # plt.plot([], c='#7570b3', label='M-SD')
 
-        if len(sizes) > 2:
-            data_a = sizes[2]
-            bpl = plt.boxplot(data_a, positions=np.array(range(len(data_a))) * len(sizes) + .8, sym='', widths=0.5)
-            set_box_color(bpl, '#1b9e77')  # colors are from http://colorbrewer2.org/
-            plt.plot([], c='#1b9e77', label='DG')
+        # if len(sizes) > 2:
+        #     data_a = sizes[2]
+        #     bpl = plt.boxplot(data_a, positions=np.array(range(len(data_a))) * len(sizes) + .8, sym='', widths=0.5)
+        #     set_box_color(bpl, '#1b9e77')  # colors are from http://colorbrewer2.org/
+        #     plt.plot([], c='#1b9e77', label='DG')
 
-        plt.legend(loc='upper center')
+        # plt.legend(loc='upper center')
         plt.title(title)
 
         plt.xticks(range(0, len(ticks) * len(sizes), len(sizes)), ticks)
@@ -361,14 +362,14 @@ class FactorAnalysis():
     """
 
 if __name__ == '__main__':
-    # optimization = OptimizationAnalysis()
-    # optimization.avg_fitness()
+    optimization = OptimizationAnalysis(dim=20)
+    optimization.avg_fitness()
 
-    fctAnl = FactorAnalysis()
-    fctAnl.run_factor_stats_per_function("_overlapping_diff_grouping_small_epsilon.csv", dimension=20)
-    fctAnl.run_factor_stats_per_function("_spectral.csv", dimension=20, epsilon=0)
-    fctAnl.run_factor_stats_per_function("_m4_diff_grouping_small_epsilon.csv", dimension=20)
-    fctAnl.boxplot_sizes(fctAnl.group_sizes_per_method, 'Group Size Statistics for 20 Dimensions')
+    # fctAnl = FactorAnalysis()
+    # fctAnl.run_factor_stats_per_function("_overlapping_diff_grouping_small_epsilon.csv", dimension=50, epsilon=0)
+    # fctAnl.run_factor_stats_per_function("_spectral.csv", dimension=20, epsilon=0)
+    # fctAnl.run_factor_stats_per_function("_m4_diff_grouping_small_epsilon.csv", dimension=20, epsilon=0.001)
+    # fctAnl.boxplot_sizes(fctAnl.overlap_sizes_per_method, 'Overlap Size for 50 Dimensions')
 
     """
     filename = "results\\factors\\" + "F1" + "_m4_diff_grouping_small_epsilon.csv"

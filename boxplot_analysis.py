@@ -2,12 +2,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import glob
-from stats.read_data import *
+from read_data import *
 from ast import literal_eval
 
 
 def get_frame_and_attributes(filename):
-    frame = transform_files_to_df(filename)
+    frame = transform_files_to_df(filename, subfolder = 'factors')
 
     epsilons = frame.EPSILON.unique()
     functions = frame.FUNCTION.unique()
@@ -30,7 +30,6 @@ def boxplot_group_size_dimension_per_epsilon(frame, epsilons, functions, dimensi
     PLOT OUT AVERAGE GROUP SIZE FOR EACH DIMENSION ACROSS 20 FUNCTION, FOR EACH EPSILON VALUE.
     """
 
-
     group_size_epsilon_dimension = np.zeros([len(epsilons), len(dimensions), len(functions)])
     for i, row in frame.iterrows():
         e = np.where(epsilons == row['EPSILON'])
@@ -50,12 +49,12 @@ def boxplot_group_size_dimension_per_epsilon(frame, epsilons, functions, dimensi
     for i, eps in enumerate(group_size_epsilon_dimension):
         # Create an axes instance
         ax = fig.add_subplot(2, 2, i + 1)
-        ax.set_title('Epsilon value: ' + str(epsilons[i]))
+        ax.set_title('Epsilon: ' + str(epsilons[i]))
         # Create the boxplot
         bp = ax.boxplot(np.transpose(eps))
-    plt.gcf().text(0.45, 0.01, 'Dimensions', fontsize=12)
+    plt.gcf().text(0.45, 0.01, '10s of Dimensions', fontsize=12)
     plt.gcf().text(0.01, 0.45, 'Group Size', fontsize=12, rotation=90)
-    fig.suptitle('Boxplots of group size across 20 functions')
+    fig.suptitle('Group size across 20 functions')
     plt.show()
 
 
@@ -94,7 +93,7 @@ def boxplot_group_size_per_function_type(frame, epsilons, functions, dimensions)
                     group_size_function.append(fion)
             print(np.transpose(np.transpose(group_size_function)))
             fig, ax = plt.subplots()
-            ax.set_title('Type: ' + functiontype_names[i] + ', Epsilon value: ' + str(epsilons[j]))
+            ax.set_title('Type: ' + functiontype_names[i] + ', Epsilon: ' + str(epsilons[j]))
             # Create the boxplot
             ax.boxplot(np.transpose(np.transpose(group_size_function)))
             plt.savefig('Type_' + functiontype_names[i] + '_Epsilonvalue_' + str(epsilons[j]))
@@ -103,4 +102,5 @@ def boxplot_group_size_per_function_type(frame, epsilons, functions, dimensions)
 if __name__ == '__main__':
     filename = "F*_m4_diff_grouping_small_epsilon.csv"
     frame, epsilons, functions, dimensions = get_frame_and_attributes(filename)
-    boxplot_group_size_per_function_type(frame, epsilons, functions, dimensions)
+    # boxplot_group_size_per_function_type(frame, epsilons, functions, dimensions)
+    boxplot_group_size_dimension_per_epsilon(frame, epsilons, functions, dimensions)

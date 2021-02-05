@@ -42,7 +42,6 @@ class Cluster(ABC):
     def return_factors(self, cluster_probs, threshold):
         factors = []
         outliers = np.arange(len(cluster_probs[0, :]))
-        # TODO: get nr of clusters based on cluster probability matrix!!!
         for i in range(len(cluster_probs)): # number of clusters?
             cluster = []
             for j in range(len(cluster_probs[i, :])):
@@ -51,9 +50,10 @@ class Cluster(ABC):
 
             factors.append(tuple(cluster))
         outliers = set(outliers) - set.union(*map(set, factors))
-        factors.append(tuple(outliers))
+        if outliers:
+            factors.append(tuple(outliers))
 
-        return factors
+        return factors, outliers
 
 
 class FuzzyKmeans(Cluster):
@@ -71,8 +71,8 @@ class FuzzyKmeans(Cluster):
         cntr, u, u0, d, jm, p, fpc = skfuzzy.cluster.cmeans(self.data.T, self.k, 2, error=0.005, maxiter=1000,
                                                             init=None)
         # I think u_pred = u from line above since using same data, so next line not needed
-        u_pred, u0, d, jm, p, fpc = skfuzzy.cluster.cmeans_predict(self.data.T, cntr, 2, error=0.005, maxiter=1000)
-        self.soft_clusters = u_pred
+        #u_pred, u0, d, jm, p, fpc = skfuzzy.cluster.cmeans_predict(self.data.T, cntr, 2, error=0.005, maxiter=1000)
+        self.soft_clusters = u
         return self.soft_clusters
 
 
@@ -102,7 +102,7 @@ class HDbscan(Cluster):
 
 class Spectral(Cluster):
     '''
-    Sprectral Clustering
+    Spectral Clustering
     '''
 
     def __init__(self, IM, num_clusters):
@@ -135,7 +135,6 @@ class Spectral(Cluster):
 
         # run fuzzy kmeans with the eigen vectors
         self.soft_clusters = FuzzyKmeans(self.eig_vectors, self.k).assign_clusters()
-        print('spectral soft', self.soft_clusters)
 
 if __name__ == '__main__':
     pass
