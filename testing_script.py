@@ -122,6 +122,7 @@ class TestOptimization():
 if __name__ == '__main__':
     function_nrs = [19]
     dim = [50]  # dim
+
     thr = 0.2 #fuzzy threshold
     for nr in function_nrs:
         # with open('results/factors/' + 'F'+str(nr) + '_fuzzy_spectral.csv', 'w') as csv_write:
