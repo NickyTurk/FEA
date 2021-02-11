@@ -179,65 +179,61 @@ class FactorAnalysis():
             file_out.write(csv_out)
             file_out.close()
 
-    # df is the dataframe with the factors
-    def graph_factors(self, df):
+    def generate_G(self, factors):
+        flatten = [var for factor in factors for var in factor]
+        dims = max(flatten) + 1
 
-        for indx, row in df.iterrows():
-            groups = row['factors']
-            factors = self.parse_factors(groups)
-            dims = int(row['dim'])
+        G = nx.Graph()
+        f_edges = []
+        for f in factors:
+            print(f)
+            G.add_nodes_from(f)
 
-            tree_edges = self.rebuild_MEET_tree(factors)
+            G.add_edges_from(itertools.combinations(f, 2))  # Fully connect the factor
+            f_edges.append(list(itertools.combinations(f, 2)))
 
-            # make different colors for each of our factors
-            HSV_tuples = [(x*1.0/len(factors), 0.5, 0.5) for x in range(len(factors))]
-            colors = list(map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples))
+        return G, f_edges, dims
 
-            G = nx.Graph()
-            f_edges = []
-            for f in factors:
-                print(f)
-                G.add_nodes_from(f)
-
-                # G.add_edges_from(itertools.combinations(f, 2))  # Fully connect the factor
-                G.add_edges_from(itertools.combinations(f, 2))  # TREE
-
-                # store the edges for each factor so can color them later
-                # f_edges.append(list(itertools.combinations(f, 2)))
+    # graph a factor
+    def graph_factors(self, G, fc_edges, dims, save_path='NONE'):
 
 
-            # DRAW!!
-            # plt.figure(1, figsize=(50,50))
+        # DRAW!!
+        # plt.figure(1, figsize=(50,50))
 
-            pos = nx.circular_layout(G)
+        pos = nx.planar_layout(G)
 
-            options = {"node_size": 500, "alpha": 0.8}
-            for f in factors:  # draw nodes
-                print(f)
-                nx.draw_networkx_nodes(G, pos, nodelist=f, **options)
-
-            for i in range(len(factors)):  # draw edges
-                e = f_edges[i]
-                c = [colors[i]]
-                nx.draw_networkx_edges(G, pos, edgelist=e, width=4, alpha=0.8, edge_color=c)
-
-            labels = {}
-            for d in range(dims):
-                labels[d] = str(d)
-
-            nx.draw_networkx_labels(G, pos, labels, font_size=16)
+        # make different colors for each of our factors
 
 
-            plt.axis("off")
-            plt.show()
-            print()
-            # break
+        options = {"node_size": 500, "alpha": 0.8}
+        for f in factors:  # draw nodes
+            print(f)
+            nx.draw_networkx_nodes(G, pos, nodelist=f, **options)
 
-    def factors_var_in(self, var, factors):
-        factors_in = []
+        for e, c in fc_edges:  # draw edges
+            nx.draw_networkx_edges(G, pos, edgelist=e, width=4, alpha=0.8, edge_color=[c])
+
+        labels = {}
+        for d in range(dims):
+            labels[d] = str(d)
+
+        nx.draw_networkx_labels(G, pos, labels, font_size=16)
+
+
+        plt.axis("off")
+        plt.show()
+
+        if save_path != 'NONE':
+            plt.savefig(save_path)
+
+        print()
+        # break
+
+    def factor_var_in(self, var, factors):
         for f in factors:
             if var in f:
-                factors_in.append(f)
+               return f
 
     def rebuild_MEET_tree(self, factors):
         flatten = [var for factor in factors for var in factor]
@@ -267,14 +263,11 @@ class FactorAnalysis():
         return edges
 
 
-
-
-
-    # for i in range(20):
-    #     s = "F" + str(i + 1)
-    #     print(s)
-    #     parse_file(s)
-
+    def assign_colors(self, f_edges):
+        HSV_tuples = [(x * 1.0 / len(f_edges), 1, 1) for x in range(len(f_edges))]
+        colors = list(map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples))
+        fc_edges = [(f_edges[i], colors[i]) for i in range(len(f_edges))]
+        return fc_edges
 
     """
     Factor analysis:
@@ -377,10 +370,34 @@ if __name__ == '__main__':
     # #fctAnl.factor_stats_per_function()
     # #fctAnl.overlap_in_factors(50, 0.001)
     # fctAnl.overlap_element_count(20, 0.001)
-    filename = "results/meet_factors/F3_meet.csv"
+    im_path = "results/meet_graphs/"
+    path = "results/meet_factors/"
+    ext = ".csv"
+
+    name = "F3_meet"
+
+    filename = path + name + ext
     f = FactorAnalysis(filename)
-    dataframe = pd.read_csv(filename)
-    f.graph_factors(dataframe)
+
+    df = pd.read_csv(filename)
+
+    for indx, row in df.iterrows():
+        groups = row['factors']
+        dim = row['dim']
+        factors = f.parse_factors(groups)
+        tree_factors = f.rebuild_MEET_tree(factors)
+        G, f_edges, dims = f.generate_G(tree_factors)
+        big_f_edges = [list(list(itertools.combinations(f, 2))) for f in factors]
+
+        f.graph_factors(G, f.assign_colors(f_edges), dims, save_path=im_path + name + '_' + str(dim) + 'tree.png')  # plot the tree
+
+        bigfc = f.assign_colors(big_f_edges)
+        f.graph_factors(G, bigfc, dims, save_path=im_path + name + '_' + str(dim) + 'full.png')  # plot fully connected
+        for factor in range(len(bigfc)):
+            f.graph_factors(G, [bigfc[factor]], dims, save_path=im_path + name + '_' + str(dim) + '_' + str(factor) + '.png')
+        break  # only go 20 dims
+
+
 
     """
     filename = "results\\factors\\" + "F1" + "_m4_diff_grouping_small_epsilon.csv"
