@@ -117,11 +117,14 @@ class FactorAnalysis():
     # Fac is string of format [(0,1,2),(3,4),(4,5,6,7)]
     # Turn this into list of tuples
     def parse_factors(self, fac):
-        tups = re.findall("(?:\([^)]+\)\s*)+", fac)  # gets the tuples copied from internet https://stackoverflow.com/questions/51965798/python-regular-expressions-extract-a-list-of-tuples-after-a-keyword-from-a-text
+        tups = fac.split('],')
+        # tups = re.findall("(?:\([^)]+\)\s*)+", fac)  # gets the tuples copied from internet https://stackoverflow.com/questions/51965798/python-regular-expressions-extract-a-list-of-tuples-after-a-keyword-from-a-text
         # tups is list of form ['(a,b,c)', '(d,e,f)']
         l = [] # list of tuples
         for t in tups:
-            tup = map(int, t.strip('(),').split(',')) # get rid of parenthesis and split, and applies int function
+            thing = t.strip('[],').split(',')
+            print(thing)
+            tup = map(int, t.strip(' [],').split(',')) # get rid of parenthesis and split, and applies int function
             tup = tuple(tup)
             l.append(tup)
         return l
@@ -180,36 +183,40 @@ class FactorAnalysis():
     def graph_factors(self, df):
 
         for indx, row in df.iterrows():
-            factors = row['FACTORS']
-            groups = self.parse_factors(factors)
-            dims = int(row['DIMENSION'])
+            groups = row['factors']
+            factors = self.parse_factors(groups)
+            dims = int(row['dim'])
+
+            tree_edges = self.rebuild_MEET_tree(factors)
 
             # make different colors for each of our factors
-            HSV_tuples = [(x*1.0/len(groups), 0.5, 0.5) for x in range(len(groups))]
+            HSV_tuples = [(x*1.0/len(factors), 0.5, 0.5) for x in range(len(factors))]
             colors = list(map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples))
 
             G = nx.Graph()
             f_edges = []
-            for f in groups:
+            for f in factors:
                 print(f)
                 G.add_nodes_from(f)
-                G.add_edges_from(itertools.combinations(f, 2))  # Fully connect the factor
+
+                # G.add_edges_from(itertools.combinations(f, 2))  # Fully connect the factor
+                G.add_edges_from(itertools.combinations(f, 2))  # TREE
 
                 # store the edges for each factor so can color them later
-                f_edges.append(list(itertools.combinations(f, 2)))
+                # f_edges.append(list(itertools.combinations(f, 2)))
 
 
             # DRAW!!
             # plt.figure(1, figsize=(50,50))
 
-            pos = nx.random_layout(G)
+            pos = nx.circular_layout(G)
 
             options = {"node_size": 500, "alpha": 0.8}
-            for f in groups:  # draw nodes
+            for f in factors:  # draw nodes
                 print(f)
                 nx.draw_networkx_nodes(G, pos, nodelist=f, **options)
 
-            for i in range(len(groups)):  # draw edges
+            for i in range(len(factors)):  # draw edges
                 e = f_edges[i]
                 c = [colors[i]]
                 nx.draw_networkx_edges(G, pos, edgelist=e, width=4, alpha=0.8, edge_color=c)
@@ -225,6 +232,41 @@ class FactorAnalysis():
             plt.show()
             print()
             # break
+
+    def factors_var_in(self, var, factors):
+        factors_in = []
+        for f in factors:
+            if var in f:
+                factors_in.append(f)
+
+    def rebuild_MEET_tree(self, factors):
+        flatten = [var for factor in factors for var in factor]
+        edges = []
+        dims = max(flatten) + 1
+        fac_cp = [list(factor) for factor in factors]
+        while len(flatten) > 0:
+            counts = [flatten.count(i) for i in range(dims)]
+            print(fac_cp)
+            print(flatten)
+            variable = counts.index(2)  # gets leaf node
+            # var is in its own factor and its singular neighbor (so 2 occurrences)
+            flatten = [x for x in flatten if x != variable]  # removes all instances of variable (should only be 2)
+            del_factors = []
+            for factor in fac_cp:
+                if variable in factor and len(factor) == 2:
+                    edges.append([min(factor[0], factor[1]), max(factor[0], factor[1])])
+                    del_factors.append(factor)
+                elif variable in factor:
+                    factor.remove(variable)
+
+            for d in del_factors:
+                fac_cp.remove(d)
+
+            flatten = [var for factor in fac_cp for var in factor]
+
+        return edges
+
+
 
 
 
@@ -252,9 +294,9 @@ class FactorAnalysis():
         size_overlap_factors = []
 
         for indx, row in df.iterrows():
-            groups = row['FACTORS']
+            groups = row['factors']
             factors = self.parse_factors(groups)
-            dims = int(row['DIMENSION'])
+            dims = int(row['dim'])
 
             num_factors.append(len(factors))
 
@@ -305,7 +347,7 @@ class FactorAnalysis():
         # Output results into a dataframe
 
         # Can copy df if want so not modifying, but is not used elsewhere so we can modify directly
-        
+
         df['Number Factors'] = [x[0] for x in output]
         df['Min Vars per Factor'] = [x[1] for x in output]
         df['Max Vars per Factor'] = [x[2] for x in output]
@@ -331,10 +373,14 @@ if __name__ == '__main__':
     # optimization = OptimizationAnalysis()
     # optimization.avg_fitness()
 
-    fctAnl = FactorAnalysis("factors/F11_overlapping_diff_grouping_small_epsilon.csv")
-    #fctAnl.factor_stats_per_function()
-    #fctAnl.overlap_in_factors(50, 0.001)
-    fctAnl.overlap_element_count(20, 0.001)
+    # fctAnl = FactorAnalysis("factors/F11_overlapping_diff_grouping_small_epsilon.csv")
+    # #fctAnl.factor_stats_per_function()
+    # #fctAnl.overlap_in_factors(50, 0.001)
+    # fctAnl.overlap_element_count(20, 0.001)
+    filename = "results/meet_factors/F3_meet.csv"
+    f = FactorAnalysis(filename)
+    dataframe = pd.read_csv(filename)
+    f.graph_factors(dataframe)
 
     """
     filename = "results\\factors\\" + "F1" + "_m4_diff_grouping_small_epsilon.csv"
