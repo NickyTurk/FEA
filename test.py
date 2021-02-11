@@ -195,7 +195,7 @@ def fuzzy_MEE_factors(function_name, function, dim, fuzzy_cluster_threshold, mic
     delta = 0.000001  # account for variations
     sample_size = dim*4
 
-    # caluclate MEE
+    # calculate MEE
     mee = MEE(function, dim, ub, lb, sample_size, a, b, delta)
     mee.direct_IM()
 

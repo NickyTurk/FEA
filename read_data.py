@@ -10,7 +10,7 @@ def transform_files_to_df(file_regex, subfolder = '', header = True):
 
     for filename in all_files:
         if header:
-            df = pd.read_csv(filename, index_col=None, header=0, converters={'fitnesses': eval})
+            df = pd.read_csv(filename, index_col=None, header=0, converters={'fitnesses': eval, 'fitness':eval})
             if 'function' not in df.columns:
                 function_nr = re.findall(r"F([0-9]+?)(?=\_)", filename) 
                 f_int = ''.join(list(filter(str.isdigit, function_nr[0])))
