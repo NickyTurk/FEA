@@ -120,7 +120,7 @@ class TestOptimization():
 
 
 if __name__ == '__main__':
-    function_nrs = [19]
+    function_nrs = [5]
     dim = [50]  # dim
 
     thr = 0.2 #fuzzy threshold
