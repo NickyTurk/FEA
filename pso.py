@@ -18,7 +18,7 @@ from core import pluck, add, mul, sub, dict_merge, Particle, Random
 import numpy as np
 from copy import deepcopy
 from functools import partial
-import pathos.multiprocessing as mp
+#import pathos.multiprocessing as mp
 
 random = Random()
 # <markdowncell>
