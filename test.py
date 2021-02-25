@@ -178,13 +178,13 @@ def MEET_factors(function, dim, de_thr = 0.001):
     ub = np.ones(dim) * 100
     lb = np.ones(dim) * -100
     delta = 0.000001  # account for variations
-    sample_size = dim*4
+    sample_size = dim*10
 
     # caluclate MEE
     mee = MEET(function, dim, ub, lb, sample_size, de_thr, delta)
     mee.compute_interaction()
     mee.assign_factors()
-    return mee.factors
+    return mee.factors, mee.mic
 
 
 def fuzzy_MEE_factors(function_name, function, dim, fuzzy_cluster_threshold, mic_thr = 0.1, de_thr = 0.001):
@@ -231,10 +231,10 @@ if __name__ == '__main__':
         seed = int(datetime.now().strftime("%S"))
 
     benchmark = args.benchmark
-    functions = [F6, F10, F12]
+    functions = [F3, F10, F12]
 
-    function_names = ['F3', 'F5', 'F9', 'F11','F17', 'F19', 'F20'] #'F6', 'F7', 'F10', 'F11',S
-    cec2010_functions = [F3, F5, F9, F11, F17, F19, F20]
+    function_names = ['F19', 'F20'] #'F6', 'F7', 'F10', 'F11',S
+    cec2010_functions = [F19, F20]
 
     # test_var_int('F6')
 
@@ -247,7 +247,7 @@ if __name__ == '__main__':
     m = 4
 
     # MEET_factors(F3, 10)
-
+    #
     # exit(1)
 
     for i,function_name in enumerate(function_names):
@@ -271,10 +271,11 @@ if __name__ == '__main__':
             csv_writer.writerow(['function', 'dim', 'nr_groups', 'factors'])
             for dim in [20,50]:
                 print('function ', function_name, 'dim: ', str(dim))
-                factors = MEET_factors(f, dim)
+                factors, mic = MEET_factors(f, dim)
                 to_write = [function_name, str(dim), str(len(factors)), str(factors)]
                 csv_writer.writerow(to_write)
                 print(to_write)
+                np.savetxt("results/meet_factors/mic/" + function_name + "_" + str(dim) + ".csv", mic, delimiter=',')
 
     print('ALL DONE')
     exit(13)

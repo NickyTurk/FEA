@@ -341,10 +341,12 @@ class FactorAnalysis():
 
 
         plt.axis("off")
-        plt.show()
 
         if save_path != 'NONE':
             plt.savefig(save_path)
+
+        plt.show()
+
 
         print()
         # break
@@ -493,10 +495,10 @@ if __name__ == '__main__':
     path = "results/meet_factors/"
     ext = ".csv"
 
-    name = "F3_meet"
+    name = "F19_meet"
 
     filename = path + name + ext
-    f = FactorAnalysis(filename)
+    f = FactorAnalysis()
 
     df = pd.read_csv(filename)
 
@@ -508,12 +510,12 @@ if __name__ == '__main__':
         G, f_edges, dims = f.generate_G(tree_factors)
         big_f_edges = [list(list(itertools.combinations(f, 2))) for f in factors]
 
-        f.graph_factors(G, f.assign_colors(f_edges), dims, save_path=im_path + name + '_' + str(dim) + 'tree.png')  # plot the tree
+        f.graph_factors(G, f.assign_colors(f_edges), dims, save_path=im_path + name + '/' + str(dim) + 'tree.png')  # plot the tree
 
         bigfc = f.assign_colors(big_f_edges)
-        f.graph_factors(G, bigfc, dims, save_path=im_path + name + '_' + str(dim) + 'full.png')  # plot fully connected
+        f.graph_factors(G, bigfc, dims, save_path=im_path + name + '/' + str(dim) + 'full.png')  # plot fully connected
         for factor in range(len(bigfc)):
-            f.graph_factors(G, [bigfc[factor]], dims, save_path=im_path + name + '_' + str(dim) + '_' + str(factor) + '.png')
+            f.graph_factors(G, [bigfc[factor]], dims, save_path=im_path + name + '/' + str(dim) + '_' + str(factor) + '.png')
         break  # only go 20 dims
 
 
