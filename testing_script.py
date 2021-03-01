@@ -67,10 +67,10 @@ class TestOptimization():
         self.function_idx = function_number - 1
         self.DG_epsilon = DG_epsilon
         if factor_topology == 'DG':
-            self.file_extension = "m4_diff_grouping_small_epsilon"
+            self.file_extension = "m4_diff_grouping"
             self.filename = "results/factors/" + self.function_name + "_" + self.file_extension + ".csv"
         elif factor_topology == 'ODG':
-            self.file_extension = "overlapping_diff_grouping_small_epsilon"
+            self.file_extension = "overlapping_diff_grouping"
             self.filename = "results/factors/" + self.function_name + "_" + self.file_extension + ".csv"
         elif factor_topology == 'spectral':
             self.DG_epsilon = 0
@@ -85,12 +85,13 @@ class TestOptimization():
 
         self.domain = [-50, 50]
 
-    def harness(self, algorithm, iterations=10, repeats=1):
+    def harness(self, algorithm, write_to_csv, iterations=2, repeats=1):
         summary = {}
         fitnesses = []
         for trial in range(0, iterations):
             result = algorithm()
             fitnesses.append(result[-1][2])
+            write_to_csv.writerow(result)
         bootstrap = create_bootstrap_function(repeats)
         replications = bootstrap(fitnesses)
         statistics = analyze_bootstrap_sample(replications)
@@ -105,12 +106,12 @@ class TestOptimization():
         neighbors = determine_neighbors(factors)
         return arbiters, optimizers, neighbors
 
-    def test_fea(self, pso_iterations, pop, fea_iterations):
+    def test_fea(self, write_to_csv, pso_iterations, pop, fea_iterations):
         factors, function_name = import_single_function_factors(self.filename, self.dim, epsilon=self.DG_epsilon)
         arbiters, optimizers, neighbors = self.get_factor_info(factors, self.dim)
         algorithm = lambda: fea_pso(self.f, self.dim, self.domain, factors, optimizers, pop, fea_iterations,
                                     lambda t, s: t == pso_iterations)
-        summary = self.harness(algorithm)
+        summary = self.harness(algorithm, write_to_csv)
         return summary
 
     def test_pso(self, pop, iterations):
@@ -120,8 +121,8 @@ class TestOptimization():
 
 
 if __name__ == '__main__':
-    function_nrs = [19]
-    dim = [50]  # dim
+    function_nrs = [5]
+    dim = [20]  # dim
 
     thr = 0.2 #fuzzy threshold
     for nr in function_nrs:
@@ -146,6 +147,6 @@ if __name__ == '__main__':
             with open('results/FEA_PSO/' + str(test_opt.function_name) + '_dim' + str(
                     test_opt.dim) + test_opt.file_extension + ".csv", 'a') as write_to_csv:
                 print('function nr: ', nr)
-                summary = test_opt.test_fea(pso_iterations=10, pop=500, fea_iterations=10)
                 csv_writer = csv.writer(write_to_csv)
+                summary = test_opt.test_fea(csv_writer, pso_iterations=10, pop=500, fea_iterations=10)
                 csv_writer.writerow(summary["fitnesses"])
