@@ -59,8 +59,7 @@ class TestDecomposition():
         return spectral_factors
 
 
-class TestOptimization():
-
+class TestOptimization:
     def __init__(self, dim, function_number, factor_topology='DG', DG_epsilon=0):
         self.dim = dim
         self.function_name = 'F' + str(function_number)
@@ -80,6 +79,9 @@ class TestOptimization():
             self.DG_epsilon = 0
             self.file_extension = "fuzzy_spectral"
             self.filename = "results/factors/" + self.function_name + "_" + self.file_extension + ".csv"
+        elif factor_topology == 'MEET':
+            self.file_extension = 'meet'
+            self.filename = 'results/meet_factors/' + self.function_name + '_' + self.file_extension + '.csv'
 
         self.f = get_function(self.function_name, self.function_idx, self.dim)
 
@@ -122,7 +124,7 @@ class TestOptimization():
 if __name__ == '__main__':
 
     #F5, F11, F17, F19
-    function_nrs = [11]
+    function_nrs = [19]
 
     for itr in range(9):
         for nr in function_nrs:
