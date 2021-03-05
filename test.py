@@ -11,6 +11,7 @@ import numpy as np
 from opfunu.cec.cec2010.function import *
 # from cec2013lsgo.cec2013 import Benchmark
 from functools import partial
+from FunctionTesting import F11_E
 
 from variable_interaction import MEE, MEET
 from numpy import linalg as la
@@ -219,6 +220,41 @@ def np_to_str(x):
         s += '\n'
     return s,total
 
+def test_runtime():
+    f = F11_E()  # intialize
+
+    # generate a point (use from MEE)
+    dim = 50
+    ub = np.ones(dim) * 100
+    lb = np.ones(dim) * -100
+    x = np.random.rand(dim) * (ub - lb) + lb
+
+    m = 4
+
+    y_1 = None
+    y_2 = None
+
+    trials = 1000
+
+    start = time.time()
+    for _ in range(trials):
+        y_1 = f.F11o(x, m_group=m)  # original
+    end = time.time()
+    original_elapse = end - start
+    print("Original: " + str(original_elapse))
+
+    start = time.time()
+    for _ in range(trials):
+        y_2 = f.run(x, m_group=m)  # new and improved?
+    end = time.time()
+    new_elapse = end - start
+    print("New: " + str(new_elapse))
+
+    print(str(y_1 == y_2))  # make sure answer is the same
+    print(str(original_elapse/new_elapse))
+
+
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="test out some algies")
@@ -234,7 +270,9 @@ if __name__ == '__main__':
     functions = [F3, F10, F12]
 
     function_names = ['F19', 'F20'] #'F6', 'F7', 'F10', 'F11',S
-    cec2010_functions = [F19, F20]
+    cec2010_functions = [F11, F19, F20]
+
+
 
     # test_var_int('F6')
 
@@ -245,6 +283,9 @@ if __name__ == '__main__':
     no_m_param = ['F1', 'F2', 'F3', 'F19', 'F20']
     shifted_error_function = ['F14', 'F15', 'F16']
     m = 4
+
+    test_runtime()
+    exit(13)
 
     # MEET_factors(F3, 10)
     #
