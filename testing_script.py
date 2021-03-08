@@ -8,7 +8,8 @@ from clustering import *
 
 from datetime import datetime
 import numpy as np
-from opfunu.cec.cec2010.function import *
+# from opfunu.cec.cec2010.function import *
+from function import *  # CEC2010 functions refactored
 from functools import partial
 import csv
 
