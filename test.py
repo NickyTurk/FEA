@@ -234,18 +234,26 @@ def test_runtime():
     y_1 = None
     y_2 = None
 
-    trials = 1000
+    import function
+
+    trials = 100
+    fo = F18
+    fn = function.F18
+
+    # no_m_param = ['F1', 'F2', 'F3', 'F19', 'F20'] ALL WORK
+    # shifted_error_function = ['F14', 'F15', 'F16'] DIM 20,50 not supported
+    # Others = ALL WORK
 
     start = time.time()
     for _ in range(trials):
-        y_1 = f.F11o(x, m_group=m)  # original
+        y_1 = fo(x,m_group=m)  # original
     end = time.time()
     original_elapse = end - start
     print("Original: " + str(original_elapse))
 
     start = time.time()
     for _ in range(trials):
-        y_2 = f.run(x, m_group=m)  # new and improved?
+        y_2 = fn(x, m_group=m)  # new and improved?
     end = time.time()
     new_elapse = end - start
     print("New: " + str(new_elapse))

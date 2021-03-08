@@ -136,16 +136,16 @@ def F6(solution=None, name="Single-group Shifted and m-rotated Ackley’s Functi
         f6_matrix = load_matrix_data__(matrix_data_file)
         f6_op_data = load_matrix_data__(shift_data_file)
     if problem_size == 1000:
-        shift_data = f5_op_data[:1, :].reshape(-1)
-        permu_data = (f5_op_data[1:, :].reshape(-1) - ones(problem_size)).astype(int)
+        shift_data = f6_op_data[:1, :].reshape(-1)
+        permu_data = (f6_op_data[1:, :].reshape(-1) - ones(problem_size)).astype(int)
     else:
         seed(0)
-        shift_data = f5_op_data[:1, :].reshape(-1)[:problem_size]
+        shift_data = f6_op_data[:1, :].reshape(-1)[:problem_size]
         permu_data = permutation(problem_size)
     z = solution - shift_data
     idx1 = permu_data[:m_group]
     idx2 = permu_data[m_group:]
-    z_rot_ackley = dot(z[idx1], f5_matrix[:m_group, :m_group])
+    z_rot_ackley = dot(z[idx1], f6_matrix[:m_group, :m_group])
     z_ackley = z[idx2]
     return f4_ackley__(z_rot_ackley) * 10 ** 6 + f4_ackley__(z_ackley)
 
@@ -523,33 +523,33 @@ def F18(solution=None, name="D/2m-group Shifted m-dimensional Rosenbrock’s Fun
     return result
 
 
-f19_op_data = None
+f19_shift_data = None
 f19_shift_file = ""
 
 
 def F19(solution=None, name="Shifted Schwefel’s Problem 1.2", shift_data_file="f19_o.txt"):
     problem_size = len(solution)
     check_problem_size(problem_size)
-    global f19_op_data, f19_shift_file
-    if shift_data_file != f19_shift_file:
+    global f19_shift_data, f19_shift_file
+    if f19_shift_file != shift_data_file:
         f19_shift_file = shift_data_file
-        f19_op_data = load_matrix_data__(shift_data_file)
-    shift_data = f19_op_data[:problem_size]
+        f19_shift_data = load_shift_data__(shift_data_file)
+    shift_data = f19_shift_data[:problem_size]
     z = solution - shift_data
     return f5_schwefel__(z)
 
 
-f20_op_data = None
+f20_shift_data = None
 f20_shift_file = ""
 
 
 def F20(solution=None, name="Shifted Rosenbrock’s Function", shift_data_file="f20_o.txt"):
     problem_size = len(solution)
     check_problem_size(problem_size)
-    global f20_op_data, f20_shift_file
+    global f20_shift_data, f20_shift_file
     if shift_data_file != f20_shift_file:
         f20_shift_file = shift_data_file
-        f20_op_data = load_matrix_data__(shift_data_file)
-    shift_data = f20_op_data[:problem_size]
+        f20_shift_data = load_shift_data__(shift_data_file)
+    shift_data = f20_shift_data[:problem_size]
     z = solution - shift_data
     return f6_rosenbrock__(z)
