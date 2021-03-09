@@ -125,9 +125,9 @@ class TestOptimization:
 if __name__ == '__main__':
 
     #F5, F11, F17, F19
-    function_nrs = [11]
+    function_nrs = [17,19,3]
 
-    for itr in range(9):
+    for itr in range(10):
         for nr in function_nrs:
             test_opt = TestOptimization(dim=50, function_number=nr, factor_topology='MEET', DG_epsilon=0)
             '''
