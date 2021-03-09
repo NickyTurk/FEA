@@ -87,7 +87,7 @@ class TestOptimization:
 
         self.domain = [-50, 50]
 
-    def harness(self, algorithm, iterations=10, repeats=1):
+    def harness(self, algorithm, iterations=1, repeats=1):
         summary = {}
         fitnesses = []
         for trial in range(0, iterations):
@@ -124,11 +124,11 @@ class TestOptimization:
 if __name__ == '__main__':
 
     #F5, F11, F17, F19
-    function_nrs = [19]
+    function_nrs = [11]
 
     for itr in range(9):
         for nr in function_nrs:
-            test_opt = TestOptimization(dim=20, function_number=nr, factor_topology='MEET', DG_epsilon=0)
+            test_opt = TestOptimization(dim=50, function_number=nr, factor_topology='MEET', DG_epsilon=0)
             '''
             with open('results/pso_20/' + str(test_opt.function_name) + '_pso_param.csv', 'a') as write_to_csv:
                 csv_writer = csv.writer(write_to_csv)
