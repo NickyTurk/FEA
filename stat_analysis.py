@@ -17,59 +17,77 @@ def mkdir(path):
 
 class OptimizationAnalysis():
 
-    def __init__(self, dim=50, functions=['F3', 'F11', 'F17', 'F19']): #'F3', 'F5', 'F11', 'F17'
+    def __init__(self, dim= 20, functions = ['F5', 'F11', 'F17', 'F19']): #'F3', 'F5', 'F11', 'F17'
         self.dim = dim
         self.functions = functions
 
-    def get_fitness_stats(self, data, f):
-        data_values = data.loc[data['function'] == f]
-        data_fitnesses = np.array(data_values.iloc[0, 0:9])
-        data_avg = np.mean(data_fitnesses)
-        data_std = np.std(data_fitnesses)
-        return data_fitnesses, data_avg, data_std
-
-    def print_fitness_stats(self):
+    def avg_fitness(self):
         # pso = read_data.transform_files_to_df("F*_pso_param.csv", subfolder = "pso_"+str(self.dim))
         # fea = read_data.transform_files_to_df("F*_dim" + str(self.dim) + "overlapping_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO", header = False)
         # ccea = read_data.transform_files_to_df("F*_dim" + str(self.dim) + "m4_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO", header = False)
 
         for f in self.functions:
-            pso = read_data.transform_files_to_df(f + "_pso_param.csv", subfolder="pso_"+str(self.dim), header=True)
-            fea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "overlapping_diff_grouping.csv", subfolder="FEA_PSO", header=False)
-            ccea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "m4_diff_grouping.csv", subfolder="FEA_PSO", header=False)
+            print()
+            pso = read_data.transform_files_to_df(f + "_pso_param.csv", subfolder = "pso_"+str(self.dim))
+            fea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "overlapping_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO", header = False)
+            ccea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "m4_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO", header = False)
             spectral = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "spectral.csv", subfolder="FEA_PSO", header=False)
-            fuzzy_spectral = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "fuzzy_spectral.csv", subfolder="FEA_PSO", header=False)
+            meet = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "meet.csv", subfolder="FEA_PSO", header=False)
 
             print(f)
             pso_values = pso.loc[pso['function'] == f]
-            avg_fitness = []
-            for fitness in pso_values['fitness']:
+            avg_fitness =  []
+            for fitness in pso_values['fitnesses']:
                 avg_fitness.append(np.mean(fitness))
             min_pso_idx = avg_fitness.index(min(avg_fitness))
             min_pso_avg = min(avg_fitness)
             pso_row = pso_values.iloc[[min_pso_idx]]
-            pso_fitnesses = pso_row['fitness'].to_numpy()[0]
+            pso_fitnesses = pso_row['fitnesses'].to_numpy()[0]
             pso_std = np.std(pso_fitnesses)
             print('pso: ', min_pso_avg, 'pso std: ', pso_std)
 
-            ccea_fitnesses, ccea_avg, ccea_std = self.get_fitness_stats(ccea, f)
-            print('ccea odg: ', ccea_avg, 'ccea odg std: ', ccea_std)
+            ccea_values = ccea.loc[ccea['function'] == f]
+            ccea_fitnesses = np.array(ccea_values.iloc[0,0:9])
+            ccea_avg = np.mean(ccea_fitnesses)
+            ccea_std = np.std(ccea_fitnesses)
+            print('ccea dg: ', ccea_avg, 'ccea dg std: ', ccea_std)
 
-            fea_fitnesses, fea_avg, fea_std = self.get_fitness_stats(fea, f)
+            fea_values = fea.loc[fea['function'] == f]
+            fea_fitnesses = np.array(fea_values.iloc[0,0:9])
+            fea_avg = np.mean(fea_fitnesses)
+            fea_std = np.std(fea_fitnesses)
             print('fea odg: ', fea_avg, 'fea odg std: ', fea_std)
 
-            spectral_fitnesses, spectral_avg, spectral_std = self.get_fitness_stats(spectral, f)
+            spectral_values = spectral.loc[ccea['function'] == f]
+            spectral_fitnesses = np.array(spectral_values.iloc[0, 0:9])
+            spectral_avg = np.mean(spectral_fitnesses)
+            spectral_std = np.std(spectral_fitnesses)
             print('spectral dg: ', spectral_avg, 'spectral std: ', spectral_std)
 
-            fuzzy_spectral_fitnesses, fuzzy_spectral_avg, fuzzy_spectral_std = self.get_fitness_stats(fuzzy_spectral, f)
-            print('fuzzy_spectral dg: ', fuzzy_spectral_avg, 'fuzzy_spectral std: ', fuzzy_spectral_std)
+            meet_values = meet.loc[ccea['function'] == f]
+            meet_fitnesses = np.array(meet_values.iloc[0, 0:9])
+            meet_avg = np.mean(meet_fitnesses)
+            meet_std = np.std(meet_fitnesses)
+            print('fea meet: ', meet_avg, 'fea meet: ', meet_std)
 
-            print('ANOVA: \n', f_oneway(pso_fitnesses, ccea_fitnesses, fea_fitnesses, spectral_fitnesses, fuzzy_spectral_fitnesses))
+            print('ANOVA: \n', f_oneway(pso_fitnesses, ccea_fitnesses, fea_fitnesses, spectral_fitnesses, meet_fitnesses))
 
-            print('fuzzy_spectral vs pso: ',  ttest_ind(pso_fitnesses, fuzzy_spectral_fitnesses))
-            print('fuzzy_spectral vs fea: ', ttest_ind(fea_fitnesses, fuzzy_spectral_fitnesses))
-            print('fuzzy_spectral vs ccea: ', ttest_ind(ccea_fitnesses, fuzzy_spectral_fitnesses))
-            print('fuzzy_spectral vs spectral: ', ttest_ind(spectral_fitnesses, fuzzy_spectral_fitnesses))
+            print('pso vs fea: ', ttest_ind(pso_fitnesses, fea_fitnesses))
+            print('pso vs ccea: ', ttest_ind(pso_fitnesses, ccea_fitnesses))
+            print('ccea vs meet: ', ttest_ind(ccea_fitnesses, meet_fitnesses))
+
+            print('meet vs pso: ',  ttest_ind(pso_fitnesses, meet_fitnesses))
+            print('meet vs fea: ', ttest_ind(fea_fitnesses, meet_fitnesses))
+            print('meet vs ccea: ', ttest_ind(ccea_fitnesses, meet_fitnesses))
+            print()
+
+            ## Make more CSV friendly
+            d = (min_pso_avg, pso_std, ccea_avg, ccea_std, fea_avg, fea_std, spectral_avg, spectral_std, meet_avg, meet_std)
+            d = (str(x) for x in d)
+            print(', '.join(d))
+
+            print()
+
 
 class FactorAnalysis():
 
@@ -316,7 +334,7 @@ class FactorAnalysis():
 
 
         # DRAW!!
-        # plt.figure(1, figsize=(50,50))
+        plt.figure(1, figsize=(10,10))
 
         pos = nx.planar_layout(G)
 
@@ -339,10 +357,18 @@ class FactorAnalysis():
 
 
         plt.axis("off")
-        plt.show()
 
         if save_path != 'NONE':
+            parent = save_path.split('/')
+            parent = '/'.join(parent[:-1])
+
+            if not os.path.exists(parent):
+                os.makedirs(parent)
+
             plt.savefig(save_path)
+
+        plt.show()
+
 
         print()
         # break
@@ -481,37 +507,65 @@ class FactorAnalysis():
 
 if __name__ == '__main__':
     optimization = OptimizationAnalysis()
-    optimization.print_fitness_stats()
+    optimization.avg_fitness()
+
+    exit(13)
 
     # fctAnl = FactorAnalysis("factors/F11_overlapping_diff_grouping_small_epsilon.csv")
     # #fctAnl.factor_stats_per_function()
     # #fctAnl.overlap_in_factors(50, 0.001)
     # fctAnl.overlap_element_count(20, 0.001)
+    im_path = "results/meet_graphs/"
+    path = "results/meet_factors/old_meet/"
+    ext = ".csv"
 
-    # im_path = "results/meet_graphs/"
-    # path = "results/meet_factors/"
-    # ext = ".csv"
-    #
-    # name = "F3_meet"
-    #
-    # filename = path + name + ext
-    # f = FactorAnalysis(filename)
-    #
-    # df = pd.read_csv(filename)
-    #
-    # for indx, row in df.iterrows():
-    #     groups = row['factors']
-    #     dim = row['dim']
-    #     factors = f.parse_factors(groups)
-    #     tree_factors = f.rebuild_MEET_tree(factors)
-    #     G, f_edges, dims = f.generate_G(tree_factors)
-    #     big_f_edges = [list(list(itertools.combinations(f, 2))) for f in factors]
-    #
-    #     f.graph_factors(G, f.assign_colors(f_edges), dims, save_path=im_path + name + '_' + str(dim) + 'tree.png')  # plot the tree
-    #
-    #     bigfc = f.assign_colors(big_f_edges)
-    #     f.graph_factors(G, bigfc, dims, save_path=im_path + name + '_' + str(dim) + 'full.png')  # plot fully connected
-    #     for factor in range(len(bigfc)):
-    #         f.graph_factors(G, [bigfc[factor]], dims, save_path=im_path + name + '_' + str(dim) + '_' + str(factor) + '.png')
-    #     break  # only go 20 dims
+    # F3, F5, F11, F17, F19
+    name = "F3_meet"
 
+    filename = path + name + ext
+    f = FactorAnalysis()
+
+    df = pd.read_csv(filename)
+
+    for indx, row in df.iterrows():
+        groups = row['factors']
+        dim = row['dim']
+        factors = f.parse_factors(groups)
+        tree_factors = f.rebuild_MEET_tree(factors)
+        G, f_edges, dims = f.generate_G(tree_factors)
+        big_f_edges = [list(list(itertools.combinations(f, 2))) for f in factors]
+
+        # f.graph_factors(G, f.assign_colors(f_edges), dims)
+        #
+        # exit(13)
+
+        f.graph_factors(G, f.assign_colors(f_edges), dims, save_path=im_path + name + '/' + str(dim) + 'tree.png')  # plot the tree
+
+        bigfc = f.assign_colors(big_f_edges)
+        f.graph_factors(G, bigfc, dims, save_path=im_path + name + '/' + str(dim) + 'full.png')  # plot fully connected
+        for factor in range(len(bigfc)):
+            # f.graph_factors(G, [bigfc[factor]], dims)
+            f.graph_factors(G, [bigfc[factor]], dims, save_path=im_path + name + '/' + str(dim) + '_' + str(factor) + '.png')
+        break  # only go 20 dims
+
+
+    # optimization = OptimizationAnalysis(dim=20)
+    # optimization.avg_fitness()
+
+    # fctAnl = FactorAnalysis()
+    # fctAnl.run_factor_stats_per_function("_overlapping_diff_grouping_small_epsilon.csv", dimension=50, epsilon=0)
+    # fctAnl.run_factor_stats_per_function("_spectral.csv", dimension=20, epsilon=0)
+    # fctAnl.run_factor_stats_per_function("_m4_diff_grouping_small_epsilon.csv", dimension=20, epsilon=0.001)
+    # fctAnl.boxplot_sizes(fctAnl.overlap_sizes_per_method, 'Overlap Size for 50 Dimensions')
+
+    """
+    filename = "results\\factors\\" + "F1" + "_m4_diff_grouping_small_epsilon.csv"
+
+    dataframe = pd.read_csv(filename)
+    # print(dataframe[2])
+    # print(dataframe['DIMENSION'])
+
+    small_ep = dataframe.loc[dataframe['EPSILON'] == min(dataframe['EPSILON'])]
+    fa = FactorAnalysis()
+    fa.graph_factors(small_ep)
+    """
