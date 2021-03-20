@@ -17,32 +17,40 @@ def mkdir(path):
 
 class OptimizationAnalysis():
 
-    def __init__(self, dim= 20, functions = ['F5', 'F11', 'F17', 'F19']): #'F3', 'F5', 'F11', 'F17'
+    def __init__(self, dim= 50, functions = ['F3', 'F5', 'F11', 'F17', 'F19']): #'F3', 'F5', 'F11', 'F17'
         self.dim = dim
         self.functions = functions
 
-    def avg_fitness(self):
+    def avg_fitness(self, output='NONE'):
         # pso = read_data.transform_files_to_df("F*_pso_param.csv", subfolder = "pso_"+str(self.dim))
         # fea = read_data.transform_files_to_df("F*_dim" + str(self.dim) + "overlapping_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO", header = False)
         # ccea = read_data.transform_files_to_df("F*_dim" + str(self.dim) + "m4_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO", header = False)
 
+        # min_pso_avg, pso_std, ccea_avg, ccea_std, fea_avg, fea_std, spectral_avg, spectral_std, meet_avg, meet_std
+        if output != 'NONE':
+            file = open(output, 'a')
+            file.write('Function , PSO Avg, PSO SD, CCEA Avg, CCEA SD, FEA Avg, FEA SD, Spectral Avg, Spectral SD, MEET Avg, MEET SD\n')
+            file.close()
+
         for f in self.functions:
             print()
             pso = read_data.transform_files_to_df(f + "_pso_param.csv", subfolder = "pso_"+str(self.dim))
-            fea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "overlapping_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO", header = False)
-            ccea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "m4_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO", header = False)
-            spectral = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "spectral.csv", subfolder="FEA_PSO", header=False)
-            meet = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "meet.csv", subfolder="FEA_PSO", header=False)
+            fea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "overlapping_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO/20_itr", header = False)
+            # fea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "overlapping_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO", header = False)
+            ccea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "m4_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO/20_itr", header = False)
+            # ccea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "m4_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO", header = False)
+            spectral = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "spectral.csv", subfolder="FEA_PSO/20_itr", header=False)
+            meet = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "meet.csv", subfolder="FEA_PSO/20_itr", header=False)
 
             print(f)
             pso_values = pso.loc[pso['function'] == f]
             avg_fitness =  []
-            for fitness in pso_values['fitnesses']:
+            for fitness in pso_values['fitness']:
                 avg_fitness.append(np.mean(fitness))
             min_pso_idx = avg_fitness.index(min(avg_fitness))
             min_pso_avg = min(avg_fitness)
             pso_row = pso_values.iloc[[min_pso_idx]]
-            pso_fitnesses = pso_row['fitnesses'].to_numpy()[0]
+            pso_fitnesses = pso_row['fitness'].to_numpy()[0]
             pso_std = np.std(pso_fitnesses)
             print('pso: ', min_pso_avg, 'pso std: ', pso_std)
 
@@ -82,9 +90,15 @@ class OptimizationAnalysis():
             print()
 
             ## Make more CSV friendly
+            # , PSO, sd, CCEA (DG), sd, ODG, sd, Spectral, sd, MEET, sd
             d = (min_pso_avg, pso_std, ccea_avg, ccea_std, fea_avg, fea_std, spectral_avg, spectral_std, meet_avg, meet_std)
             d = (str(x) for x in d)
-            print(', '.join(d))
+            csv = ', '.join(d)
+            csv = f + ',' + csv
+            if output != 'NONE':
+                file = open(output, 'a')
+                file.write(csv + '\n')
+                file.close()
 
             print()
 
@@ -507,7 +521,7 @@ class FactorAnalysis():
 
 if __name__ == '__main__':
     optimization = OptimizationAnalysis()
-    optimization.avg_fitness()
+    optimization.avg_fitness(output='results/results_50DIM_20itr.csv')
 
     exit(13)
 

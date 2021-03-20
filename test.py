@@ -265,6 +265,27 @@ def test_runtime():
 
 
 if __name__ == '__main__':
+
+    dir = 'results/FEA_PSO/'
+    extension = '.csv'
+    functions = ['F3', 'F5', 'F11', 'F17', 'F19']
+    dim = 'dim50'
+    methods = ['fuzzy_spectral', 'meet', 'overlapping_diff_grouping_small_epsilon', 'm4_diff_grouping_small_epsilon', 'spectral']
+
+    for f in functions:
+        for m in methods:
+            file = dir + f + '_' + dim + m + '_20itr' + extension
+            in_f = open(file, 'r')
+            data = []
+            for line in in_f:
+                line = line.replace('\n', '')
+                data.append(line)
+            out = ','.join(data)
+            out_f = open(dir + '20_itr/' + f + '_' + dim + m + extension, 'w')
+            out_f.write(out)
+
+
+    exit(13)
     parser = argparse.ArgumentParser(description="test out some algies")
     parser.add_argument("--benchmark", help="pick the name of a benchmark function", default="schwefel-1.2")
     parser.add_argument("--seed", help="the random seed to use")
