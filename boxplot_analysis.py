@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import glob
+
+import read_data
 from read_data import *
 from ast import literal_eval
 
@@ -99,7 +101,93 @@ def boxplot_group_size_per_function_type(frame, epsilons, functions, dimensions)
             plt.savefig('Type_' + functiontype_names[i] + '_Epsilonvalue_' + str(epsilons[j]))
 
 
+def get_fits(functions, itr):
+    dim = 50
+    tail = '_' + str(itr) + 'itr.csv'
+    ret = {}
+    for f in functions:
+        print()
+        print(f + "_dim" + str(dim) + "overlapping_diff_grouping_small_epsilon" + tail)
+        fea = read_data.transform_files_to_df(
+            f + "_dim" + str(dim) + "overlapping_diff_grouping_small_epsilon" + tail, subfolder="FEA_PSO/40_itr",
+            header=False)
+        # fea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "overlapping_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO", header = False)
+        ccea = read_data.transform_files_to_df(f + "_dim" + str(dim) + "m4_diff_grouping_small_epsilon" + tail,
+                                               subfolder="FEA_PSO/40_itr", header=False)
+        # ccea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "m4_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO", header = False)
+        spectral = read_data.transform_files_to_df(f + "_dim" + str(dim) + "spectral" + tail,
+                                                   subfolder="FEA_PSO/40_itr", header=False)
+        meet = read_data.transform_files_to_df("F5" + "_dim" + str(dim) + "meet" + tail, subfolder="FEA_PSO/40_itr",
+                                               header=False)
+
+        ccea_values = ccea.loc[ccea['function'] == f]
+        ccea_fitnesses = np.array(ccea_values.iloc[0, 0:10])
+        ccea_avg = np.mean(ccea_fitnesses)
+        ccea_std = np.std(ccea_fitnesses)
+
+        fea_values = fea.loc[fea['function'] == f]
+        fea_fitnesses = np.array(fea_values.iloc[0, 0:10])
+        fea_avg = np.mean(fea_fitnesses)
+        fea_std = np.std(fea_fitnesses)
+
+        spectral_values = spectral.loc[ccea['function'] == f]
+        spectral_fitnesses = np.array(spectral_values.iloc[0, 0:10])
+        spectral_avg = np.mean(spectral_fitnesses)
+        spectral_std = np.std(spectral_fitnesses)
+
+        meet_values = meet.loc[ccea['function'] == f]
+        meet_fitnesses = np.array(meet_values.iloc[0, 0:10])
+        meet_avg = np.mean(meet_fitnesses)
+        meet_std = np.std(meet_fitnesses)
+
+        ret[f] = (ccea_fitnesses, fea_fitnesses, spectral_fitnesses, meet_fitnesses)
+    return ret
+
+
+def boxplot_fitness():
+    functions = ["F3", "F5", "F11", "F17", "F19"]
+    topologies = ['CCEA', 'ODG', 'Spectral']
+    iterations = [10, 20, 30, 40]
+    fits = [get_fits(functions, i) for i in iterations]  # array of dicts
+
+
+
+    for f in functions:
+        fig, axs = plt.subplots(2,2, figsize=(10,10))
+        # plt.setp(axs, xticklabels=['10', '20', '30', '40'])
+        for i, topo in enumerate(topologies):
+            fig.suptitle(f)
+            data = [fits[itr][f][i] for itr in range(len(iterations))]
+            coord = (i %2, int(i/2))
+            axs[coord[0]][coord[1]].boxplot(data)
+            axs[coord[0]][coord[1]].set_title(topo)
+            axs[coord[0]][coord[1]].set_xticklabels([10, 20, 30, 40])
+        path = 'results/plots/40_itr/'
+        plt.savefig(path + f + '.png')
+        plt.show()
+        # exit(1)
+    pass
+
+
+def turn_func_to_csv(f, top):
+    functions = ["F3", "F5", "F11", "F17", "F19"]
+    iterations = [10, 20, 30, 40]
+    out = ''
+    fits = [get_fits(functions, i) for i in iterations]
+    for i in range(len(iterations)):
+        data = fits[i][f][top]
+        for d in data:
+            out += str(d) + ','
+
+        out += '\n'
+    print(out)
+
+
 if __name__ == '__main__':
+    boxplot_fitness()
+    # turn_func_to_csv('F17', 1)
+    exit(13)
+
     filename = "F*_m4_diff_grouping_small_epsilon.csv"
     frame, epsilons, functions, dimensions = get_frame_and_attributes(filename)
     # boxplot_group_size_per_function_type(frame, epsilons, functions, dimensions)
