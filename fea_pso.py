@@ -213,11 +213,11 @@ def fea_pso(f, n, domain, all_factors, optimizers, p, fea_times, pso_stop):
         # threads = [threading.Thread(target=optimize_swarm, args=(swarm, pso_stop, indx, new_swarms)) for indx, swarm in enumerate(swarms)]
 
         # pool = NoDaemonProcessPool(len(optimize_args))
-        pool = mp.ThreadingPool(int(mp.cpu_count()/2))
-        new_swarms = pool.map(optimize_swarm, optimize_args)
-        pool.close()
-        pool.join()
-        pool.restart()
+        #pool = mp.ThreadingPool(int(mp.cpu_count()/2))
+        new_swarms = [optimize_swarm(args) for args in optimize_args]
+        #pool.close()
+        #pool.join()
+        #pool.restart()
 
         # end for
         swarms = new_swarms
