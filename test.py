@@ -221,8 +221,6 @@ def np_to_str(x):
     return s,total
 
 def test_runtime():
-    f = F11_E()  # intialize
-
     # generate a point (use from MEE)
     dim = 50
     ub = np.ones(dim) * 100
@@ -236,9 +234,9 @@ def test_runtime():
 
     import function
 
-    trials = 100
-    fo = F18
-    fn = function.F18
+    trials = 1000
+    fo = F13
+    fn = function.F13
 
     # no_m_param = ['F1', 'F2', 'F3', 'F19', 'F20'] ALL WORK
     # shifted_error_function = ['F14', 'F15', 'F16'] DIM 20,50 not supported

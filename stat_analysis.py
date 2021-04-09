@@ -345,8 +345,6 @@ class FactorAnalysis():
 
     # graph a factor
     def graph_factors(self, G, fc_edges, dims, save_path='NONE'):
-
-
         # DRAW!!
         plt.figure(1, figsize=(10,10))
 

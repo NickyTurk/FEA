@@ -120,6 +120,15 @@ class TestOptimization:
 
     def test_fea(self, pso_iterations, pop, fea_iterations, sampled_iterations = [-1]):
         factors, function_name = import_single_function_factors(self.filename, self.dim, epsilon=self.DG_epsilon)
+        sum_len = 0
+        m = 0
+        for fac in factors:
+            sum_len += len(fac)
+            if len(fac) > m:
+                m = len(fac)
+        print(len(factors), sum_len/len(factors), m)
+        # print(sum_len/len(factors))
+        return 0
         arbiters, optimizers, neighbors = self.get_factor_info(factors, self.dim)
         algorithm = lambda: fea_pso(self.f, self.dim, self.domain, factors, optimizers, pop, fea_iterations,
                                     lambda t, s: t == pso_iterations)
@@ -135,10 +144,10 @@ class TestOptimization:
 if __name__ == '__main__':
 
     #F5, F11, F17, F19
-    function_nrs = [5,11,17,19,3]
+    function_nrs = [3, 5,11,17,19]
     # topologies = ['DG', 'ODG']
     # topologies = ['spectral', 'fuzzy_spectral', 'MEET']
-    topologies = ['MEET']
+    topologies = ['DG', 'ODG', 'MEET']
 
     for topo in topologies:
         print("\nTOPOLOGY: " + topo + "\n")
@@ -159,6 +168,7 @@ if __name__ == '__main__':
 
             samples = [10, 20, 30, 40]
             summary = test_opt.test_fea(pso_iterations=40, pop=500, fea_iterations=40, sampled_iterations=samples)
+            continue
 
             for i in range(len(samples)):
                 s = samples[i]
