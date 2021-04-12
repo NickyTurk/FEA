@@ -126,9 +126,6 @@ class TestOptimization:
             sum_len += len(fac)
             if len(fac) > m:
                 m = len(fac)
-        print(len(factors), sum_len/len(factors), m)
-        # print(sum_len/len(factors))
-        return 0
         arbiters, optimizers, neighbors = self.get_factor_info(factors, self.dim)
         algorithm = lambda: fea_pso(self.f, self.dim, self.domain, factors, optimizers, pop, fea_iterations,
                                     lambda t, s: t == pso_iterations)
@@ -147,13 +144,13 @@ if __name__ == '__main__':
     function_nrs = [17]
     # topologies = ['DG', 'ODG']
     # topologies = ['spectral', 'fuzzy_spectral', 'MEET']
-    topologies = ['MEET', 'DG', 'ODG']
+    topologies = ['DG']
 
     for topo in topologies:
         print("\nTOPOLOGY: " + topo + "\n")
         for nr in function_nrs:
             print("Function "  + str(nr))
-            test_opt = TestOptimization(dim=50, function_number=nr, factor_topology=topo, DG_epsilon=0)
+            test_opt = TestOptimization(dim=1000, function_number=nr, factor_topology=topo, DG_epsilon=0)
             '''
             with open('results/pso_20/' + str(test_opt.function_name) + '_pso_param.csv', 'a') as write_to_csv:
                 csv_writer = csv.writer(write_to_csv)
@@ -168,11 +165,11 @@ if __name__ == '__main__':
 
             samples = [10, 20, 30, 40]
             summary = test_opt.test_fea(pso_iterations=40, pop=500, fea_iterations=40, sampled_iterations=samples)
-            continue
+            # continue
 
             for i in range(len(samples)):
                 s = samples[i]
-                file = open('results/FEA_PSO/40_itr/' + str(test_opt.function_name) + '_dim' + str(test_opt.dim) + test_opt.file_extension + "_" + str(s) + "itr.csv", 'a')
+                file = open('results/FEA_PSO/1000_dim/' + str(test_opt.function_name) + '_dim' + str(test_opt.dim) + test_opt.file_extension + "_" + str(s) + "itr.csv", 'a')
                 csv_writer = csv.writer(file)
                 csv_writer.writerow(summary["fitnesses"][i])
 
