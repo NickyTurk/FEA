@@ -144,10 +144,10 @@ class TestOptimization:
 if __name__ == '__main__':
 
     #F5, F11, F17, F19
-    function_nrs = [3, 5,11,17,19]
+    function_nrs = [17]
     # topologies = ['DG', 'ODG']
     # topologies = ['spectral', 'fuzzy_spectral', 'MEET']
-    topologies = ['DG', 'ODG', 'MEET']
+    topologies = ['MEET', 'DG', 'ODG']
 
     for topo in topologies:
         print("\nTOPOLOGY: " + topo + "\n")
