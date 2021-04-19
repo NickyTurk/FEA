@@ -106,8 +106,6 @@ def get_fits(functions, itr):
     tail = '_' + str(itr) + 'itr.csv'
     ret = {}
     for f in functions:
-        print()
-        print(f + "_dim" + str(dim) + "overlapping_diff_grouping_small_epsilon" + tail)
         fea = read_data.transform_files_to_df(
             f + "_dim" + str(dim) + "overlapping_diff_grouping_small_epsilon" + tail, subfolder="FEA_PSO/40_itr",
             header=False)
@@ -117,7 +115,7 @@ def get_fits(functions, itr):
         # ccea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "m4_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO", header = False)
         spectral = read_data.transform_files_to_df(f + "_dim" + str(dim) + "spectral" + tail,
                                                    subfolder="FEA_PSO/40_itr", header=False)
-        meet = read_data.transform_files_to_df("F5" + "_dim" + str(dim) + "meet" + tail, subfolder="FEA_PSO/40_itr",
+        meet = read_data.transform_files_to_df(f + "_dim" + str(dim) + "meet" + tail, subfolder="FEA_PSO/40_itr",
                                                header=False)
 
         ccea_values = ccea.loc[ccea['function'] == f]
@@ -145,25 +143,52 @@ def get_fits(functions, itr):
 
 
 def boxplot_fitness():
-    functions = ["F3", "F5", "F11", "F17", "F19"]
-    topologies = ['CCEA', 'ODG', 'Spectral']
+    functions = ["F19"]
+    topologies = ['CCEA', 'ODG', 'spectral', 'MEET']
+    # topologies = ['CCEA', 'ODG', 'spectral', 'MEET']
     iterations = [10, 20, 30, 40]
     fits = [get_fits(functions, i) for i in iterations]  # array of dicts
 
-
+    plt.rc('xtick', labelsize=20)
+    plt.rc('ytick', labelsize=20)
 
     for f in functions:
-        fig, axs = plt.subplots(2,2, figsize=(10,10))
+        fig, axs = plt.subplots(1,2, figsize=(15,10))
         # plt.setp(axs, xticklabels=['10', '20', '30', '40'])
+        max_scale = 0
+        min_scale = 0
+        all_points = []
+        for i in range(len(topologies)):
+            for itr in range(len(topologies)):
+                all_points += fits[itr][f][i].tolist()
+        max_scale = max(all_points)
+        min_scale = min(all_points)
+        scale_factor = 0.05  # adds some whitespace above max point
+
+        # data = [fits[3][f][i] for i in range(len(topologies))]
+        # axs.boxplot(data)
+        # axs.set_title(f, fontsize=30)
+        # axs.set_xticklabels(['CCEA', 'ODG', 'Spectral', 'MEET'])
+        # fig.tight_layout()
+
         for i, topo in enumerate(topologies):
-            fig.suptitle(f)
+            if i == 0 or i == 2:
+                continue
+            # continue
+            fig.suptitle(f, fontsize=30)
             data = [fits[itr][f][i] for itr in range(len(iterations))]
-            coord = (i %2, int(i/2))
-            axs[coord[0]][coord[1]].boxplot(data)
-            axs[coord[0]][coord[1]].set_title(topo)
-            axs[coord[0]][coord[1]].set_xticklabels([10, 20, 30, 40])
+            coord = (0 if i == 1 else 1, int(i/2))
+            axs[coord[0]].boxplot(data)
+            axs[coord[0]].set_title(topo, fontsize=24)
+            axs[coord[0]].set_xticklabels([10, 20, 30, 40])
+            # axs[coord[0]].set_xticklabels(['CCEA', 'ODG', 'Spectral', 'MEET'])
+            axs[coord[0]].set_ylim(min_scale - scale_factor * (max_scale - min_scale),
+                                             max_scale + scale_factor * (max_scale - min_scale))
+
+            fig.subplots_adjust(right=0.98, left=0.1)
+
         path = 'results/plots/40_itr/'
-        plt.savefig(path + f + '.png')
+        plt.savefig(path + f + '_over_time.png')
         plt.show()
         # exit(1)
     pass
