@@ -1,5 +1,5 @@
 # <codecell>
-
+import csv
 from copy import deepcopy, copy
 from core import Particle, pp
 import numpy as np
@@ -210,7 +210,7 @@ def fea_pso(f, n, domain, all_factors, optimizers, p, fea_times, pso_stop):
     # with just f, this should still work well.
     #   swarms = [initialize_fea_swarm( p, n, factors, domain, f) for factors in all_factors]
 
-    for _ in range(fea_times):
+    for i in range(fea_times):
         print('fea loop: ', _)
         #t_optimize_start = time.time()
         new_swarms = [None for _ in range(len(swarms))]  # init blank list so no out of bounds errors
@@ -223,16 +223,23 @@ def fea_pso(f, n, domain, all_factors, optimizers, p, fea_times, pso_stop):
         # threads = [threading.Thread(target=optimize_swarm, args=(swarm, pso_stop, indx, new_swarms)) for indx, swarm in enumerate(swarms)]
 
         # pool = NoDaemonProcessPool(len(optimize_args))
-        pool = mp.ThreadingPool(int(mp.cpu_count()/2))
-        new_swarms = pool.map(optimize_swarm, optimize_args)
-        pool.close()
-        pool.join()
-        pool.restart()
+        #pool = mp.ThreadingPool(int(mp.cpu_count()/2))
+        new_swarms = [optimize_swarm(args) for args in optimize_args]
+        #pool.close()
+        #pool.join()
+        #pool.restart()
 
         # end for
         swarms = new_swarms
         solution = compete(n, swarms, all_factors, optimizers, f, solution)
         print(solution)
+
+        file = open('results/FEA_PSO/temp/' + 'F17' + '_dim' + str(
+            n) + "m4_diff_grouping_small_epsilon" + ".csv", 'a')
+        csv_writer = csv.writer(file)
+        a = [i] + solution
+        csv_writer.writerow(a)
+        file.close()
 
         swarms = [share(swarm, solution, f) for swarm in swarms]
         solutions.append(Particle(position=solution, velocity=[], fitness=f(np.array(solution))))

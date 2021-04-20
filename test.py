@@ -8,10 +8,11 @@ from datetime import datetime
 from evaluation import *
 from clustering import *
 import numpy as np
-from opfunu.cec.cec2010.function import *
+# from opfunu.cec.cec2010.function import *
 # from cec2013lsgo.cec2013 import Benchmark
 from functools import partial
 from FunctionTesting import F11_E
+from function import *
 
 from variable_interaction import MEE, MEET
 from numpy import linalg as la
@@ -221,8 +222,6 @@ def np_to_str(x):
     return s,total
 
 def test_runtime():
-    f = F11_E()  # intialize
-
     # generate a point (use from MEE)
     dim = 50
     ub = np.ones(dim) * 100
@@ -234,11 +233,11 @@ def test_runtime():
     y_1 = None
     y_2 = None
 
-    import function
 
-    trials = 100
-    fo = F18
-    fn = function.F18
+
+    trials = 1000
+    fo = F13
+    fn = function.F13
 
     # no_m_param = ['F1', 'F2', 'F3', 'F19', 'F20'] ALL WORK
     # shifted_error_function = ['F14', 'F15', 'F16'] DIM 20,50 not supported
@@ -266,26 +265,26 @@ def test_runtime():
 
 if __name__ == '__main__':
 
-    dir = 'results/FEA_PSO/'
-    extension = '.csv'
-    functions = ['F3', 'F5', 'F11', 'F17', 'F19']
-    dim = 'dim50'
-    methods = ['fuzzy_spectral', 'meet', 'overlapping_diff_grouping_small_epsilon', 'm4_diff_grouping_small_epsilon', 'spectral']
-
-    for f in functions:
-        for m in methods:
-            file = dir + f + '_' + dim + m + '_20itr' + extension
-            in_f = open(file, 'r')
-            data = []
-            for line in in_f:
-                line = line.replace('\n', '')
-                data.append(line)
-            out = ','.join(data)
-            out_f = open(dir + '20_itr/' + f + '_' + dim + m + extension, 'w')
-            out_f.write(out)
-
-
-    exit(13)
+    # dir = 'results/FEA_PSO/'
+    # extension = '.csv'
+    # functions = ['F3', 'F5', 'F11', 'F17', 'F19']
+    # dim = 'dim50'
+    # methods = ['fuzzy_spectral', 'meet', 'overlapping_diff_grouping_small_epsilon', 'm4_diff_grouping_small_epsilon', 'spectral']
+    #
+    # for f in functions:
+    #     for m in methods:
+    #         file = dir + f + '_' + dim + m + '_20itr' + extension
+    #         in_f = open(file, 'r')
+    #         data = []
+    #         for line in in_f:
+    #             line = line.replace('\n', '')
+    #             data.append(line)
+    #         out = ','.join(data)
+    #         out_f = open(dir + '20_itr/' + f + '_' + dim + m + extension, 'w')
+    #         out_f.write(out)
+    #
+    #
+    # exit(13)
     parser = argparse.ArgumentParser(description="test out some algies")
     parser.add_argument("--benchmark", help="pick the name of a benchmark function", default="schwefel-1.2")
     parser.add_argument("--seed", help="the random seed to use")
@@ -298,12 +297,9 @@ if __name__ == '__main__':
     benchmark = args.benchmark
     functions = [F3, F10, F12]
 
-    function_names = ['F19', 'F20'] #'F6', 'F7', 'F10', 'F11',S
-    cec2010_functions = [F11, F19, F20]
+    function_names = ['F17', 'F11', 'F5'] #'F6', 'F7', 'F10', 'F11',S
+    cec2010_functions = [F17, F11, F5]
 
-
-
-    # test_var_int('F6')
 
     dimensions = [50, 100]
     populations = [500,1000]
@@ -313,16 +309,7 @@ if __name__ == '__main__':
     shifted_error_function = ['F14', 'F15', 'F16']
     m = 4
 
-    test_runtime()
-    exit(13)
-
-    # MEET_factors(F3, 10)
-    #
-    # exit(1)
-
     for i,function_name in enumerate(function_names):
-        #test_var_int(function_name)
-
         if function_name in no_m_param:
             f = cec2010_functions[i]
         elif function_name in shifted_error_function:
@@ -330,22 +317,44 @@ if __name__ == '__main__':
         else:
             f = partial(cec2010_functions[i], m_group=m)
 
-        with open("results/meet_factors/" + function_name + "_meet.csv", "a") as write_to_csv:
+        # with open("results/meet_factors/" + function_name + "_meet.csv", "a") as write_to_csv:
+        #     csv_writer = csv.writer(write_to_csv)
+        #
+        #     # csv_writer.writerow(['function', 'dim', 'nr_groups', 'factors'])
+        #     for dim in [1000]:
+        #         print('MEET ', function_name, 'dim: ', str(dim))
+        #         factors, mic = MEET_factors(f, dim)
+        #         to_write = [function_name, str(dim), str(len(factors)), str(factors)]
+        #         csv_writer.writerow(to_write)
+        #         print(to_write)
+        #         np.savetxt("results/meet_factors/mic/" + function_name + "_" + str(dim) + ".csv", mic, delimiter=',')
+        #
+        with open("results/factors/" + function_name + "_overlapping_diff_grouping_small_epsilon.csv", "a") as write_to_csv:
             csv_writer = csv.writer(write_to_csv)
-            # csv_writer.writerow(['function', 'dim', 'population', 'iterations', 'fitnesses', 'stats'])
-            # for pop in populations:
-            #     print(function_name, ' pop: ', str(pop))
-            #     summary = test_pso(function_name, pop, dim, t=iteration, function=f)
-            #     to_write = [function_name, str(dim), str(pop), str(iteration), summary["fitnesses"], summary["statistics"]]
-            #     csv_writer.writerow(to_write)
-            csv_writer.writerow(['function', 'dim', 'nr_groups', 'factors'])
-            for dim in [20,50]:
-                print('function ', function_name, 'dim: ', str(dim))
-                factors, mic = MEET_factors(f, dim)
-                to_write = [function_name, str(dim), str(len(factors)), str(factors)]
+
+            # csv_writer.writerow(['function', 'dim', 'nr_groups', 'factors'])
+            for dim in [1000]:
+                eps = 1e-9
+                print('ODG ', function_name, 'dim: ', str(dim))
+                factors, arbiters, optimizers, neighbors, separate_variables = generate_overlapping_diff_grouping(f, dim, eps)
+                to_write = [function_name, str(dim), str(eps), str(len(factors)), str(factors), str(separate_variables)]
                 csv_writer.writerow(to_write)
                 print(to_write)
-                np.savetxt("results/meet_factors/mic/" + function_name + "_" + str(dim) + ".csv", mic, delimiter=',')
+                # np.savetxt("results/meet_factors/mic/" + function_name + "_" + str(dim) + ".csv", mic, delimiter=',')
+
+
+        # with open("results/factors/" + function_name + "_diff_grouping_small_epsilon.csv", "a") as write_to_csv:
+        #     csv_writer = csv.writer(write_to_csv)
+        #
+        #     # csv_writer.writerow(['function', 'dim', 'nr_groups', 'factors'])
+        #     for dim in [1000]:
+        #         eps = 1e-9
+        #         print('DG ', function_name, 'dim: ', str(dim))
+        #         factors, arbiters, optimizers, neighbors, separate_variables = generate_diff_grouping(f, dim, eps)
+        #         to_write = [function_name, str(dim), str(eps), str(len(factors)), str(factors), str(separate_variables)]
+        #         csv_writer.writerow(to_write)
+        #         print(to_write)
+        #         # np.savetxt("results/meet_factors/mic/" + function_name + "_" + str(dim) + ".csv", mic, delimiter=',')
 
     print('ALL DONE')
     exit(13)

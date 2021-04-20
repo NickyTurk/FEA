@@ -9,7 +9,6 @@ import math
 import copy
 from minepy import MINE
 from deap.benchmarks import *
-# from cec2013lsgo.cec2013 import Benchmark
 from networkx.convert_matrix import *
 import networkx as nx
 

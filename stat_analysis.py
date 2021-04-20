@@ -35,12 +35,12 @@ class OptimizationAnalysis():
         for f in self.functions:
             print()
             pso = read_data.transform_files_to_df(f + "_pso_param.csv", subfolder = "pso_"+str(self.dim))
-            fea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "overlapping_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO/20_itr", header = False)
+            fea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "overlapping_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO/40_itr", header = False)
             # fea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "overlapping_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO", header = False)
-            ccea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "m4_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO/20_itr", header = False)
+            ccea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "m4_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO/40_itr", header = False)
             # ccea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "m4_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO", header = False)
-            spectral = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "spectral.csv", subfolder="FEA_PSO/20_itr", header=False)
-            meet = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "meet.csv", subfolder="FEA_PSO/20_itr", header=False)
+            spectral = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "spectral.csv", subfolder="FEA_PSO/40_itr", header=False)
+            meet = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "meet.csv", subfolder="FEA_PSO/40_itr", header=False)
 
             print(f)
             pso_values = pso.loc[pso['function'] == f]
@@ -345,8 +345,6 @@ class FactorAnalysis():
 
     # graph a factor
     def graph_factors(self, G, fc_edges, dims, save_path='NONE'):
-
-
         # DRAW!!
         plt.figure(1, figsize=(10,10))
 

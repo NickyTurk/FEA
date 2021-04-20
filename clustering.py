@@ -118,8 +118,8 @@ class Spectral(Cluster):
         '''
 
         # get Laplacian
-        self.laplacian = nx.linalg.laplacian_matrix(self.IM_graph)
-        self.laplacian = sp.sparse.csr_matrix.toarray(self.laplacian)
+        laplacian = nx.linalg.laplacian_matrix(self.IM_graph)
+        self.laplacian = sp.sparse.csr_matrix.toarray(laplacian)
         # print('laplacian', self.laplacian)
 
         # calc eigen vectors and values of the laplacian
