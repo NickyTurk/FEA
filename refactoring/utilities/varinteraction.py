@@ -31,26 +31,25 @@ class MEE:
 
         # for each dimension
         for i in range(self.d):
+            print(i)
+            # compare to consecutive variable (/dimension)
             for j in range(i + 1, self.d):
+                # number of values to calculate == sample size
                 de = np.zeros(self.samples)
-                # randomly generate feature values -- initialization of function variables
+                # randomly generate solution -- initialization of function variables
                 x_0 = np.random.rand(self.d) * (self.ub - self.lb) + self.lb
-                # generate n values for j-th dimension
+                # generate n values (i.e. samples) for j-th dimension
                 x_j = np.random.rand(self.samples) * (self.ub[j] - self.lb[j]) + self.lb[j]
                 for k in range(1, self.samples):
-                    x = [i for i in x_0]
-                    print(x)
-                    x[j] = x_j[k]
+                    x = [i for i in x_0]  # copy x_0 into new variable
+                    x[j] = x_j[k]  # set jth value to random sample value
                     y_1 = self.f.run(x)
                     x[i] = x[i] + self.delta
                     y_2 = self.f.run(x)
                     de[k] = (y_2 - y_1) / self.delta
 
                 avg_de = np.mean(de)
-
-                for k in range(1, self.samples):
-                    if abs(de[i] - avg_de) < self.de_thresh:
-                        de[i] = avg_de
+                de[de < self.de_thresh] = avg_de  # use np fancy indexing to replace values
 
                 mine = MINE()
                 mine.compute_score(de, x_j)
@@ -79,5 +78,5 @@ class MEE:
 if __name__ == '__main__':
     from refactoring.optimizationProblems.function import Function
     f = Function(function_number=1, shift_data_file="f01_o.txt")
-    mee = MEE(f, 10, 50, 0.1, 0.0001, 0.000001)
+    mee = MEE(f, 1000, 100, 0.1, 0.0001, 0.000001)
     mee.get_IM()
