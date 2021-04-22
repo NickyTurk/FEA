@@ -6,7 +6,7 @@ import glob, re
 from ast import literal_eval
 
 
-class DataReader:
+class CSVReader(object):
     def __init__(self, file_regex):
         self.file_regex = file_regex
         self.path_to_files = self.get_files_list()  # array of all files and their path that match the regex or string

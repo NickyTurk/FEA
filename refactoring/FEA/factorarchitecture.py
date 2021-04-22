@@ -1,5 +1,5 @@
 import numpy as np
-from copy import *
+from numba import jit
 import scipy as sp
 import networkx as nx
 
@@ -8,14 +8,15 @@ try:
 except:
     import pickle
 import os
-from refactoring.utilities import clustering, varinteraction
+from refactoring.utilities.clustering import FuzzyKmeans
 
 
+@jit
 def rotate(xs, n):
     return xs[n:] + xs[:n]
 
 
-class FactorArchitecture:
+class FactorArchitecture(object):
     """
     Topology Generation:
 
@@ -65,20 +66,18 @@ class FactorArchitecture:
         pickle.dump(self.__dict__, file)
 
     def load_architecture(self, path_to_load="", method="", dim=0):
-        if path_to_load == "" and method != "" and dim != 0:
+        from refactoring.utilities.exceptions import PickleException
+        if path_to_load == "" and (method == "" or dim == 0):
+            raise PickleException()
+        elif path_to_load != "" and not os.path.isdir(path_to_load):
+            raise PickleException()
+        elif path_to_load == "" and method != "" and dim != 0:
             pickle_object = pickle.load(
                 open("factor_architecture_files/" + method + "/" + method + "_" + str(dim), 'rb'))
             self.__dict__.update(pickle_object)
-        elif path_to_load == "" and (method == "" or dim == 0):
-            print("ERROR: when not providing filepath, you must provide method and dimension to load")
         elif path_to_load != "" and os.path.isdir(path_to_load):
             pickle_object = pickle.load(open(path_to_load, 'rb'))
             self.__dict__.update(pickle_object)
-        elif path_to_load != "" and not os.path.isdir(path_to_load):
-            print("ERROR: given file does not exist.")
-
-    #        else:
-    #            print("An unknown error occurred while trying to load the pickle file.")
 
     def linear_grouping(self, width, offset):
         self.method = "linear"
@@ -103,8 +102,8 @@ class FactorArchitecture:
         Omidvar et al. 2010
         """
         self.method = "DG"
-        size = copy(self.dim)
-        dimensions = np.arange(start=0, stop=self.dim)
+        size = self.dim
+        dimensions = np.arange(start=0, stop=size)
         curr_dim_idx = 0
         factors = []
         separate_variables = []
@@ -144,8 +143,8 @@ class FactorArchitecture:
         :return:
         """
         self.method = "ODG"
-        size = copy(self.dim)
-        dimensions = np.arange(start=0, stop=self.dim)
+        size = self.dim
+        dimensions = np.arange(start=0, stop=size)
         factors = []
         separate_variables = []
         function_evaluations = 0
@@ -229,7 +228,7 @@ class FactorArchitecture:
         eig_vectors = np.transpose(eig_vectors[k_arr])
 
         # run fuzzy kmeans with the eigen vectors
-        self.factors = clustering.FuzzyKmeans(eig_vectors, num_clusters).assign_clusters()
+        self.factors = FuzzyKmeans(eig_vectors, num_clusters).assign_clusters()
         self.nominate_arbiters()
         self.calculate_optimizers()
         self.determine_neighbors()
@@ -237,6 +236,7 @@ class FactorArchitecture:
     def MEET(self, IM):
         """
         Create directed graph with edge weights in MIC table.
+        Directed graph (IM) can be calculated using different methods, called from variableinteraction class
         Create MAXimal spanning tree from this graph.
         :return:
         """
@@ -263,13 +263,15 @@ class FactorArchitecture:
         :return:
         """
         assignments = {}
-        for i, factor in enumerate(self.factors[:-1]):
+        # Iteration is faster when it does not have to access the object each time
+        factors = self.factors
+        for i, factor in enumerate(factors[:-1]):
             for j in factor:
                 if j not in self.factors[i + 1] and j not in assignments:
                     assignments[j] = i
-        for j in self.factors[-1]:
+        for j in factors[-1]:
             if j not in assignments:
-                assignments[j] = len(self.factors) - 1
+                assignments[j] = len(factors) - 1
         keys = list(assignments.keys())
         keys.sort()
         arbiters = [assignments[k] for k in keys]
@@ -282,9 +284,10 @@ class FactorArchitecture:
         :return:
         """
         optimizers = []
+        factors = self.factors
         for v in range(self.dim):
             optimizer = []
-            for i, factor in enumerate(self.factors):
+            for i, factor in enumerate(factors):
                 if v in factor:
                     optimizer.append(i)
             optimizers.append(optimizer)
@@ -297,9 +300,10 @@ class FactorArchitecture:
         :return:
         """
         neighbors = []
-        for i, factor in enumerate(self.factors):
+        factors = self.factors
+        for i, factor in enumerate(factors):
             neighbor = []
-            for j, other_factor in enumerate(self.factors):
+            for j, other_factor in enumerate(factors):
                 if (i != j) and not set(factor).isdisjoint(set(other_factor)):
                     neighbor.append(j)
             neighbors.append(neighbor)
