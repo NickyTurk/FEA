@@ -304,7 +304,7 @@ def generate_diff_grouping(_function, d, epsilon, m=0):
     :param epsilon:
     :return:
     """
-    size = deepcopy(d)
+    size = copy(d)
     dimensions = np.arange(start=0, stop=d)
     curr_dim_idx = 0
     lbound = -100
@@ -320,8 +320,7 @@ def generate_diff_grouping(_function, d, epsilon, m=0):
         # print("dimensions in loop ", loop, ": ", dimensions)
         curr_factor = [dimensions[0]]
 
-        p1 = np.multiply(lbound, np.ones(d))
-        p2 = np.multiply(lbound, np.ones(d))  # python does weird things if you set p2 = p1
+        p1, p2 = np.multiply(lbound, np.ones(d))
         p2[curr_dim_idx] = ubound
         if m == 0:
             delta1 = _function(p1) - _function(p2)
@@ -330,10 +329,10 @@ def generate_diff_grouping(_function, d, epsilon, m=0):
         function_evaluations += 2
 
         for j in range(1, size):
-            p3 = deepcopy(p1)
-            p4 = deepcopy(p2)
-            p3[dimensions[j]] = 0  # grabs dimension to compare to, corresponds to python index
-            p4[dimensions[j]] = 0
+            p3 = np.multiply(lbound, np.ones(d))
+            p4 = np.multiply(lbound, np.ones(d))
+            p4[curr_dim_idx] = ubound
+            p3[dimensions[j]], p4[dimensions[j]] = 0  # grabs dimension to compare to, corresponds to python index
 
             if m == 0:
                 delta2 = _function(p3) - _function(p4)

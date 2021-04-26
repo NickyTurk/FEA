@@ -70,6 +70,16 @@ def compete(n, swarms, factors, optimizers, f, solution):
     # print("best fitness after competition: ", best_fitness)
     return solution
 
+#TODO: RANDOMLY SMASH TOGETHER
+def random_compete():
+    pass
+
+#TODO: AVERAGE OVER OVERLAPPING VALUES to get var
+
+# Helps with diversity?
+def avg_compete():
+    pass
+
 
 # end def
 
