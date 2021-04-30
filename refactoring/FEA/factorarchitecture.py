@@ -79,6 +79,16 @@ class FactorArchitecture(object):
             pickle_object = pickle.load(open(path_to_load, 'rb'))
             self.__dict__.update(pickle_object)
 
+    def load_csv_architecture(self, file, dim, method=""):
+        from refactoring.utilities.CSVreader import CSVReader
+
+        csv = CSVReader(file)
+        self.factors, f = csv.import_factors(dim)
+        self.dim = dim
+        self.nominate_arbiters()
+        self.calculate_optimizers()
+        self.determine_neighbors()
+
     def linear_grouping(self, width, offset):
         self.method = "linear"
         assert offset <= width

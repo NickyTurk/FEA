@@ -49,8 +49,6 @@ def compete(n, swarms, factors, optimizers, f, solution):
     variables = list(range(n))
     best_fitness = f(np.array(solution))
     for i in variables:
-        #        print "start", i, map( lambda v: "%.4f" % v, solution)
-        best_fitness = f(np.array(solution))
         best_value = solution[i]
         for swarm_idx in optimizers[i]:
             swarm = swarms[swarm_idx]
