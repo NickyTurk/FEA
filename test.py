@@ -17,6 +17,9 @@ from function import *
 from variable_interaction import MEE, MEET
 from numpy import linalg as la
 
+import refactoring.FEA.factorarchitecture as re_factors
+import refactoring.utilities.varinteraction as re_interaction
+import refactoring.optimizationProblems.function as re_function
 
 def harness(algorithm, iterations, repeats):
     summary = {}
@@ -264,150 +267,30 @@ def test_runtime():
 
 
 if __name__ == '__main__':
+    # Elliot wiped what was in here in April 26 (look back at that commit)
+    func17 = re_function.Function(17, shift_data_file="f17_op.txt")
+    func11 = re_function.Function(11, shift_data_file="f11_op.txt", matrix_data_file="f11_m.txt")
+    func5 = re_function.Function(5, shift_data_file="f05_op.txt", matrix_data_file="f05_m.txt")
+    functions = [func17, func11, func5]
+    for f in functions:
+        print(f.function_to_call)
+        print("starting dg")
+        dg = re_factors.FactorArchitecture(dim=1000)
+        dg.diff_grouping(f, 1e-9)
+        print("finished dg")
+        dg.save_architecture()
 
-    # dir = 'results/FEA_PSO/'
-    # extension = '.csv'
-    # functions = ['F3', 'F5', 'F11', 'F17', 'F19']
-    # dim = 'dim50'
-    # methods = ['fuzzy_spectral', 'meet', 'overlapping_diff_grouping_small_epsilon', 'm4_diff_grouping_small_epsilon', 'spectral']
-    #
-    # for f in functions:
-    #     for m in methods:
-    #         file = dir + f + '_' + dim + m + '_20itr' + extension
-    #         in_f = open(file, 'r')
-    #         data = []
-    #         for line in in_f:
-    #             line = line.replace('\n', '')
-    #             data.append(line)
-    #         out = ','.join(data)
-    #         out_f = open(dir + '20_itr/' + f + '_' + dim + m + extension, 'w')
-    #         out_f.write(out)
-    #
-    #
-    # exit(13)
-    parser = argparse.ArgumentParser(description="test out some algies")
-    parser.add_argument("--benchmark", help="pick the name of a benchmark function", default="schwefel-1.2")
-    parser.add_argument("--seed", help="the random seed to use")
-    args = parser.parse_args()
+        print("starting odg")
+        odg = re_factors.FactorArchitecture(dim=1000)
+        odg.overlapping_diff_grouping(f, 1e-9)
+        print("finished odg")
+        odg.save_architecture()
 
-    seed = args.seed
-    if not seed:
-        seed = int(datetime.now().strftime("%S"))
-
-    benchmark = args.benchmark
-    functions = [F3, F10, F12]
-
-    function_names = ['F17', 'F11', 'F5'] #'F6', 'F7', 'F10', 'F11',S
-    cec2010_functions = [F17, F11, F5]
-
-
-    dimensions = [50, 100]
-    populations = [500,1000]
-    iteration = 200
-
-    no_m_param = ['F1', 'F2', 'F3', 'F19', 'F20']
-    shifted_error_function = ['F14', 'F15', 'F16']
-    m = 4
-
-    for i,function_name in enumerate(function_names):
-        if function_name in no_m_param:
-            f = cec2010_functions[i]
-        elif function_name in shifted_error_function:
-            f = partial(cec2010_functions[i], m_group=dim)
-        else:
-            f = partial(cec2010_functions[i], m_group=m)
-
-        # with open("results/meet_factors/" + function_name + "_meet.csv", "a") as write_to_csv:
-        #     csv_writer = csv.writer(write_to_csv)
-        #
-        #     # csv_writer.writerow(['function', 'dim', 'nr_groups', 'factors'])
-        #     for dim in [1000]:
-        #         print('MEET ', function_name, 'dim: ', str(dim))
-        #         factors, mic = MEET_factors(f, dim)
-        #         to_write = [function_name, str(dim), str(len(factors)), str(factors)]
-        #         csv_writer.writerow(to_write)
-        #         print(to_write)
-        #         np.savetxt("results/meet_factors/mic/" + function_name + "_" + str(dim) + ".csv", mic, delimiter=',')
-        #
-        with open("results/factors/" + function_name + "_overlapping_diff_grouping_small_epsilon.csv", "a") as write_to_csv:
-            csv_writer = csv.writer(write_to_csv)
-
-            # csv_writer.writerow(['function', 'dim', 'nr_groups', 'factors'])
-            for dim in [1000]:
-                eps = 1e-9
-                print('ODG ', function_name, 'dim: ', str(dim))
-                factors, arbiters, optimizers, neighbors, separate_variables = generate_overlapping_diff_grouping(f, dim, eps)
-                to_write = [function_name, str(dim), str(eps), str(len(factors)), str(factors), str(separate_variables)]
-                csv_writer.writerow(to_write)
-                print(to_write)
-                # np.savetxt("results/meet_factors/mic/" + function_name + "_" + str(dim) + ".csv", mic, delimiter=',')
-
-
-        # with open("results/factors/" + function_name + "_diff_grouping_small_epsilon.csv", "a") as write_to_csv:
-        #     csv_writer = csv.writer(write_to_csv)
-        #
-        #     # csv_writer.writerow(['function', 'dim', 'nr_groups', 'factors'])
-        #     for dim in [1000]:
-        #         eps = 1e-9
-        #         print('DG ', function_name, 'dim: ', str(dim))
-        #         factors, arbiters, optimizers, neighbors, separate_variables = generate_diff_grouping(f, dim, eps)
-        #         to_write = [function_name, str(dim), str(eps), str(len(factors)), str(factors), str(separate_variables)]
-        #         csv_writer.writerow(to_write)
-        #         print(to_write)
-        #         # np.savetxt("results/meet_factors/mic/" + function_name + "_" + str(dim) + ".csv", mic, delimiter=',')
-
-    print('ALL DONE')
-    exit(13)
-
-    #test_diff_grouping(function_names)
-    test_optimization(dimensions, function_names, cec2010_functions)
-
-
-    # pso_stop = lambda t, s: t == 5
-    # p = 100
-    # n = 100
-    # # width = d
-    #
-    # algorithm = lambda: pso(f, p * dim, dim, domain, lambda t, s: t == 5)
-    # summary = harness(algorithm, n, 1)
-    # print("G=", summary["statistics"])
-    # print("G=", summary["fitnesses"])
-    #
-    # with open('results/f7_pso.csv', 'w') as write_to_csv:
-    #     csv_writer = csv.writer(write_to_csv)
-    #     csv_writer.writerows(summary["fitnesses"])
-    #
-    # random.seed(seed)
-    # print("starting FEA")
-    # algorithm = lambda: fea_pso(f, d, domain, factors, optimizers, p, n, pso_stop)
-    # summary = harness(algorithm, n, 1)
-    # print("G=", summary["statistics"])
-    # print("G=", summary["fitnesses"])
-    #
-    # with open('results/f7_fea_pso_diff_group.csv', 'w') as write_to_csv:
-    #     csv_writer = csv.writer(write_to_csv)
-    #     csv_writer.writerows(summary["fitnesses"])
-
-    # factors, arbiters, optimizers, neighbors = generate_linear_topology(d, k)
-    #
-    # random.seed(seed)
-    # print("starting FEA")
-    # algorithm = lambda: fea_pso(f, d, domain, factors, optimizers, p, n, pso_stop)
-    # summary = harness(algorithm, n, 1)
-    # print("G=", summary["statistics"])
-    # print("G=", summary["fitnesses"])
-    #
-    # with open('results/f7_fea_pso_linear_topology.csv', 'w') as write_to_csv:
-    #     csv_writer = csv.writer(write_to_csv)
-    #     csv_writer.writerows(summary["fitnesses"])
-
-    #FOR CEC 2010 OPFUNU
-    #no_m_param = ['F1', 'F2', 'F3', 'F19', 'F20']
-    #shifted_error_function = ['F14', 'F15', 'F16']
-
-    # if function_name in no_m_param:
-    #     f = functions[function_names.index(function_name)]
-    # elif function_name in shifted_error_function:
-    #     f = partial(functions[function_names.index(function_name)], m_group=dim)
-    # else:
-    # f = partial(functions[function_names.index(function_name)], m_group=m)  # retrieve appropriate function
+        print("Starting IM")
+        im = re_interaction.MEE(f, 1000, 1000, 0, 0.001, 0.000001, use_mic_value=True)
+        IM = im.get_IM()
+        print("finished IM")
+        meet = re_factors.FactorArchitecture(dim=1000)
+        meet.MEET(IM)
+        print("finished MEET")
+        meet.save_architecture()

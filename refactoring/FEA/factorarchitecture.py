@@ -192,7 +192,8 @@ class FactorArchitecture(object):
         :param curr_factor:
         :return curr_factor:
         """
-        p1, p2 = np.multiply(_function.lbound, np.ones(self.dim))  # python does weird things if you set p2 = p1
+        p1 = np.multiply(_function.lbound, np.ones(self.dim))  # python does weird things if you set p2 = p1
+        p2 = np.multiply(_function.lbound, np.ones(self.dim))  # python does weird things if you set p2 = p1
         p2[i] = _function.ubound
         if m == 0:
             delta1 = _function.run(p1) - _function.run(p2)
@@ -201,9 +202,11 @@ class FactorArchitecture(object):
         self.function_evaluations += 2
 
         for j in range(i + 1, size):
-            p3, p4 = np.multiply(_function.lbound, np.ones(self.dim))
+            p3 = np.multiply(_function.lbound, np.ones(self.dim))
+            p4 = np.multiply(_function.lbound, np.ones(self.dim))
             p4[i] = _function.ubound
-            p3[dimensions[j]], p4[dimensions[j]] = 0  # grabs dimension to compare to, same as index
+            p3[dimensions[j]] = 0
+            p4[dimensions[j]] = 0  # grabs dimension to compare to, same as index
 
             if m == 0:
                 delta2 = _function.run(p3) - _function.run(p4)
