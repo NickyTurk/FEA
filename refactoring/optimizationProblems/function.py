@@ -17,7 +17,7 @@ from refactoring.optimizationProblems.benchmarks import *
 
 class Function(object):
 
-    def __init__(self, function_number=0, lbound=-100, ubound=100, shift_data_file="", matrix_data_file="", m=0):
+    def __init__(self, function_number=0, partial_function=None, lbound=-100, ubound=100, shift_data_file="", matrix_data_file="", m=0):
         self.function_to_call = 'F'+str(function_number)
         self.name = ""
         self.dimensions = 0

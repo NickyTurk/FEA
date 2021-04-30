@@ -2,12 +2,12 @@ import os.path
 
 import pandas as pd
 import numpy as np
-import glob, re
+import re
 from ast import literal_eval
 
 
 class CSVReader(object):
-    def __init__(self, file_regex):
+    def __init__(self, file_regex=""):
         self.file_regex = file_regex
         self.path_to_files = self.get_files_list()  # array of all files and their path that match the regex or string
 
@@ -39,8 +39,8 @@ class CSVReader(object):
                 result.append(os.path.join(root, self.file_regex))
         return result
 
-    def import_factors(self, dim=50, epsilon=0):
-        frame = pd.read_csv(self.filepath, header=0)
+    def import_factors(self, dim, epsilon=0):
+        frame = pd.read_csv(self.file_regex, header=0)
         frame.columns = map(str.upper, frame.columns)
         frame = frame.rename(columns={"DIM": "DIMENSION"}, errors="ignore")
         dim_frame = frame.loc[frame['DIMENSION'] == int(dim)]
