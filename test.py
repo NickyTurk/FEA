@@ -274,20 +274,20 @@ if __name__ == '__main__':
     functions = [func17, func11, func5]
     for f in functions:
         print(f.function_to_call)
-        print("starting dg")
-        dg = re_factors.FactorArchitecture(dim=1000)
-        dg.diff_grouping(f, 1e-9)
-        print("finished dg")
-        dg.save_architecture()
-
-        print("starting odg")
-        odg = re_factors.FactorArchitecture(dim=1000)
-        odg.overlapping_diff_grouping(f, 1e-9)
-        print("finished odg")
-        odg.save_architecture()
+        # print("starting dg")
+        # dg = re_factors.FactorArchitecture(dim=1000)
+        # dg.diff_grouping(f, 1e-9)
+        # print("finished dg")
+        # dg.save_architecture()
+        #
+        # print("starting odg")
+        # odg = re_factors.FactorArchitecture(dim=1000)
+        # odg.overlapping_diff_grouping(f, 1e-9)
+        # print("finished odg")
+        # odg.save_architecture()
 
         print("Starting IM")
-        im = re_interaction.MEE(f, 1000, 1000, 0, 0.001, 0.000001, use_mic_value=True)
+        im = re_interaction.MEE(f, 1000, 500, 0, 0.001, 0.000001, use_mic_value=True)
         IM = im.get_IM()
         print("finished IM")
         meet = re_factors.FactorArchitecture(dim=1000)

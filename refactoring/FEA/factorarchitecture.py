@@ -56,6 +56,8 @@ class FactorArchitecture(object):
 
     def save_architecture(self, path_to_save=""):
         if path_to_save == "":
+            if not os.path.isdir("factor_architecture_files/"):
+                os.mkdir("factor_architecture_files/")
             if not os.path.isdir("factor_architecture_files/" + self.method):
                 os.mkdir("factor_architecture_files/" + self.method)
             file = open("factor_architecture_files/" + self.method + "/" + self.method + "_" + str(self.dim), "wb")
