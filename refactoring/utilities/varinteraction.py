@@ -58,12 +58,14 @@ class MEE(object):
                     self.IM[j, i] = 1
 
     def strongly_connected_comps(self):
-        import networkx as nx
+        from networkx import to_networkx_graph, DiGraph
+        from networkx.algorithms.components import strongly_connected_components
+
         """
         Sets strongly connected components in the Interaction Matrix
         """
-        IM_graph = nx.to_networkx_graph(self.IM, create_using=nx.DiGraph)
-        strongly_connected_components = nx.algorithms.components.strongly_connected_components(IM_graph)
+        IM_graph = to_networkx_graph(self.IM, create_using= DiGraph)
+        strongly_connected_components = strongly_connected_components(IM_graph)
         for component in strongly_connected_components:
             component = list(component)
             for i in range(len(component)):

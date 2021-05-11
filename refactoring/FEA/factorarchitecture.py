@@ -1,7 +1,6 @@
 import numpy as np
 from numba import jit
 import scipy as sp
-import networkx as nx
 
 try:
     import _pickle as pickle
@@ -222,14 +221,16 @@ class FactorArchitecture(object):
         return curr_factor
 
     def spectral_grouping(self, IM, num_clusters):
+        from networkx import to_networkx_graph, Graph
+        from networkx.linalg import laplacian_matrix
         '''
         Assign the datapoints to clusters using spectral clustering and return and array of cluster assignemnts
         '''
         self.method = "spectral"
-        IM_graph = nx.to_networkx_graph(IM, create_using=nx.Graph)
+        IM_graph = to_networkx_graph(IM, create_using=Graph)
 
         # get Laplacian
-        laplacian = sp.sparse.csr_matrix.toarray(nx.linalg.laplacian_matrix(IM_graph))
+        laplacian = sp.sparse.csr_matrix.toarray(laplacian_matrix(IM_graph))
 
         # calc eigen vectors and values of the laplacian
         eig_values, eig_vectors = np.linalg.eig(laplacian)
@@ -249,6 +250,8 @@ class FactorArchitecture(object):
         self.determine_neighbors()
 
     def MEET(self, IM):
+        from networkx import  from_numpy_array, maximum_spanning_tree
+
         """
         Create directed graph with edge weights in MIC table.
         Directed graph (IM) can be calculated using different methods, called from variableinteraction class
@@ -256,8 +259,8 @@ class FactorArchitecture(object):
         :return:
         """
         self.method = "MEET"
-        G = nx.from_numpy_array(IM)
-        T = nx.maximum_spanning_tree(G)
+        G = from_numpy_array(IM)
+        T = maximum_spanning_tree(G)
 
         factors = []
 
