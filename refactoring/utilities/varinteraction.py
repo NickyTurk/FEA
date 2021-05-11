@@ -1,6 +1,5 @@
 import numpy as np
 from minepy import MINE
-import networkx as nx
 
 
 class MEE:
@@ -63,6 +62,7 @@ class MEE:
                     self.IM[i, j] = mic
 
     def strongly_connected_comps(self):
+        import networkx as nx
         """
         Sets strongly connected components in the Interaction Matrix
         """

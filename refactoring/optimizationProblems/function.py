@@ -54,7 +54,6 @@ class Function:
 
     def F1(self, solution=None, name="Shifted Elliptic Function"):
         self.name = name
-        print(self.shift_data[:10].shape)
         z = solution - self.shift_data[:self.dimensions]
         return elliptic__(z)
 
