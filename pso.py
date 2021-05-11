@@ -100,7 +100,7 @@ def update_velocity(v_max, particle, personal_best, global_best):
     personal = mul( phi_1, personal_exploitation)
     phi_2 = [random.random() * phi for i in range( n)] # exploration
     social_exploitation = sub( global_best.position, particle.position) # exploitation
-    social = mul( phi_2, social_exploitation)
+    social = mul(phi_2, social_exploitation)
 #    print("position", particle.position)
 #    print("pbest", personal_best.position, "gbest", global_best.position)
 #    print("phi1=", phi_1)

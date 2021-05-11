@@ -2,7 +2,7 @@ import numpy as np
 from minepy import MINE
 
 
-class MEE:
+class MEE(object):
     def __init__(self, func, dim, samples, mic_thresh, de_thresh, delta, use_mic_value=True):
         self.f = func
         self.d = dim
@@ -27,39 +27,35 @@ class MEE:
         Calculates the Direct Interaction Matrix based on MIC
         :return: direct_IM
         """
-
+        f, dim, lb, ub, sample_size, delta = self.f, self.d, self.lb, self.ub, self.samples, self.delta
         # for each dimension
-        for i in range(self.d):
-            for j in range(i + 1, self.d):
-                de = np.zeros(self.samples)
-                # randomly generate feature values -- initialization of function variables
-                x_0 = np.random.rand(self.d) * (self.ub - self.lb) + self.lb
-                # generate n values for j-th dimension
-                x_j = np.random.rand(self.samples) * (self.ub[j] - self.lb[j]) + self.lb[j]
-                for k in range(1, self.samples):
-                    x = [i for i in x_0]
-                    print(x)
-                    x[j] = x_j[k]
-                    y_1 = self.f.run(x)
-                    x[i] = x[i] + self.delta
-                    y_2 = self.f.run(x)
-                    de[k] = (y_2 - y_1) / self.delta
+        for i in range(dim):
+            # compare to consecutive variable (/dimension)
+            for j in range(i + 1, dim):
+                # number of values to calculate == sample size
+                de = np.zeros(sample_size)
+                # generate n values (i.e. samples) for j-th dimension
+                x_j = np.random.rand(sample_size) * (ub[j] - lb[j]) + lb[j]
+                for k in range(1, sample_size):
+                    # randomly generate solution -- initialization of function variables
+                    x = np.random.uniform(lb, ub, size=dim)
+                    x[j] = x_j[k]  # set jth value to random sample value
+                    y_1 = f.run(x)
+                    x[i] = x[i] + delta
+                    y_2 = f.run(x)
+                    de[k] = (y_2 - y_1) / delta
 
                 avg_de = np.mean(de)
-
-                for k in range(1, self.samples):
-                    if abs(de[i] - avg_de) < self.de_thresh:
-                        de[i] = avg_de
+                de[de < self.de_thresh] = avg_de  # use np fancy indexing to replace values
 
                 mine = MINE()
                 mine.compute_score(de, x_j)
                 mic = mine.mic()
-                if not self.use_mic_value:
-                    if mic > self.mic_thresh:  # threshold <--------
-                        self.IM[i, j] = 1
-                        self.IM[j, i] = 1
-                elif self.use_mic_value:
+                if self.use_mic_value:
                     self.IM[i, j] = mic
+                elif not self.use_mic_value and mic > self.mic_thresh:  # threshold <--------
+                    self.IM[i, j] = 1
+                    self.IM[j, i] = 1
 
     def strongly_connected_comps(self):
         import networkx as nx
@@ -79,5 +75,5 @@ class MEE:
 if __name__ == '__main__':
     from refactoring.optimizationProblems.function import Function
     f = Function(function_number=1, shift_data_file="f01_o.txt")
-    mee = MEE(f, 10, 50, 0.1, 0.0001, 0.000001)
+    mee = MEE(f, 5, 5, 0.1, 0.0001, 0.000001)
     mee.get_IM()

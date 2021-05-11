@@ -49,8 +49,6 @@ def compete(n, swarms, factors, optimizers, f, solution):
     variables = list(range(n))
     best_fitness = f(np.array(solution))
     for i in variables:
-        #        print "start", i, map( lambda v: "%.4f" % v, solution)
-        best_fitness = f(np.array(solution))
         best_value = solution[i]
         for swarm_idx in optimizers[i]:
             swarm = swarms[swarm_idx]
@@ -69,6 +67,16 @@ def compete(n, swarms, factors, optimizers, f, solution):
     # end for
     # print("best fitness after competition: ", best_fitness)
     return solution
+
+#TODO: RANDOMLY SMASH TOGETHER
+def random_compete():
+    pass
+
+#TODO: AVERAGE OVER OVERLAPPING VALUES to get var
+
+# Helps with diversity?
+def avg_compete():
+    pass
 
 
 # end def
@@ -201,7 +209,7 @@ def fea_pso(f, n, domain, all_factors, optimizers, p, fea_times, pso_stop):
     #   swarms = [initialize_fea_swarm( p, n, factors, domain, f) for factors in all_factors]
 
     for i in range(fea_times):
-        print('fea loop: ', _)
+        print('fea loop: ', i)
         #t_optimize_start = time.time()
         new_swarms = [None for _ in range(len(swarms))]  # init blank list so no out of bounds errors
 
@@ -224,7 +232,7 @@ def fea_pso(f, n, domain, all_factors, optimizers, p, fea_times, pso_stop):
         solution = compete(n, swarms, all_factors, optimizers, f, solution)
         print(solution)
 
-        file = open('results/FEA_PSO/temp/' + 'F17' + '_dim' + str(
+        file = open('results/FEA_PSO/temp/' + 'ODGFunction' + '_dim' + str(
             n) + "m4_diff_grouping_small_epsilon" + ".csv", 'a')
         csv_writer = csv.writer(file)
         a = [i] + solution

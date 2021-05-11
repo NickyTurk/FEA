@@ -52,8 +52,8 @@ class MEE:
                 avg_de = np.mean(de)
 
                 for k in range(1, self.n):
-                    if abs(de[i] - avg_de) < self.de_thresh:
-                        de[i] = avg_de
+                    if abs(de[k] - avg_de) < self.de_thresh:
+                        de[k] = avg_de
 
                 mine = MINE()
                 mine.compute_score(de, x_j)

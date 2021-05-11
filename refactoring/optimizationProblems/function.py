@@ -15,9 +15,9 @@ from opfunu.cec.cec2010.utils import *
 from refactoring.optimizationProblems.benchmarks import *
 
 
-class Function:
+class Function(object):
 
-    def __init__(self, function_number=0, lbound=-100, ubound=100, shift_data_file="", matrix_data_file="", m=0):
+    def __init__(self, function_number=0, partial_function=None, lbound=-100, ubound=100, shift_data_file="", matrix_data_file="", m=0):
         self.function_to_call = 'F'+str(function_number)
         self.name = ""
         self.dimensions = 0
@@ -39,7 +39,7 @@ class Function:
     def run(self, solution):
         if self.dimensions == 0:
             self.dimensions = len(solution)
-            check_problem_size(self.dimensions)
+            # check_problem_size(self.dimensions)
         return getattr(self, self.function_to_call)(solution=solution)
 
     def shift_permutation(self):
@@ -120,7 +120,7 @@ class Function:
     def F9(self, solution=None, name="D/2m-group Shifted and m-rotated Elliptic Function", m_group=50):
         self.name = name
         epoch = int(self.dimensions / (2 * m_group))
-        check_m_group("F9", self.dimensions, 2*m_group)
+        # check_m_group("F9", self.dimensions, 2*m_group)
         shift_data, permu_data = self.shift_permutation()
         z = solution - shift_data
         result = 0.0
@@ -136,7 +136,7 @@ class Function:
     def F10(self, solution=None, name="D/2m-group Shifted and m-rotated Rastrigin’s Function", m_group=50):
         self.name = name
         epoch = int(self.dimensions / (2 * m_group))
-        check_m_group("F10", self.dimensions, 2*m_group)
+        # check_m_group("F10", self.dimensions, 2*m_group)
         shift_data, permu_data = self.shift_permutation()
         z = solution - shift_data
         result = 0.0
@@ -152,7 +152,7 @@ class Function:
     def F11(self, solution=None, name="D/2m-group Shifted and m-rotated Ackley’s Function", m_group=50):
         self.name = name
         epoch = int(self.dimensions / (2 * m_group))
-        check_m_group("F11", self.dimensions, 2*m_group)
+        # check_m_group("F11", self.dimensions, 2*m_group)
         shift_data, permu_data = self.shift_permutation()
         z = solution - shift_data
         result = 0.0
@@ -168,7 +168,7 @@ class Function:
     def F12(self, solution=None, name="D/2m-group Shifted m-dimensional Schwefel’s Problem 1.2", m_group=50):
         self.name = name
         epoch = int(self.dimensions / (2 * m_group))
-        check_m_group("F12", self.dimensions, 2*m_group)
+        # check_m_group("F12", self.dimensions, 2*m_group)
         shift_data, permu_data = self.shift_permutation()
         z = solution - shift_data
         result = 0.0
@@ -182,7 +182,7 @@ class Function:
     def F13(self, solution=None, name="D/2m-group Shifted m-dimensional Rosenbrock’s Function", m_group=50):
         self.name = name
         epoch = int(self.dimensions / (2 * m_group))
-        check_m_group("F13", self.dimensions, 2*m_group)
+        # check_m_group("F13", self.dimensions, 2*m_group)
         shift_data, permu_data = self.shift_permutation()
         z = solution - shift_data
         result = 0.0
@@ -196,7 +196,7 @@ class Function:
     def F14(self, solution=None, name="D/2m-group Shifted and m-rotated Elliptic Function", m_group=50):
         self.name = name
         epoch = int(self.dimensions / m_group)
-        check_m_group("F14", self.dimensions, m_group)
+        # check_m_group("F14", self.dimensions, m_group)
         shift_data, permu_data = self.shift_permutation()
         z = solution - shift_data
         result = 0.0
@@ -208,7 +208,7 @@ class Function:
     def F15(self, solution=None, name="D/2m-group Shifted and m-rotated Rastrigin’s Function", m_group=50):
         self.name = name
         epoch = int(self.dimensions / m_group)
-        check_m_group("F15", self.dimensions, m_group)
+        # check_m_group("F15", self.dimensions, m_group)
         shift_data, permu_data = self.shift_permutation()
         z = solution - shift_data
         result = 0.0
@@ -220,7 +220,7 @@ class Function:
     def F16(self, solution=None, name="D/2m-group Shifted and m-rotated Ackley’s Function", m_group=50):
         self.name = name
         epoch = int(self.dimensions / m_group)
-        check_m_group("F16", self.dimensions, m_group)
+        # check_m_group("F16", self.dimensions, m_group)
         shift_data, permu_data = self.shift_permutation()
         z = solution - shift_data
         result = 0.0
@@ -232,7 +232,7 @@ class Function:
     def F17(self, solution=None, name="D/2m-group Shifted m-dimensional Schwefel’s Problem 1.2", m_group=50):
         self.name = name
         epoch = int(self.dimensions / m_group)
-        check_m_group("F17", self.dimensions, m_group)
+        # check_m_group("F17", self.dimensions, m_group)
         shift_data, permu_data = self.shift_permutation()
         z = solution - shift_data
         result = 0.0
@@ -244,7 +244,7 @@ class Function:
     def F18(self, solution=None, name="D/2m-group Shifted m-dimensional Rosenbrock’s Function", m_group=50):
         self.name = name
         epoch = int(self.dimensions / m_group)
-        check_m_group("F18", self.dimensions, m_group)
+        # check_m_group("F18", self.dimensions, m_group)
         shift_data, permu_data = self.shift_permutation()
         z = solution - shift_data
         result = 0.0
