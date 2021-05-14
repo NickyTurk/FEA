@@ -271,26 +271,74 @@ if __name__ == '__main__':
     func17 = re_function.Function(17, shift_data_file="f17_op.txt")
     func11 = re_function.Function(11, shift_data_file="f11_op.txt", matrix_data_file="f11_m.txt")
     func5 = re_function.Function(5, shift_data_file="f05_op.txt", matrix_data_file="f05_m.txt")
-    functions = [func17, func11, func5]
+    functions = [func17]
+
+    dim = 50
+
     for f in functions:
         print(f.function_to_call)
-        # print("starting dg")
-        # dg = re_factors.FactorArchitecture(dim=1000)
-        # dg.diff_grouping(f, 1e-9)
-        # print("finished dg")
-        # dg.save_architecture()
-        #
-        # print("starting odg")
-        # odg = re_factors.FactorArchitecture(dim=1000)
-        # odg.overlapping_diff_grouping(f, 1e-9)
-        # print("finished odg")
-        # odg.save_architecture()
 
-        print("Starting IM")
-        im = re_interaction.MEE(f, 1000, 500, 0, 0.001, 0.000001, use_mic_value=True)
+        print("Starting MEET IM")
+        im = re_interaction.MEE(f, dim, 100, 0, 0.001, 0.000001, use_mic_value=True)
         IM = im.get_IM()
         print("finished IM")
-        meet = re_factors.FactorArchitecture(dim=1000)
+        meet = re_factors.FactorArchitecture(dim=dim)
         meet.MEET(IM)
         print("finished MEET")
-        meet.save_architecture()
+        meet.save_architecture("MeetRandom/meet")
+
+        print("Starting Random 20")
+        im = re_interaction.RandomTree(f, dim, 100, 0.001, 0.000001)
+        IM = im.run(20)
+        print("finished Random 20")
+        meet = re_factors.FactorArchitecture(dim=dim)
+        meet.MEET(IM)
+        print("finished Random 20")
+        meet.save_architecture("MeetRandom/rand20")
+
+        IM = im.run(20)
+        print("finished Random 40")
+        meet = re_factors.FactorArchitecture(dim=dim)
+        meet.MEET(IM)
+        print("finished Random 40")
+        meet.save_architecture("MeetRandom/rand40")
+
+        IM = im.run(60)
+        print("finished Random 100")
+        meet = re_factors.FactorArchitecture(dim=dim)
+        meet.MEET(IM)
+        print("finished Random 100")
+        meet.save_architecture("MeetRandom/rand100")
+
+    from refactoring.baseAlgorithms.pso import PSO
+    from refactoring.FEA.factorarchitecture import FactorArchitecture
+    from refactoring.FEA.factorevolution import FEA
+
+    fa = FactorArchitecture()
+    print("FEA MEET")
+    fa.load_architecture("MeetRandom/meet")
+    fea = FEA(func17, 10, 10, 3, fa, PSO)
+    fea.run()
+    print()
+
+    fa = FactorArchitecture()
+    print("FEA Rand 20")
+    fa.load_architecture("MeetRandom/rand20")
+    fea = FEA(func17, 10, 10, 3, fa, PSO)
+    fea.run()
+    print()
+
+    fa = FactorArchitecture()
+    print("FEA Rand40")
+    fa.load_architecture("MeetRandom/rand40")
+    fea = FEA(func17, 10, 10, 3, fa, PSO)
+    fea.run()
+    print()
+
+    fa = FactorArchitecture()
+    print("FEA Rand100")
+    fa.load_architecture("MeetRandom/rand100")
+    fea = FEA(func17, 10, 10, 3, fa, PSO)
+    fea.run()
+    print()
+
