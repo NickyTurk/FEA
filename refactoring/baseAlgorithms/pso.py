@@ -113,7 +113,7 @@ class PSO(object):
         pass
 
     def update_swarm(self):
-        global_solution = self.global_solution
+        global_solution = [x for x in self.global_solution]
         omega, phi, global_best, v_max = self.omega, self.phi, self.gbest, self.v_max
         for p in self.pop:
             p.update_particle(omega, phi, global_best, v_max, global_solution)
