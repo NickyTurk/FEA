@@ -1,5 +1,7 @@
 import numpy as np
 from minepy import MINE
+from networkx import from_numpy_array, maximum_spanning_tree, connected_components
+from random import choice
 
 
 class MEE(object):
@@ -72,6 +74,71 @@ class MEE(object):
                 for j in range(i + 1, len(component)):
                     self.IM[component[i], component[j]] = 1
                     self.IM[component[j], component[i]] = 1
+
+
+class RandomTree(object):
+    def __init__(self, func, dim, samples, de_thresh, delta):
+        self.f = func
+        self.d = dim
+        self.ub = np.ones(self.d) * func.ubound
+        self.lb = np.ones(self.d) * func.lbound
+        self.delta = delta  # account for small variations
+        self.IM = np.ones((self.d, self.d)) * -1  # init IM to bunch of -1's (so we can initialize a tree)
+        self.samples = samples
+        self.de_thresh = de_thresh
+
+        self.iteration_ctr = 0
+
+        # Init tree and graph
+        self.G = from_numpy_array(self.IM)  # We don't technically need this in self, but might as well have it
+        self.T = maximum_spanning_tree(self.G)  # just make a tree (they're all -1 so it is a boring tree)
+
+    def run(self, trials):
+        for i in range(trials):
+            self.iteration_ctr += 1  # keep track of global counter to allow for multiple, sequential run calls
+            print("Iteration " + str(self.iteration_ctr))
+
+            edges = list(self.T.edges(data="weight"))
+            remove = min(edges)  # find the cheapest edge
+            self.T.remove_edge(remove[0], remove[1])  # delete the edge
+
+            comp1, comp2 = connected_components(self.T)
+
+            node1 = choice(list(comp1))  # generate random start node
+            node2 = choice(list(comp2))  # generate random end node
+
+            interact = self.compute_interaction(node1, node2)
+            if interact > remove[2]:  # if the new random edge is more expensive then the previous one, add it
+                self.T.add_edge(node1, node2, weight=interact)
+            else:  # otherwise add the original one back
+                self.T.add_edge(remove[0], remove[1], weight=remove[2])
+        return self.IM
+
+    def compute_interaction(self, i, j):
+        if self.IM[i][j] != -1:
+            return self.IM[i][j]
+        # number of values to calculate == sample size
+        f, dim, lb, ub, sample_size, delta = self.f, self.d, self.lb, self.ub, self.samples, self.delta
+        de = np.zeros(sample_size)
+        # generate n values (i.e. samples) for j-th dimension
+        x_j = np.random.rand(sample_size) * (ub[j] - lb[j]) + lb[j]
+        for k in range(1, sample_size):
+            # randomly generate solution -- initialization of function variables
+            x = np.random.uniform(lb, ub, size=dim)
+            x[j] = x_j[k]  # set jth value to random sample value
+            y_1 = f.run(x)
+            x[i] = x[i] + delta
+            y_2 = f.run(x)
+            de[k] = (y_2 - y_1) / delta
+
+        avg_de = np.mean(de)
+        de[de < self.de_thresh] = avg_de  # use np fancy indexing to replace values
+
+        mine = MINE()
+        mine.compute_score(de, x_j)
+        mic = mine.mic()
+        self.IM[i, j] = mic
+        return mic
 
 
 if __name__ == '__main__':

@@ -61,8 +61,9 @@ class FactorArchitecture(object):
                 os.mkdir("factor_architecture_files/" + self.method)
             file = open("factor_architecture_files/" + self.method + "/" + self.method + "_" + str(self.dim), "wb")
         else:
-            if not os.path.isdir(path_to_save):
-                os.mkdir(path_to_save)
+            folder = os.path.dirname(path_to_save)
+            if not os.path.isdir(folder):
+                os.mkdir(folder)
             file = open(path_to_save, "wb")
         pickle.dump(self.__dict__, file)
 
@@ -70,13 +71,13 @@ class FactorArchitecture(object):
         from refactoring.utilities.exceptions import PickleException
         if path_to_load == "" and (method == "" or dim == 0):
             raise PickleException()
-        elif path_to_load != "" and not os.path.isdir(path_to_load):
+        elif path_to_load != "" and os.path.isdir(path_to_load):
             raise PickleException()
         elif path_to_load == "" and method != "" and dim != 0:
             pickle_object = pickle.load(
                 open("factor_architecture_files/" + method + "/" + method + "_" + str(dim), 'rb'))
             self.__dict__.update(pickle_object)
-        elif path_to_load != "" and os.path.isdir(path_to_load):
+        elif path_to_load != "" and not os.path.isdir(path_to_load):
             pickle_object = pickle.load(open(path_to_load, 'rb'))
             self.__dict__.update(pickle_object)
 
