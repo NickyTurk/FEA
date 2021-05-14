@@ -1,0 +1,188 @@
+D:\pryor\Documents\GitHubProjects\FEA\venv\Scripts\python.exe D:/pryor/Documents/GitHubProjects/FEA/test.py
+F17
+Starting MEET IM
+D:\pryor\Documents\GitHubProjects\FEA\refactoring\optimizationProblems\benchmarks.py:29: NumbaWarning: 
+Compilation is falling back to object mode WITH looplifting enabled because Function "schwefel__" failed type inference due to: No implementation of function Function(<function sum at 0x0000021FF9FA2D30>) found for signature:
+ 
+ >>> sum(list(float64)<iv=None>)
+ 
+There are 2 candidate implementations:
+  - Of which 2 did not match due to:
+  Overload of function 'sum': File: numba\core\typing\npydecl.py: Line 348.
+    With argument(s): '(list(float64)<iv=None>)':
+   No match.
+
+During: resolving callee type: Function(<function sum at 0x0000021FF9FA2D30>)
+During: typing of call at D:\pryor\Documents\GitHubProjects\FEA\refactoring\optimizationProblems\benchmarks.py (31)
+
+
+File "refactoring\optimizationProblems\benchmarks.py", line 31:
+def schwefel__(solution=None):
+    return sum([sum(solution[:i]) ** 2 for i in range(0, len(solution))])
+    ^
+
+  @numba.jit
+D:\pryor\Documents\GitHubProjects\FEA\venv\lib\site-packages\numba\core\object_mode_passes.py:151: NumbaWarning: Function "schwefel__" was compiled in object mode without forceobj=True.
+
+File "refactoring\optimizationProblems\benchmarks.py", line 30:
+@numba.jit
+def schwefel__(solution=None):
+^
+
+  warnings.warn(errors.NumbaWarning(warn_msg,
+D:\pryor\Documents\GitHubProjects\FEA\venv\lib\site-packages\numba\core\object_mode_passes.py:161: NumbaDeprecationWarning: 
+Fall-back from the nopython compilation path to the object mode compilation path has been detected, this is deprecated behaviour.
+
+For more information visit https://numba.pydata.org/numba-doc/latest/reference/deprecation.html#deprecation-of-object-mode-fall-back-behaviour-when-using-jit
+
+File "refactoring\optimizationProblems\benchmarks.py", line 30:
+@numba.jit
+def schwefel__(solution=None):
+^
+
+  warnings.warn(errors.NumbaDeprecationWarning(msg,
+finished IM
+finished MEET
+Starting Random 20
+finished Random 20
+finished Random 20
+finished Random 40
+finished Random 40
+finished Random 100
+finished Random 100
+FEA MEET
+global fitness found:  336250.2140472205
+===================================================
+fea run  0 336250.2140472205
+global fitness found:  298040.38032362773
+===================================================
+fea run  1 298040.38032362773
+global fitness found:  473866.448925393
+===================================================
+fea run  2 473866.448925393
+global fitness found:  204738.07101578984
+===================================================
+fea run  3 204738.07101578984
+global fitness found:  183844.45855964007
+===================================================
+fea run  4 183844.45855964007
+global fitness found:  1121195.116935901
+===================================================
+fea run  5 1121195.116935901
+global fitness found:  293215.35498147766
+===================================================
+fea run  6 293215.35498147766
+global fitness found:  292736.54817132023
+===================================================
+fea run  7 292736.54817132023
+global fitness found:  290995.5156114122
+===================================================
+fea run  8 290995.5156114122
+global fitness found:  272489.0128179839
+===================================================
+fea run  9 272489.0128179839
+
+FEA Rand 20
+global fitness found:  381253.9690492714
+===================================================
+fea run  0 381253.9690492714
+global fitness found:  371019.45008216804
+===================================================
+fea run  1 371019.45008216804
+global fitness found:  347929.34361883055
+===================================================
+fea run  2 347929.34361883055
+global fitness found:  272794.2047073509
+===================================================
+fea run  3 272794.2047073509
+global fitness found:  210573.1078336008
+===================================================
+fea run  4 210573.1078336008
+global fitness found:  179085.6310923198
+===================================================
+fea run  5 179085.6310923198
+global fitness found:  934318.1779459557
+===================================================
+fea run  6 934318.1779459557
+global fitness found:  251368.53349403534
+===================================================
+fea run  7 251368.53349403534
+global fitness found:  250176.85641495243
+===================================================
+fea run  8 250176.85641495243
+global fitness found:  172583.96819053387
+===================================================
+fea run  9 172583.96819053387
+
+FEA Rand40
+global fitness found:  280726.07225961104
+===================================================
+fea run  0 280726.07225961104
+global fitness found:  224147.74908523585
+===================================================
+fea run  1 224147.74908523585
+global fitness found:  259002.00083569146
+===================================================
+fea run  2 259002.00083569146
+global fitness found:  192802.6387573998
+===================================================
+fea run  3 192802.6387573998
+global fitness found:  157314.6843177717
+===================================================
+fea run  4 157314.6843177717
+global fitness found:  157179.9759506051
+===================================================
+fea run  5 157179.9759506051
+global fitness found:  248781.6712540016
+===================================================
+fea run  6 248781.6712540016
+global fitness found:  243985.26500020947
+===================================================
+fea run  7 243985.26500020947
+global fitness found:  248781.6712540016
+===================================================
+fea run  8 248781.6712540016
+global fitness found:  243985.26500020947
+===================================================
+fea run  9 243985.26500020947
+
+FEA Rand100
+global fitness found:  577547.0991789518
+===================================================
+fea run  0 577547.0991789518
+global fitness found:  501077.6865890236
+===================================================
+fea run  1 501077.6865890236
+global fitness found:  410363.63500331785
+===================================================
+fea run  2 410363.63500331785
+global fitness found:  597027.8581194519
+===================================================
+fea run  3 597027.8581194519
+global fitness found:  268770.92723657493
+===================================================
+fea run  4 268770.92723657493
+global fitness found:  258982.0999134242
+===================================================
+fea run  5 258982.0999134242
+global fitness found:  275635.23767225695
+===================================================
+fea run  6 275635.23767225695
+global fitness found:  207955.77892259212
+===================================================
+fea run  7 207955.77892259212
+global fitness found:  222892.1231822774
+===================================================
+fea run  8 222892.1231822774
+global fitness found:  284182.83039260306
+===================================================
+fea run  9 284182.83039260306
+
+
+Process finished with exit code 0
+
+MEET -    272489.0128179839
+Rand20 -  172583.96819053387
+Rand40 -  243985.26500020947
+Rand100 - 284182.83039260306
+

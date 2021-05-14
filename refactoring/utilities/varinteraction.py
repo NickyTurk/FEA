@@ -96,7 +96,7 @@ class RandomTree(object):
     def run(self, trials):
         for i in range(trials):
             self.iteration_ctr += 1  # keep track of global counter to allow for multiple, sequential run calls
-            print("Iteration " + str(self.iteration_ctr))
+            # print("Iteration " + str(self.iteration_ctr))
 
             edges = list(self.T.edges(data="weight"))
             remove = min(edges)  # find the cheapest edge
