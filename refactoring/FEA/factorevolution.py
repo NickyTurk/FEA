@@ -32,7 +32,7 @@ class FEA:
         """
         Construct new global solution based on best shared variables from all swarms
         """
-        gs = [x for x in self.global_solution]
+        gs = self.global_solution
         print('global fitness found: ', self.global_fitness)
         print('===================================================')
         for alg in self.subpopulations:
@@ -56,7 +56,7 @@ class FEA:
         f = self.f
         curr_fitness = f.run(self.global_solution)
         for var_idx in range(self.dim):
-            best_value_for_var = 0
+            best_value_for_var = sol[var_idx]
             for pop_idx in self.factor_architecture.optimizers[var_idx]:
                 curr_pop = self.subpopulations[pop_idx]
                 pop_var_idx = np.where(curr_pop.factor == var_idx)

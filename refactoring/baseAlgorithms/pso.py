@@ -123,12 +123,12 @@ class PSO(object):
 
     def replace_worst_solution(self, global_solution):
         # find worst particle
-        self.global_solution = global_solution
+        self.global_solution = np.array([x for x in global_solution])
         worst_particle = max(self.pop)
         worst_particle_index = [i for i, x in enumerate(self.pop) if x == worst_particle]
         partial_solution = [x for i, x in enumerate(global_solution) if i in self.factor] # if i in self.factor
         self.pop[worst_particle_index[0]].set_position(partial_solution)
-        self.pop[worst_particle_index[0]].set_fitness(self.f.run(global_solution))
+        self.pop[worst_particle_index[0]].set_fitness(self.f.run(self.global_solution))
 
     def run(self):
         for i in range(self.generations):
