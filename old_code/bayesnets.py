@@ -3,7 +3,7 @@ from pgmpy.models.BayesianModel import BayesianModel
 from pgmpy.readwrite import BIFReader
 import pyreadr
 
-reader = BIFReader("BN_data/hailfinder.bif")
+reader = BIFReader("../BN_data/hailfinder.bif")
 DAG = reader.get_model()
 
 

@@ -1,13 +1,7 @@
 # <codecell>
 import csv
-from copy import deepcopy, copy
-from core import Particle, pp
-import numpy as np
-import pathos.multiprocessing as mp
-
-from pathos.multiprocessing import ProcessingPool, ThreadingPool
-
-import time
+from copy import copy
+from core import Particle
 
 import pso
 from fea_common import *
@@ -251,7 +245,6 @@ def fea_pso(f, n, domain, all_factors, optimizers, p, fea_times, pso_stop):
 if __name__ == "__main__":
     from evaluation import create_bootstrap_function, analyze_bootstrap_sample
     from topology import generate_linear_topology
-    import random
     import json
 
     p = 10 # population

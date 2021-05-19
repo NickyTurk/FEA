@@ -1,18 +1,15 @@
-from benchmarks import _benchmarks
-from topology import *
-from read_data import *
-from pso import pso
-from fea_pso import fea_pso
-import argparse, csv
-from datetime import datetime
-from evaluation import *
-from clustering import *
+from old_code.topology import *
+from old_code.read_data import *
+from old_code.pso import pso
+from old_code.fea_pso import fea_pso
+import csv
+from old_code.evaluation import *
+from old_code.clustering import *
 import numpy as np
 # from opfunu.cec.cec2010.function import *
 # from cec2013lsgo.cec2013 import Benchmark
 from functools import partial
-from FunctionTesting import F11_E
-from function import *
+from old_code.function import *
 
 from variable_interaction import MEE, MEET
 from numpy import linalg as la

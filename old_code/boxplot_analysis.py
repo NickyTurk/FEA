@@ -1,7 +1,4 @@
 import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import glob
 
 import read_data
 from read_data import *
@@ -187,7 +184,7 @@ def boxplot_fitness():
 
             fig.subplots_adjust(right=0.98, left=0.1)
 
-        path = 'results/plots/40_itr/'
+        path = '../results/plots/40_itr/'
         plt.savefig(path + f + '_over_time.png')
         plt.show()
         # exit(1)

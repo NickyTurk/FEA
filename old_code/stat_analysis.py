@@ -1,6 +1,6 @@
 import networkx as nx
 import pandas as pd
-import re, os
+import os
 import matplotlib.pyplot as plt
 import read_data
 import numpy as np
@@ -34,10 +34,10 @@ class OptimizationAnalysis():
 
         for f in self.functions:
             print()
-            pso = read_data.transform_files_to_df(f + "_pso_param.csv", subfolder = "pso_"+str(self.dim))
-            fea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "overlapping_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO/40_itr", header = False)
+            pso = read_data.transform_files_to_df(f + "_pso_param.csv", subfolder ="pso_" + str(self.dim))
+            fea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "overlapping_diff_grouping_small_epsilon.csv", subfolder ="FEA_PSO/40_itr", header = False)
             # fea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "overlapping_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO", header = False)
-            ccea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "m4_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO/40_itr", header = False)
+            ccea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "m4_diff_grouping_small_epsilon.csv", subfolder ="FEA_PSO/40_itr", header = False)
             # ccea = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "m4_diff_grouping_small_epsilon.csv", subfolder = "FEA_PSO", header = False)
             spectral = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "spectral.csv", subfolder="FEA_PSO/40_itr", header=False)
             meet = read_data.transform_files_to_df(f + "_dim" + str(self.dim) + "meet.csv", subfolder="FEA_PSO/40_itr", header=False)
@@ -187,7 +187,7 @@ class FactorAnalysis():
         plt.show()
 
     def get_frame_and_attributes(self, filename_extension):
-        frame = read_data.transform_files_to_df('factors/F*'+filename_extension)
+        frame = read_data.transform_files_to_df('factors/F*' + filename_extension)
 
         epsilons = frame.EPSILON.unique()
         functions = frame.FUNCTION.unique()
@@ -527,8 +527,8 @@ if __name__ == '__main__':
     # #fctAnl.factor_stats_per_function()
     # #fctAnl.overlap_in_factors(50, 0.001)
     # fctAnl.overlap_element_count(20, 0.001)
-    im_path = "results/meet_graphs/"
-    path = "results/meet_factors/old_meet/"
+    im_path = "../results/meet_graphs/"
+    path = "../results/meet_factors/old_meet/"
     ext = ".csv"
 
     # F3, F5, F11, F17, F19

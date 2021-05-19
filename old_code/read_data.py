@@ -29,7 +29,7 @@ def transform_files_to_df(file_regex, subfolder='', header=True):
 
 def get_files_list(file_regex, subfolder = ''):
     if not subfolder:
-        path = r'./results'
+        path = r'../results'
     else:
         path = './results/' + subfolder
     return glob.glob(path + '/' + file_regex)
