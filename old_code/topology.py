@@ -2,7 +2,7 @@
 Topology Generation: This is a VERY VERY confusing topic.
 
 With d = 5, there are 5 variables, x_i => x_0, x_1, x_2, x_3, x_4. This means, in any list,
-the variable corresponds to the index. This is a convention and hopefully a space
+the variable corresponds to the home. This is a convention and hopefully a space
 saving one.
 
 With the "i+1 functions" (Benchmark functions), there are always d - 1 factors.
@@ -19,7 +19,7 @@ The neighbor of swarm 0 is swarm 1 (because they have variables in common).
 
 Arbiters fall into the second group as do optimizers. The arbiter of variable 0 is swarm 0.
 An arbiter of variable 3 is swarm 3 (0-3). Similarly, optimizers are lists of swarms
-that optimize for a specific index (variable). Variable 1 is optimized by [0, 1] which is
+that optimize for a specific home (variable). Variable 1 is optimized by [0, 1] which is
 to say both swarm 0 and swarm 1.
 
 factors = [[0, 1], [1, 2], [2, 3], [3, 4]] # # of factors and swarms
@@ -265,7 +265,7 @@ def generate_overlapping_diff_grouping(_function, d, epsilon,m=0):
         for j in range(i + 1, size):
             p3 = deepcopy(p1)
             p4 = deepcopy(p2)
-            p3[dimensions[j]] = 0  # grabs dimension to compare to, same as index
+            p3[dimensions[j]] = 0  # grabs dimension to compare to, same as home
             p4[dimensions[j]] = 0
 
             if m == 0:
@@ -332,7 +332,7 @@ def generate_diff_grouping(_function, d, epsilon, m=0):
             p3 = np.multiply(lbound, np.ones(d))
             p4 = np.multiply(lbound, np.ones(d))
             p4[curr_dim_idx] = ubound
-            p3[dimensions[j]], p4[dimensions[j]] = 0  # grabs dimension to compare to, corresponds to python index
+            p3[dimensions[j]], p4[dimensions[j]] = 0  # grabs dimension to compare to, corresponds to python home
 
             if m == 0:
                 delta2 = _function(p3) - _function(p4)

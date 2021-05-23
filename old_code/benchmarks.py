@@ -266,9 +266,9 @@ def dixon_price(xs):
     term1 = (xs[0] - 1) ** 2
     term2 = 0.0
     for i in range(1, len(xs)):
-        index = i + 1  # because math and programming indices are different.
+        home = i + 1  # because math and programming indices are different.
         term = ((2.0 * xs[i] ** 2) - xs[i - 1]) ** 2
-        term2 += index * term
+        term2 += home * term
     return term1 + term2
 
 

@@ -29,8 +29,8 @@ def import_single_function_factors(file_name, dim=50, epsilon=0):
     dim_array = np.array(dim_frame['FACTORS'])
 
     if epsilon ==0:
-        index = dim_frame['NR_GROUPS'].argmax()
-        factors = literal_eval(dim_array[index])
+        home = dim_frame['NR_GROUPS'].argmax()
+        factors = literal_eval(dim_array[home])
     else:
         epsilon_row = dim_frame.loc[dim_frame['EPSILON'] == epsilon]
         print(epsilon_row)

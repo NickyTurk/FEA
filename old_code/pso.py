@@ -194,7 +194,7 @@ Updates each particle in the batch
 
 updater: the partially filled in function of update_particle
 new_particles: list where output is stored
-index: index in global particles list where batch starts so order is preserved
+home: home in global particles list where batch starts so order is preserved
 
 TODO: maybe need lock
 """

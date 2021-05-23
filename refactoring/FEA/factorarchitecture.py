@@ -20,7 +20,7 @@ class FactorArchitecture(object):
     Topology Generation:
 
     With d = 5, there are 5 variables, x_i => x_0, x_1, x_2, x_3, x_4. This means, in any list,
-    the variable corresponds to the index. This is a convention and hopefully a space
+    the variable corresponds to the home. This is a convention and hopefully a space
     saving one.
 
     Of the four sort of topological elements required by the algorithm, there are two kinds:
@@ -35,7 +35,7 @@ class FactorArchitecture(object):
 
     Arbiters fall into the second group as do optimizers. The arbiter of variable 0 is swarm 0.
     An arbiter of variable 3 is swarm 3 (0-3). Similarly, optimizers are lists of swarms
-    that optimize for a specific index (variable). Variable 1 is optimized by [0, 1] which is
+    that optimize for a specific home (variable). Variable 1 is optimized by [0, 1] which is
     to say both swarm 0 and swarm 1.
 
     factors = [[0, 1], [1, 2], [2, 3], [3, 4]] = # of factors and swarms
@@ -208,7 +208,7 @@ class FactorArchitecture(object):
             p4 = np.multiply(_function.lbound, np.ones(self.dim))
             p4[i] = _function.ubound
             p3[dimensions[j]] = 0
-            p4[dimensions[j]] = 0  # grabs dimension to compare to, same as index
+            p4[dimensions[j]] = 0  # grabs dimension to compare to, same as home
 
             if m == 0:
                 delta2 = _function.run(p3) - _function.run(p4)
@@ -298,7 +298,7 @@ class FactorArchitecture(object):
 
     def calculate_optimizers(self):
         """
-        Optimizers are lists of swarms that optimize for a specific index (variable).
+        Optimizers are lists of swarms that optimize for a specific home (variable).
         Variable 1 is optimized by swarms [0, 1].
         :return:
         """

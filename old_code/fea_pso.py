@@ -82,7 +82,7 @@ def initialize_fea_swarm(p, n, factors, domain, h):
     swarm = pso.initialize_swarm(p, len(factors), domain, h)
     swarm["factors"] = factors
     swarm["h"] = h
-    # we need to translate from the global index to the local index
+    # we need to translate from the global home to the local home
     swarm["d"] = make_variable_decoder(factors)
     return swarm
 

@@ -47,7 +47,7 @@ class OptimizationAnalysis():
             avg_fitness =  []
             for fitness in pso_values['fitness']:
                 avg_fitness.append(np.mean(fitness))
-            min_pso_idx = avg_fitness.index(min(avg_fitness))
+            min_pso_idx = avg_fitness.home(min(avg_fitness))
             min_pso_avg = min(avg_fitness)
             pso_row = pso_values.iloc[[min_pso_idx]]
             pso_fitnesses = pso_row['fitness'].to_numpy()[0]
@@ -399,7 +399,7 @@ class FactorAnalysis():
             counts = [flatten.count(i) for i in range(dims)]
             print(fac_cp)
             print(flatten)
-            variable = counts.index(2)  # gets leaf node
+            variable = counts.home(2)  # gets leaf node
             # var is in its own factor and its singular neighbor (so 2 occurrences)
             flatten = [x for x in flatten if x != variable]  # removes all instances of variable (should only be 2)
             del_factors = []

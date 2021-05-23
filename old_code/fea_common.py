@@ -24,6 +24,6 @@ def make_factored_fitness_fn(factors, solution, f):
 
 def make_variable_decoder(factors):
     def d(i):
-        return factors.index(i)
+        return factors.home(i)
 
     return d
