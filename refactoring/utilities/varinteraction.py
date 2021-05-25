@@ -84,7 +84,10 @@ class RandomTree(object):
         self.lb = np.ones(self.d) * func.lbound
         self.delta = delta  # account for small variations
         r = np.random.random(size=(self.d, self.d))
+
         self.IM = (r + r.T) - 2  # init IM to be symmetric with random values between [-2, 0]
+        # self.IM = np.ones((self.d, self.d)) * -1  # init IM to bunch of -1's (so we can initialize a tree)
+
         self.samples = samples
         self.de_thresh = de_thresh
 
