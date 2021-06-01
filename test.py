@@ -11,12 +11,12 @@ import numpy as np
 from functools import partial
 from old_code.function import *
 
-from variable_interaction import MEE, MEET
+from old_code.variable_interaction import MEE, MEET
 from numpy import linalg as la
 
 import refactoring.FEA.factorarchitecture as re_factors
 import refactoring.utilities.varinteraction as re_interaction
-import refactoring.optimizationProblems.function as re_function
+import refactoring.optimizationproblems.function as re_function
 
 def harness(algorithm, iterations, repeats):
     summary = {}
@@ -307,7 +307,7 @@ if __name__ == '__main__':
         print("finished Random 100")
         meet.save_architecture("MeetRandom/rand100")
 
-    from refactoring.baseAlgorithms.pso import PSO
+    from refactoring.basealgorithms.pso import PSO
     from refactoring.FEA.factorarchitecture import FactorArchitecture
     from refactoring.FEA.factorevolution import FEA
 

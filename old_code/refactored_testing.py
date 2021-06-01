@@ -1,8 +1,8 @@
-from refactoring.optimizationProblems.function import Function
+from refactoring.optimizationproblems.function import Function
 from refactoring.utilities.varinteraction import MEE, RandomTree
 from refactoring.FEA.factorevolution import FEA
 from refactoring.FEA.factorarchitecture import FactorArchitecture
-from refactoring.baseAlgorithms.pso import PSO
+from refactoring.basealgorithms.pso import PSO
 
 
 if __name__ == '__main__':

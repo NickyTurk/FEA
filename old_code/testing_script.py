@@ -2,7 +2,7 @@ from topology import *
 from read_data import *
 from pso import pso
 from fea_pso import fea_pso
-from variable_interaction import MEE
+from old_code.variable_interaction import MEE
 from evaluation import *
 from clustering import *
 
