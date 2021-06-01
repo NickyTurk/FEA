@@ -6,12 +6,15 @@ from refactoring.baseAlgorithms.pso import PSO
 
 
 if __name__ == '__main__':
+    outputfile = open('./MeetRandom/trial.txt', 'a')
     print("running")
 
     f = Function(17, shift_data_file="f17_op.txt")
     print(f.function_to_call)
 
-    dim = 50
+    dim = 200
+    outputfile.write("Dim: " + str(dim) + " Random Init\n")
+    random_iteration = [50, 50, 100, 100, 200]
 
     print("Starting MEET IM")
     im = MEE(f, dim, 100, 0, 0.001, 0.000001, use_mic_value=True)
@@ -22,55 +25,36 @@ if __name__ == '__main__':
     print("finished MEET")
     meet.save_architecture("MeetRandom/meet")
 
-    print("Starting Random 20")
-    im = RandomTree(f, dim, 100, 0.001, 0.000001)
-    IM = im.run(20)
-    print("finished Random 20")
-    meet = FactorArchitecture(dim=dim)
-    meet.MEET(IM)
-    print("finished Random 20")
-    meet.save_architecture("MeetRandom/rand20")
+    total = 0
+    for it in random_iteration:
+        total += it
 
-    IM = im.run(20)
-    print("finished Random 40")
-    meet = FactorArchitecture(dim=dim)
-    meet.MEET(IM)
-    print("finished Random 40")
-    meet.save_architecture("MeetRandom/rand40")
-
-    IM = im.run(60)
-    print("finished Random 100")
-    meet = FactorArchitecture(dim=dim)
-    meet.MEET(IM)
-    print("finished Random 100")
-    meet.save_architecture("MeetRandom/rand100")
-
+        print("Starting Random " + str(total))
+        im = RandomTree(f, dim, 100, 0.001, 0.000001)
+        T = im.run(20)
+        print("finished Random " + str(total))
+        meet = FactorArchitecture(dim=dim)
+        meet.MEET(T)
+        print("finished Random " + str(total))
+        meet.save_architecture("MeetRandom/rand" + str(total))
 
     fa = FactorArchitecture()
     print("FEA MEET")
     fa.load_architecture("MeetRandom/meet")
     fea = FEA(f, 10, 10, 3, fa, PSO)
     fea.run()
-    print()
+    outputfile.write(f"MEET, \t\t{fea.global_fitness}\n")
+    print(fea.global_fitness)
 
-    fa = FactorArchitecture()
-    print("FEA Rand 20")
-    fa.load_architecture("MeetRandom/rand20")
-    fea = FEA(f, 10, 10, 3, fa, PSO)
-    fea.run()
-    print()
+    total = 0
+    for it in random_iteration:
+        total += it
+        fa = FactorArchitecture()
+        print("FEA Rand " + str(total))
+        fa.load_architecture("MeetRandom/rand" + str(total))
+        fea = FEA(f, 10, 10, 3, fa, PSO)
+        fea.run()
+        outputfile.write(f"Rand {total}, \t{fea.global_fitness}\n")
+        print(fea.global_fitness)
 
-    fa = FactorArchitecture()
-    print("FEA Rand40")
-    fa.load_architecture("MeetRandom/rand40")
-    fea = FEA(f, 10, 10, 3, fa, PSO)
-    fea.run()
-    print()
-
-    fa = FactorArchitecture()
-    print("FEA Rand100")
-    fa.load_architecture("MeetRandom/rand100")
-    fea = FEA(f, 10, 10, 3, fa, PSO)
-    fea.run()
-    print()
 

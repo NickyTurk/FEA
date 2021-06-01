@@ -250,19 +250,21 @@ class FactorArchitecture(object):
         self.calculate_optimizers()
         self.determine_neighbors()
 
-    def MEET(self, IM):
-        from networkx import  from_numpy_array, maximum_spanning_tree
-
+    def MEET(self, T):
         """
         Create directed graph with edge weights in MIC table.
         Directed graph (IM) can be calculated using different methods, called from variableinteraction class
         Create MAXimal spanning tree from this graph.
+        :param T, T is either a directed graph stored as a numpy array, or a networkx graph object
         :return:
         """
-        self.method = "MEET"
-        G = from_numpy_array(IM)
-        T = maximum_spanning_tree(G)
 
+        if isinstance(T, np.ndarray):  # convert np array to tree
+            from networkx import  from_numpy_array, maximum_spanning_tree
+            G = from_numpy_array(T)
+            T = maximum_spanning_tree(G)
+
+        self.method = "MEET"
         factors = []
 
         for node in list(T.nodes):  # each dimension
@@ -274,6 +276,9 @@ class FactorArchitecture(object):
         self.nominate_arbiters()
         self.calculate_optimizers()
         self.determine_neighbors()
+
+
+
 
     def nominate_arbiters(self):
         """

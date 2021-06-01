@@ -83,7 +83,11 @@ class RandomTree(object):
         self.ub = np.ones(self.d) * func.ubound
         self.lb = np.ones(self.d) * func.lbound
         self.delta = delta  # account for small variations
-        self.IM = np.ones((self.d, self.d)) * -1  # init IM to bunch of -1's (so we can initialize a tree)
+        r = np.random.random(size=(self.d, self.d))
+
+        self.IM = (r + r.T) - 2  # init IM to be symmetric with random values between [-2, 0]
+        # self.IM = np.ones((self.d, self.d)) * -1  # init IM to bunch of -1's (so we can initialize a tree)
+
         self.samples = samples
         self.de_thresh = de_thresh
 
@@ -94,6 +98,12 @@ class RandomTree(object):
         self.T = maximum_spanning_tree(self.G)  # just make a tree (they're all -1 so it is a boring tree)
 
     def run(self, trials):
+        """
+        Runs a greedy improvement algorithm on the existing tree
+        Replaces the cheapest edge, and adds a new edge if it is less expensive then the queried edge
+        :param trials: The number of iterations to run
+        :return:
+        """
         for i in range(trials):
             self.iteration_ctr += 1  # keep track of global counter to allow for multiple, sequential run calls
             # print("Iteration " + str(self.iteration_ctr))
@@ -112,9 +122,15 @@ class RandomTree(object):
                 self.T.add_edge(node1, node2, weight=interact)
             else:  # otherwise add the original one back
                 self.T.add_edge(remove[0], remove[1], weight=remove[2])
-        return self.IM
+        return self.T
 
     def compute_interaction(self, i, j):
+        """
+        Computes the interaction using MEE between vars i, j
+        :param i:
+        :param j:
+        :return: MIC value
+        """
         if self.IM[i][j] != -1:
             return self.IM[i][j]
         # number of values to calculate == sample size
