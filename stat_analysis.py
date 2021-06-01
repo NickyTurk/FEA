@@ -272,7 +272,6 @@ class FactorAnalysis():
         l = [] # list of tuples
         for t in tups:
             thing = t.strip('[],').split(',')
-            print(thing)
             tup = map(int, t.strip(' [],').split(',')) # get rid of parenthesis and split, and applies int function
             tup = tuple(tup)
             l.append(tup)
@@ -335,7 +334,6 @@ class FactorAnalysis():
         G = nx.Graph()
         f_edges = []
         for f in factors:
-            print(f)
             G.add_nodes_from(f)
 
             G.add_edges_from(itertools.combinations(f, 2))  # Fully connect the factor
@@ -354,9 +352,7 @@ class FactorAnalysis():
 
 
         options = {"node_size": 500, "alpha": 0.8}
-        for f in factors:  # draw nodes
-            print(f)
-            nx.draw_networkx_nodes(G, pos, nodelist=f, **options)
+        nx.draw_networkx_nodes(G, pos, **options)
 
         for e, c in fc_edges:  # draw edges
             nx.draw_networkx_edges(G, pos, edgelist=e, width=4, alpha=0.8, edge_color=[c])
@@ -516,6 +512,30 @@ class FactorAnalysis():
 
         return df
 
+
+def factor_graphing(factors, filepath):
+    if not os.path.isdir(filepath):
+        os.mkdir(filepath)
+
+
+    f = FactorAnalysis()
+    tree_edges = f.rebuild_MEET_tree(factors)
+    G, f_edges, dims = f.generate_G(tree_edges)
+    big_f_edges = [list(list(itertools.combinations(f, 2))) for f in factors]
+
+    # f.graph_factors(G, f.assign_colors(f_edges), dims)
+    #
+    # exit(13)
+
+    f.graph_factors(G, f.assign_colors(f_edges), dims,
+                    save_path=filepath + 'tree.png')  # plot the tree
+
+    bigfc = f.assign_colors(big_f_edges)
+    f.graph_factors(G, bigfc, dims, save_path=filepath + 'full.png')  # plot fully connected
+    for factor in range(len(bigfc)):
+        # f.graph_factors(G, [bigfc[factor]], dims)
+        f.graph_factors(G, [bigfc[factor]], dims,
+                        save_path=filepath + str(factor) + '.png')
 
 if __name__ == '__main__':
     optimization = OptimizationAnalysis()

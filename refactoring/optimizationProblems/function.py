@@ -229,7 +229,7 @@ class Function(object):
             result += ackley__(dot(z[idx1], self.matrix_data))
         return result
   
-    def F17(self, solution=None, name="D/2m-group Shifted m-dimensional Schwefel’s Problem 1.2", m_group=50):
+    def F17(self, solution=None, name="D/2m-group Shifted m-dimensional Schwefel’s Problem 1.2", m_group=4):
         self.name = name
         epoch = int(self.dimensions / m_group)
         # check_m_group("F17", self.dimensions, m_group)

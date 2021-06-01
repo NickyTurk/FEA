@@ -267,6 +267,8 @@ class FactorArchitecture(object):
         self.method = "MEET"
         factors = []
 
+        print(f'Total weight: {T.size(weight="weight")}')
+
         for node in list(T.nodes):  # each dimension
             factor = list(T.neighbors(node))  # adjacent nodes
             factor.append(node)  # add itself to the group

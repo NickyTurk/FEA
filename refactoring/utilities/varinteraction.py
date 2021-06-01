@@ -48,12 +48,17 @@ class MEE(object):
                     de[k] = (y_2 - y_1) / delta
 
                 avg_de = np.mean(de)
-                de[de < self.de_thresh] = avg_de  # use np fancy indexing to replace values
+                # de[de < self.de_thresh] = avg_de  # use np fancy indexing to replace values
+
+                for k in range(1, sample_size):
+                    if abs(de[i] - avg_de) < self.de_thresh:
+                        de[i] = avg_de
 
                 mine = MINE()
                 mine.compute_score(de, x_j)
                 mic = mine.mic()
                 if self.use_mic_value:
+                    print(mic, end=", ")
                     self.IM[i, j] = mic
                 elif not self.use_mic_value and mic > self.mic_thresh:  # threshold <--------
                     self.IM[i, j] = 1
@@ -104,12 +109,14 @@ class RandomTree(object):
         :param trials: The number of iterations to run
         :return:
         """
+        summary = ""
         for i in range(trials):
             self.iteration_ctr += 1  # keep track of global counter to allow for multiple, sequential run calls
             # print("Iteration " + str(self.iteration_ctr))
 
             edges = list(self.T.edges(data="weight"))
-            remove = min(edges)  # find the cheapest edge
+            remove = choice(edges)  # remove a random edge
+            # remove = min(edges, key=lambda e: e[2])  # find the cheapest edge
             self.T.remove_edge(remove[0], remove[1])  # delete the edge
 
             comp1, comp2 = connected_components(self.T)
@@ -118,10 +125,15 @@ class RandomTree(object):
             node2 = choice(list(comp2))  # generate random end node
 
             interact = self.compute_interaction(node1, node2)
+            print(f"Interaction: {interact}")
+            summary += f"\t|\t{remove[2]} --> {interact} "
             if interact > remove[2]:  # if the new random edge is more expensive then the previous one, add it
                 self.T.add_edge(node1, node2, weight=interact)
+                summary += "Accepted"
             else:  # otherwise add the original one back
                 self.T.add_edge(remove[0], remove[1], weight=remove[2])
+                summary += "Rejected"
+        print(summary)
         return self.T
 
     def compute_interaction(self, i, j):
@@ -131,21 +143,25 @@ class RandomTree(object):
         :param j:
         :return: MIC value
         """
-        if self.IM[i][j] != -1:
+        if self.IM[i][j] > 0:
             return self.IM[i][j]
         # number of values to calculate == sample size
         f, dim, lb, ub, sample_size, delta = self.f, self.d, self.lb, self.ub, self.samples, self.delta
         de = np.zeros(sample_size)
         # generate n values (i.e. samples) for j-th dimension
         x_j = np.random.rand(sample_size) * (ub[j] - lb[j]) + lb[j]
+        # randomly generate solution -- initialization of function variables
+        x = np.random.uniform(lb, ub, size=dim)
         for k in range(1, sample_size):
-            # randomly generate solution -- initialization of function variables
-            x = np.random.uniform(lb, ub, size=dim)
+            cp = x[j]
             x[j] = x_j[k]  # set jth value to random sample value
             y_1 = f.run(x)
             x[i] = x[i] + delta
             y_2 = f.run(x)
             de[k] = (y_2 - y_1) / delta
+            # Reset the changes
+            x[j] = cp
+            x[i] = x[i] - delta
 
         avg_de = np.mean(de)
         de[de < self.de_thresh] = avg_de  # use np fancy indexing to replace values
@@ -154,6 +170,7 @@ class RandomTree(object):
         mine.compute_score(de, x_j)
         mic = mine.mic()
         self.IM[i, j] = mic
+        print(f"Mic: {mic}")
         return mic
 
 
