@@ -58,7 +58,7 @@ class MEE(object):
                 mine.compute_score(de, x_j)
                 mic = mine.mic()
                 if self.use_mic_value:
-                    print(mic, end=", ")
+                    # print(mic, end=", ")
                     self.IM[i, j] = mic
                 elif not self.use_mic_value and mic > self.mic_thresh:  # threshold <--------
                     self.IM[i, j] = 1
@@ -125,7 +125,6 @@ class RandomTree(object):
             node2 = choice(list(comp2))  # generate random end node
 
             interact = self.compute_interaction(node1, node2)
-            print(f"Interaction: {interact}")
             summary += f"\t|\t{remove[2]} --> {interact} "
             if interact > remove[2]:  # if the new random edge is more expensive then the previous one, add it
                 self.T.add_edge(node1, node2, weight=interact)
@@ -170,7 +169,7 @@ class RandomTree(object):
         mine.compute_score(de, x_j)
         mic = mine.mic()
         self.IM[i, j] = mic
-        print(f"Mic: {mic}")
+        self.IM[j, i] = mic
         return mic
 
 

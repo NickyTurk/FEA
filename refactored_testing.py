@@ -13,9 +13,9 @@ if __name__ == '__main__':
     f = Function(17, shift_data_file="f17_op.txt")
     print(f.function_to_call)
 
-    dim = 20
+    dim = 200
     outputfile.write("Dim: " + str(dim) + " Random Init\n")
-    random_iteration = [1, 4, 5, 10, 20, 200]
+    random_iteration = [5, 15, 30, 50, 100, 200, 600, 1000]
 
     total = 0
     im = RandomTree(f, dim, 100, 0.001, 0.000001)
@@ -30,29 +30,29 @@ if __name__ == '__main__':
         print("finished Random " + str(total))
         meet.save_architecture("MeetRandom/rand" + str(total))
 
-        factor_graphing(meet.factors, f"./MeetRandom/imgs/rand{total}/")
+        # factor_graphing(meet.factors, f"./MeetRandom/imgs/rand{total}/")
 
-    print("Starting MEET IM")
-    im = MEE(f, dim, 100, 0, 0.001, 0.000001, use_mic_value=True)
-    IM = im.get_IM()
-    print("finished IM")
-    meet = FactorArchitecture(dim=dim)
-    meet.MEET(IM)
-    print("finished MEET")
-    meet.save_architecture("MeetRandom/meet")
+    # print("Starting MEET IM")
+    # im = MEE(f, dim, 100, 0, 0.001, 0.000001, use_mic_value=True)
+    # IM = im.get_IM()
+    # print("finished IM")
+    # meet = FactorArchitecture(dim=dim)
+    # meet.MEET(IM)
+    # print("finished MEET")
+    # meet.save_architecture("MeetRandom/meet")
 
-    factor_graphing(meet.factors, "./MeetRandom/imgs/meet/")
+    # factor_graphing(meet.factors, "./MeetRandom/imgs/meet/")
 
     summary  = {}
 
-    fa = FactorArchitecture()
-    print("FEA MEET")
-    fa.load_architecture("MeetRandom/meet")
-    fea = FEA(f, 10, 10, 3, fa, PSO)
-    fea.run()
-    outputfile.write(f"MEET, \t\t{fea.global_fitness}\n")
-    print(fea.global_fitness)
-    summary['MEET'] = fea.global_fitness
+    # fa = FactorArchitecture()
+    # print("FEA MEET")
+    # fa.load_architecture("MeetRandom/meet")
+    # fea = FEA(f, 10, 10, 3, fa, PSO)
+    # fea.run()
+    # outputfile.write(f"MEET, \t\t{fea.global_fitness}\n")
+    # print(fea.global_fitness)
+    # summary['MEET'] = fea.global_fitness
 
     total = 0
     for it in random_iteration:
