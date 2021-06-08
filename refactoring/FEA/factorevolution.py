@@ -73,8 +73,8 @@ class FEA:
 
 
 if __name__ == '__main__':
-    from refactoring.baseAlgorithms.pso import PSO
-    from refactoring.optimizationProblems.function import Function
+    from refactoring.basealgorithms.pso import PSO
+    from refactoring.optimizationproblems.function import Function
     from refactoring.FEA.factorarchitecture import FactorArchitecture
 
     fa = FactorArchitecture()

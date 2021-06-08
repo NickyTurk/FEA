@@ -174,7 +174,7 @@ class RandomTree(object):
 
 
 if __name__ == '__main__':
-    from refactoring.optimizationProblems.function import Function
+    from refactoring.optimizationproblems.function import Function
     f = Function(function_number=1, shift_data_file="f01_o.txt")
     mee = MEE(f, 5, 5, 0.1, 0.0001, 0.000001)
     mee.get_IM()

@@ -48,8 +48,8 @@ class CSVReader(object):
         dim_array = np.array(dim_frame['FACTORS'])
 
         if epsilon == 0:
-            index = dim_frame['NR_GROUPS'].argmax()
-            factors = literal_eval(dim_array[index])
+            home = dim_frame['NR_GROUPS'].argmax()
+            factors = literal_eval(dim_array[home])
         else:
             epsilon_row = dim_frame.loc[dim_frame['EPSILON'] == epsilon]
             factors = literal_eval(np.array(epsilon_row['FACTORS'])[0])
