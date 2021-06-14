@@ -51,8 +51,8 @@ class MEE(object):
                 # de[de < self.de_thresh] = avg_de  # use np fancy indexing to replace values
 
                 for k in range(1, sample_size):
-                    if abs(de[i] - avg_de) < self.de_thresh:
-                        de[i] = avg_de
+                    if abs(de[k] - avg_de) < self.de_thresh:
+                        de[k] = avg_de
 
                 mine = MINE()
                 mine.compute_score(de, x_j)
