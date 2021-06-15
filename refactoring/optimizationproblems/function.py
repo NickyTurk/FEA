@@ -12,7 +12,7 @@
 from numpy.random import seed, permutation
 from numpy import dot, ones
 from opfunu.cec.cec2010.utils import *
-from refactoring.optimizationproblems.benchmarks import *
+from refactoring.optimizationProblems.benchmarks import *
 
 
 class Function(object):

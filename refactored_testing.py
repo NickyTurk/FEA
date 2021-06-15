@@ -1,10 +1,10 @@
-from refactoring.optimizationproblems.function import Function
+from refactoring.optimizationProblems.function import Function
 from refactoring.utilities.varinteraction import MEE, RandomTree
 from refactoring.FEA.factorevolution import FEA
 from refactoring.FEA.factorarchitecture import FactorArchitecture
-from refactoring.basealgorithms.pso import PSO
+from refactoring.baseAlgorithms.pso import PSO
 
-from stat_analysis import factor_graphing
+# from stat_analysis import factor_graphing
 
 if __name__ == '__main__':
     outputfile = open('./MeetRandom/trial.txt', 'a')
@@ -14,7 +14,7 @@ if __name__ == '__main__':
     print(f.function_to_call)
 
     dim = 200
-    outputfile.write("Dim: " + str(dim) + " Random Init\n")
+    outputfile.write("Dim: " + str(dim) + " Seed = 1\n")
     random_iteration = [5, 15, 30, 50, 100, 200, 600, 1000]
 
     total = 0
