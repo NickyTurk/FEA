@@ -17,6 +17,9 @@ class MEE(object):
         self.IM = np.zeros((self.d, self.d))
         self.use_mic_value = use_mic_value
 
+        # Define measure
+        self.measure = Entropic(self.f, self.d, self.lb, self.ub, self.samples, self.delta, self.de_thresh)
+
     def get_IM(self):
         self.direct_IM()
         if not self.use_mic_value:
@@ -34,26 +37,11 @@ class MEE(object):
         for i in range(dim):
             # compare to consecutive variable (/dimension)
             for j in range(i + 1, dim):
-                # number of values to calculate == sample size
-                de = np.zeros(sample_size)
-                # generate n values (i.e. samples) for j-th dimension
-                x_j = np.random.rand(sample_size) * (ub[j] - lb[j]) + lb[j]
-                for k in range(1, sample_size):
-                    # randomly generate solution -- initialization of function variables
-                    x = np.random.uniform(lb, ub, size=dim)
-                    x[j] = x_j[k]  # set jth value to random sample value
-                    y_1 = f.run(x)
-                    x[i] = x[i] + delta
-                    y_2 = f.run(x)
-                    de[k] = (y_2 - y_1) / delta
 
-                avg_de = np.mean(de)
-                de[de < self.de_thresh] = avg_de  # use np fancy indexing to replace values
+                mic = self.measure.compute(i, j)
 
-                mine = MINE()
-                mine.compute_score(de, x_j)
-                mic = mine.mic()
                 if self.use_mic_value:
+                    # print(mic, end=", ")
                     self.IM[i, j] = mic
                 elif not self.use_mic_value and mic > self.mic_thresh:  # threshold <--------
                     self.IM[i, j] = 1
@@ -97,6 +85,9 @@ class RandomTree(object):
         self.G = from_numpy_array(self.IM)  # We don't technically need this in self, but might as well have it
         self.T = maximum_spanning_tree(self.G)  # just make a tree (they're all -1 so it is a boring tree)
 
+        # Define measure
+        self.measure = Entropic(self.f, self.d, self.lb, self.ub, self.samples, self.delta, self.de_thresh)
+
     def run(self, trials):
         """
         Runs a greedy improvement algorithm on the existing tree
@@ -104,12 +95,14 @@ class RandomTree(object):
         :param trials: The number of iterations to run
         :return:
         """
+        summary = ""
         for i in range(trials):
             self.iteration_ctr += 1  # keep track of global counter to allow for multiple, sequential run calls
             # print("Iteration " + str(self.iteration_ctr))
 
             edges = list(self.T.edges(data="weight"))
-            remove = min(edges)  # find the cheapest edge
+            remove = choice(edges)  # remove a random edge
+            # remove = min(edges, key=lambda e: e[2])  # find the cheapest edge
             self.T.remove_edge(remove[0], remove[1])  # delete the edge
 
             comp1, comp2 = connected_components(self.T)
@@ -118,10 +111,14 @@ class RandomTree(object):
             node2 = choice(list(comp2))  # generate random end node
 
             interact = self.compute_interaction(node1, node2)
+            summary += f"\t|\t{remove[2]} --> {interact} "
             if interact > remove[2]:  # if the new random edge is more expensive then the previous one, add it
                 self.T.add_edge(node1, node2, weight=interact)
+                summary += "Accepted"
             else:  # otherwise add the original one back
                 self.T.add_edge(remove[0], remove[1], weight=remove[2])
+                summary += "Rejected"
+        print(summary)
         return self.T
 
     def compute_interaction(self, i, j):
@@ -131,21 +128,63 @@ class RandomTree(object):
         :param j:
         :return: MIC value
         """
-        if self.IM[i][j] != -1:
+        if self.IM[i][j] > 0:
             return self.IM[i][j]
+
+        mic = self.measure.compute(i, j)
+
+        self.IM[i, j] = mic
+        self.IM[j, i] = mic
+        return mic
+
+
+class Measure(object):
+    """
+    Base class
+    """
+
+    def compute(self, i, j):
+        return 0
+
+
+class Entropic(Measure):
+    def __init__(self, f, d, lb, ub, samples, delta, de_thresh):
+        """
+        Uses MEE to compute interaction
+        :param f: function
+        :param d: dimensions
+        :param lb: lower bound matrix
+        :param ub: upper bound matrix
+        :param samples: number of samples to take
+        :param delta: pertubation
+        :param de_thresh: threshold value
+        """
+        self.de_thresh = de_thresh
+        self.delta = delta
+        self.samples = samples
+        self.ub = ub
+        self.lb = lb
+        self.d = d
+        self.f = f
+
+    def compute(self, i, j):
         # number of values to calculate == sample size
         f, dim, lb, ub, sample_size, delta = self.f, self.d, self.lb, self.ub, self.samples, self.delta
         de = np.zeros(sample_size)
         # generate n values (i.e. samples) for j-th dimension
         x_j = np.random.rand(sample_size) * (ub[j] - lb[j]) + lb[j]
+        # randomly generate solution -- initialization of function variables
+        x = np.random.uniform(lb, ub, size=dim)
         for k in range(1, sample_size):
-            # randomly generate solution -- initialization of function variables
-            x = np.random.uniform(lb, ub, size=dim)
+            cp = x[j]
             x[j] = x_j[k]  # set jth value to random sample value
             y_1 = f.run(x)
             x[i] = x[i] + delta
             y_2 = f.run(x)
             de[k] = (y_2 - y_1) / delta
+            # Reset the changes
+            x[j] = cp
+            x[i] = x[i] - delta
 
         avg_de = np.mean(de)
         de[de < self.de_thresh] = avg_de  # use np fancy indexing to replace values
@@ -153,12 +192,43 @@ class RandomTree(object):
         mine = MINE()
         mine.compute_score(de, x_j)
         mic = mine.mic()
-        self.IM[i, j] = mic
         return mic
 
 
+class DGInteraction(Measure):
+    def __init__(self, func, dim, epsilon, lbound, ubound, m=0):
+        self.f = func
+        self.dim = dim
+        self.eps = epsilon
+        self.m = m
+        self.lbound = lbound
+        self.ubound = ubound
+
+    def compute(self, i, j):
+        p1 = np.multiply(self.lbound, np.ones(self.dim))  # python does weird things if you set p2 = p1
+        p2 = np.multiply(self.lbound, np.ones(self.dim))  # python does weird things if you set p2 = p1
+        p2[i] = self.ubound
+        if self.m == 0:
+            delta1 = self.f.run(p1) - self.f.run(p2)
+        else:
+            delta1 = self.f.run(p1, m_group=self.m) - self.f.run(p2, m_group=self.m)
+
+        p3 = np.multiply(self.lbound, np.ones(self.dim))
+        p4 = np.multiply(self.lbound, np.ones(self.dim))
+        p4[i] = self.ubound
+        p3[j] = 0  # In factorarcitecture.check_delta it is self.dimensions[j]. In ODG this is equivalent
+        p4[j] = 0  # grabs dimension to compare to, same as home
+
+        if self.m == 0:
+            delta2 = self.f.run(p3) - self.f.run(p4)
+        else:
+            delta2 = self.f.run(p3, m_group=self.m) - self.f.run(p4, m_group=self.m)
+
+        return abs(delta1 - delta2)
+
+
 if __name__ == '__main__':
-    from refactoring.optimizationproblems.function import Function
+    from refactoring.optimizationProblems.function import Function
     f = Function(function_number=1, shift_data_file="f01_o.txt")
     mee = MEE(f, 5, 5, 0.1, 0.0001, 0.000001)
     mee.get_IM()

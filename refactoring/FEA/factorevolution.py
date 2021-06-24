@@ -2,7 +2,10 @@ import numpy as np
 
 
 class FEA:
-    def __init__(self, function, fea_runs, generations, pop_size, factor_architecture, base_algorithm):
+    def __init__(self, function, fea_runs, generations, pop_size, factor_architecture, base_algorithm, seed=None):
+        if seed is not None:
+            np.random.seed(seed)
+
         self.f = function
         self.fea_runs = fea_runs
         self.generations = generations
