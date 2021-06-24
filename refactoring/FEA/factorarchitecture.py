@@ -87,9 +87,7 @@ class FactorArchitecture(object):
         csv = CSVReader(file)
         self.factors, f = csv.import_factors(dim)
         self.dim = dim
-        self.nominate_arbiters()
-        self.calculate_optimizers()
-        self.determine_neighbors()
+        self.get_factor_topology_elements()
 
     def linear_grouping(self, width, offset):
         self.method = "linear"
@@ -97,9 +95,6 @@ class FactorArchitecture(object):
         if offset == width:
             print("WARNING - offset and width are equal; the factors will not overlap.")
         self.factors = list(zip(*[range(i, self.dim, offset) for i in range(0, width)]))
-        self.nominate_arbiters()
-        self.calculate_optimizers()
-        self.determine_neighbors()
 
     def ring_grouping(self, width=2):
         self.method = "ring"
@@ -145,9 +140,6 @@ class FactorArchitecture(object):
             factors.append(tuple(separate_variables))
 
         self.factors = factors
-        self.nominate_arbiters()
-        self.calculate_optimizers()
-        self.determine_neighbors()
 
     def overlapping_diff_grouping(self, _function, epsilon, m=0):
         """
@@ -177,9 +169,6 @@ class FactorArchitecture(object):
 
         factors.append(tuple(separate_variables))
         self.factors = factors
-        self.nominate_arbiters()
-        self.calculate_optimizers()
-        self.determine_neighbors()
 
     def check_delta(self, _function, m, i, size, dimensions, eps, curr_factor):
         """
@@ -246,9 +235,6 @@ class FactorArchitecture(object):
 
         # run fuzzy kmeans with the eigen vectors
         self.factors = FuzzyKmeans(eig_vectors, num_clusters).assign_clusters()
-        self.nominate_arbiters()
-        self.calculate_optimizers()
-        self.determine_neighbors()
 
     def MEET(self, T):
         """
@@ -273,12 +259,14 @@ class FactorArchitecture(object):
             factors.append(factor)
 
         self.factors = factors
+
+    def get_factor_topology_elements(self):
+        """
+        Calculates arbiters, optimizers and neighbours based on the created factors.
+        """
         self.nominate_arbiters()
         self.calculate_optimizers()
         self.determine_neighbors()
-
-
-
 
     def nominate_arbiters(self):
         """
