@@ -103,7 +103,7 @@ class FactorArchitecture(object):
         self.determine_neighbors()
         self.calculate_optimizers()
 
-    def diff_grouping(self, _function, epsilon, m=0):
+    def diff_grouping(self, _function, epsilon, m=0, moo=False, n_obj=np.inf):
         """
         DIFFERENTIAL GROUPING
         Omidvar et al. 2010
@@ -121,7 +121,7 @@ class FactorArchitecture(object):
             # initialize for current iteration
             curr_factor = [dimensions[0]]
 
-            curr_factor = self.check_delta(_function, m, 1, size, dimensions, epsilon, curr_factor)
+            curr_factor = self.check_delta(_function, m, 1, size, dimensions, epsilon, curr_factor, moo, n_obj)
 
             if len(curr_factor) == 1:
                 separate_variables.extend(curr_factor)
@@ -141,7 +141,7 @@ class FactorArchitecture(object):
 
         self.factors = factors
 
-    def overlapping_diff_grouping(self, _function, epsilon, m=0):
+    def overlapping_diff_grouping(self, _function, epsilon, m=0, moo=False, n_obj=np.inf):
         """
         Use differential grouping approach to determine factors.
         :return:
@@ -158,7 +158,7 @@ class FactorArchitecture(object):
             # initialize for current iteration
             curr_factor = [dim]
 
-            self.check_delta(_function, m, i, size, dimensions, epsilon, curr_factor)
+            self.check_delta(_function, m, i, size, dimensions, epsilon, curr_factor, moo, n_obj)
 
             if len(curr_factor) == 1:
                 separate_variables.extend(curr_factor)
@@ -170,7 +170,7 @@ class FactorArchitecture(object):
         factors.append(tuple(separate_variables))
         self.factors = factors
 
-    def check_delta(self, _function, m, i, size, dimensions, eps, curr_factor):
+    def check_delta(self, _function, m, i, size, dimensions, eps, curr_factor, moo=False, n_obj=np.inf):
         """
         Helper function for the two differential grouping approaches.
         Compares function fitnesses to determine whether there is a difference in results larger than 'epsilon'.
@@ -186,10 +186,13 @@ class FactorArchitecture(object):
         p1 = np.multiply(_function.lbound, np.ones(self.dim))  # python does weird things if you set p2 = p1
         p2 = np.multiply(_function.lbound, np.ones(self.dim))  # python does weird things if you set p2 = p1
         p2[i] = _function.ubound
-        if m == 0:
-            delta1 = _function.run(p1) - _function.run(p2)
-        else:
-            delta1 = _function.run(p1, m_group=m) - _function.run(p2, m_group=m)
+        if not moo:
+            if m == 0:
+                delta1 = _function.run(p1) - _function.run(p2)
+            else:
+                delta1 = _function.run(p1, m_group=m) - _function.run(p2, m_group=m)
+        elif moo:
+            delta1 = _function.run(p1, i=n_obj) - _function.run(p2, i=n_obj)
         self.function_evaluations += 2
 
         for j in range(i + 1, size):
@@ -199,10 +202,13 @@ class FactorArchitecture(object):
             p3[dimensions[j]] = 0
             p4[dimensions[j]] = 0  # grabs dimension to compare to, same as home
 
-            if m == 0:
-                delta2 = _function.run(p3) - _function.run(p4)
-            else:
-                delta2 = _function.run(p3, m_group=m) - _function.run(p4, m_group=m)
+            if not moo:
+                if m == 0:
+                    delta2 = _function.run(p3) - _function.run(p4)
+                else:
+                    delta2 = _function.run(p3, m_group=m) - _function.run(p4, m_group=m)
+            elif moo:
+                delta2 = _function.run(p3, i=n_obj) - _function.run(p4, i=n_obj)
             self.function_evaluations += 2
 
             if abs(delta1 - delta2) > eps:
@@ -322,3 +328,39 @@ class FactorArchitecture(object):
                     neighbor.append(j)
             neighbors.append(neighbor)
         self.neighbors = neighbors
+
+
+class MooFactorArchitecture:
+
+    def __init__(self, dim, problem, decomp_approach='diff_grouping'):
+        self.dim = dim
+        self.problem = problem
+        self.decomp = decomp_approach
+
+    def create_objective_factors(self, save_files=True) -> FactorArchitecture:
+        """Create factors along different objective functions.
+        For each objective, a FactorArchitecture object is created.
+        :param save_files: Boolean that determines whether the created factorArchitectures are saved in pickle files
+        :returns FactorArchitecture object: with all the factors generated
+        """
+        all_factors = FactorArchitecture(self.dim)
+        eps = 0.000000001
+        for i in range(self.problem.n_obj):
+            fa = FactorArchitecture(self.dim)
+            getattr(fa, self.decomp)(self.problem, eps, moo=True, n_obj=i)
+            if save_files:
+                fa.save_architecture(
+                    '../factor_architecture_files/n_obj_' + str(self.problem.n_obj) + '/MOO_' + fa.method + '_dim_' + str(self.dim) + '_obj_' + str(i))
+            all_factors.factors.extend(fa.factors)
+        all_factors.get_factor_topology_elements()
+        return all_factors
+
+    def read_objective_factors(self, method_name) -> FactorArchitecture:
+        all_factors = FactorArchitecture(self.dim)
+        for i, obj in enumerate(self.problem.n_obj):
+            fa = FactorArchitecture(self.dim)
+            fa.load_architecture(
+                '../factor_architecture_files/MOO_' + method_name + '_dim_' + str(self.dim) + '_obj_' + str(i))
+            all_factors.factors.extend(fa.factors)
+        all_factors.get_factor_topology_elements()
+        return all_factors

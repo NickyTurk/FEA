@@ -10,17 +10,21 @@ class Particle(object):
         self.dim = size
         self.factor = factor
         self.velocity = np.zeros(size)
+        # TODO: change this to accept MOO fitness i.o. single fitness: this means changing the fitness comparison
         self.fitness = self.calculate_fitness(self.position, global_solution)
         self.lbest_fitness = float('inf')
 
     def __le__(self, other):
-        return self.lbest_fitness <= other.lbest_fitness
+        if self.lbest_fitness is float:
+            return self.lbest_fitness <= other.lbest_fitness
 
     def __lt__(self, other):
-        return self.lbest_fitness < other.lbest_fitness
+        if self.lbest_fitness is float:
+            return self.lbest_fitness < other.lbest_fitness
 
     def __gt__(self, other):
-        return self.lbest_fitness > other.lbest_fitness
+        if self.lbest_fitness is float:
+            return self.lbest_fitness > other.lbest_fitness
 
     def __eq__(self, other):
         return (self.position == other.position).all()
@@ -140,7 +144,7 @@ class PSO(object):
 
 
 if __name__ == '__main__':
-    from refactoring.optimizationproblems.function import Function
+    from refactoring.optimizationproblems.continuous_functions import Function
 
     f = Function(function_number=1, shift_data_file="f01_o.txt")
     pso = PSO(10, 10, 10, f)

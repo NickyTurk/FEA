@@ -3,32 +3,20 @@ from ..FEA.factorarchitecture import FactorArchitecture
 
 
 class FEAMOO:
-    def __init__(self, problem, base_alg):
-        self.problem = problem
-        self.objectives = problem.objectives
-        self.obj_size = problem.n_obj
-        self.dim = problem.dimensions
-        self.factors = self.create_objective_factors()
+    def __init__(self, fea_iterations, alg_iterations, pop_size, fa, base_alg, dimensions, fitness_function=None):
+        if fitness_function is not None:
+            self.objectives = fitness_function.objectives
+        else:
+            self.objectives = []
+        self.dim = dimensions
+        self.nondom_archive = []
+        self.current_nondom_global_solutions=[]
+        self.factors = fa
         self.algorithm = base_alg
-        self.non_dominated_solutions = []
-        self.archive = []
-
-    def create_objective_factors(self, savefiles=True):
-        """Create factors along different objective functions.
-        For each objective, a FactorArchitecture object is created.
-        :param savefiles: Boolean that determines whether the created factorArchitectures are saved in pickle files
-        :returns FactorArchitecture object: with all the factors generated
-        """
-        all_factors = FactorArchitecture(self.dim)
-        for i, obj in enumerate(self.objectives):
-            fa = FactorArchitecture(self.dim)
-            fa.diff_grouping(obj, 0.001)
-            if savefiles:
-                fa.save_architecture(
-                    '../factor_architecture_files/MOO_' + fa.method + '_dim_' + str(self.dim) + '_obj_' + str(i))
-            all_factors.factors.extend(fa.factors)
-        all_factors.get_factor_topology_elements()
-        return all_factors
+        self.iterations = fea_iterations
+        self.base_alg_iterations = alg_iterations
+        self.pop_size = pop_size
+        self.current_iteration = 0
 
     def evaluate_pareto_dominance(self):
         """
@@ -41,7 +29,19 @@ class FEAMOO:
         for sol in self.archive:
             pass
 
-    def run(self):
+    def set_objectives(self, objectives):
+        self.objectives = objectives
 
+    def run(self):
+        '''
+        For each subpopulation:
+            Optimize along all objectives
+            Apply non-dominated sorting strategy
+            Include diversity measure individuals
+        Compete (based on non-domination of solution, i.e. overall fitness)
+        -> or ignore compete and create set of solutions based on overlapping variables: improves diversity? Check this with diversity measure
+        -> spread different non-domination solutions across different subpopulations, i.e., different subpopulations have different global solutions: this should also improve diversity along the PF?
+            :return:
+        '''
         fea = FEA(self.problem, 10, 10, 3, self.factors, self.algorithm)
 
