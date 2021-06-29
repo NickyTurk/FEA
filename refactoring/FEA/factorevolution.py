@@ -2,20 +2,22 @@ import numpy as np
 
 
 class FEA:
-    def __init__(self, function, fea_runs, generations, pop_size, factor_architecture, base_algorithm, seed=None):
+    def __init__(self, function, fea_runs, generations, pop_size, factor_architecture, base_algorithm, continuous=True,
+                 seed=None):
         if seed is not None:
             np.random.seed(seed)
 
-        self.f = function
+        self.function = function
         self.fea_runs = fea_runs
-        self.generations = generations
-        self.pop = pop_size
+        self.base_alg_iterations = generations
+        self.pop_size = pop_size
         self.factor_architecture = factor_architecture
         self.dim = factor_architecture.dim
         self.base_algorithm = base_algorithm
-        self.global_solution = np.random.uniform(function.lbound, function.ubound, size=factor_architecture.dim)
-        self.global_fitness = function.run(self.global_solution)
-        self.solution_history = [self.global_solution]
+        self.global_solution = None
+        self.global_fitness = np.inf
+        self.solution_history = []
+        self.set_global_solution(continuous)
         self.subpopulations = self.initialize_factored_subpopulations()
 
     def run(self):
@@ -26,10 +28,18 @@ class FEA:
             self.share_solution()
             print('fea run ', fea_run, self.global_fitness)
 
+    def set_global_solution(self, continuous):
+        if continuous:
+            self.global_solution = np.random.uniform(self.function.lbound, self.function.ubound, size=self.factor_architecture.dim)
+            self.global_fitness = self.function.run(self.global_solution)
+            self.solution_history = [self.global_solution]
+
     def initialize_factored_subpopulations(self):
         fa = self.factor_architecture
         alg = self.base_algorithm
-        return [alg(self.generations, self.pop, self.f, len(factor), factor, self.global_solution) for factor in fa.factors]
+        return [
+            alg(function=self.function, ga_runs=self.base_alg_iterations, population_size=self.pop_size, factor=factor)
+            for factor in fa.factors]
 
     def share_solution(self):
         """
@@ -56,7 +66,7 @@ class FEA:
         Set new global solution after all variables have been checked
         """
         sol = [x for x in self.global_solution]
-        f = self.f
+        f = self.function
         curr_fitness = f.run(self.global_solution)
         for var_idx in range(self.dim):
             best_value_for_var = sol[var_idx]
@@ -77,7 +87,7 @@ class FEA:
 
 if __name__ == '__main__':
     from refactoring.basealgorithms.pso import PSO
-    from refactoring.optimizationproblems.function import Function
+    from refactoring.optimizationproblems.continuous_functions import Function
     from refactoring.FEA.factorarchitecture import FactorArchitecture
 
     fa = FactorArchitecture()
