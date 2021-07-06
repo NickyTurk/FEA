@@ -58,16 +58,4 @@ class MOOFunctions:
                 f.append(_f)
             return anp.column_stack(f)
 
-    def precision_ag(self):
-        self.problem = Prescription()
-        self.objectives = [self.problem.maximize_stratification, self.problem.minimize_jumps,
-                           self.problem.minimize_overall_fertilizer_rate]
 
-    def precision_ag_obj_func(self, x, i):
-        if i < self.n_obj:
-            return self.objectives[i](x)
-        elif i == self.n_obj:
-            f = []
-            for j in range(0, self.n_obj):
-                f.append(self.objectives[j](x))
-            return f
