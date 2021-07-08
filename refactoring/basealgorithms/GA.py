@@ -4,19 +4,20 @@ The Genetic Algorithm implementation to maximize stratification while minimizing
 Prescription class -- stores all relevant fitness score information for each map instance.
 GA class -- algorithm instance
 """
+from refactoring.optimizationproblems.prescription import Prescription
+from refactoring.MOO.paretofront import *
 
 import numpy as np
+from pymoo.algorithms.nsga2 import calc_crowding_distance
 import random
-from refactoring.optimizationproblems.prescription import Prescription
 
 
 class GA:
-    def __init__(self, function, population_size=200, tournament_size=20, mutation_rate=0.1, crossover_rate=0.90,
+    def __init__(self, population_size=200, tournament_size=20, mutation_rate=0.1, crossover_rate=0.90,
                  ga_runs=20, mutation_type="swap", crossover_type="multi",
                  parent_pairs_size=20, data_distribution=False, weight=.75, factor=None, global_solution=None):
-        self.function = function
         self.run_algorithm_bool = False
-        self.prescription_maps = []
+        self.curr_population = []
         self.population_size = population_size
         self.tournament_size = tournament_size
         self.mutation_rate = mutation_rate
@@ -30,6 +31,9 @@ class GA:
         self.cell_distribution = data_distribution  # bins are equally distributed across cells: True or False
         self.stopping_run = False
         self.w = weight
+        self.gbests = []
+        self.nondom_pop = []
+        self.pf = ParetoOptimization()
 
     def stop_ga_running(self):
         self.stopping_run = True
@@ -46,12 +50,12 @@ class GA:
         """
         keys = ["run", "overall", "jumps", "strat", "fertilizer", "variance", "min_score", "max_score"]
         stat_values = []
-        scores = [_map.overall_fitness for _map in self.prescription_maps]
+        scores = [_map.overall_fitness for _map in self.curr_population]
         stat_values.append(run)
         stat_values.append(np.mean(scores))
-        stat_values.append(np.mean([_map.jumps for _map in self.prescription_maps]))
-        stat_values.append(np.mean([_map.strat for _map in self.prescription_maps]))
-        stat_values.append(np.mean([_map.fertilizer_rate for _map in self.prescription_maps]))
+        stat_values.append(np.mean([_map.jumps for _map in self.curr_population]))
+        stat_values.append(np.mean([_map.strat for _map in self.curr_population]))
+        stat_values.append(np.mean([_map.fertilizer_rate for _map in self.curr_population]))
         stat_values.append(np.var(scores))
         stat_values.append(min(scores))
         stat_values.append(max(scores))
@@ -64,7 +68,7 @@ class GA:
         while i < self.population_size:
             if field is not None:
                 new_map = Prescription(field=field, index=i)
-                self.prescription_maps.append(new_map)
+                self.curr_population.append(new_map)
                 if i == 0:
                     initial_solution = new_map
                 i = i + 1
@@ -79,8 +83,8 @@ class GA:
         i = 0
         chosen_prescriptions = []
         while i < k_individuals:
-            rand = random.randint(0, len(self.prescription_maps) - 1)
-            chosen_prescriptions.append(self.prescription_maps[rand])
+            rand = random.randint(0, len(self.curr_population) - 1)
+            chosen_prescriptions.append(self.curr_population[rand])
             i += 1
 
         chosen_prescriptions.sort()
@@ -118,7 +122,7 @@ class GA:
                 np.random.shuffle(temp_list)
                 _map.variables[min_index:max_index] = temp_list
 
-        self.function.set_fitness(_map.variables, self.global_solution, self.factor)
+        _map.set_fitness(_map.variables, self.global_solution, self.factor)
 
         return _map
 
@@ -155,36 +159,36 @@ class GA:
         So the function uses the index of the first maps position in order to avoid that
         """
 
-        scores = [map.score for map in self.prescription_maps]
+        scores = [map.score for map in self.curr_population]
         min_index = scores.index(min(scores))
         prescription_maps[min_index] = [x for x in given_map]
         return min_index, prescription_maps
 
     def find_best_solutions(self):
         # finds index of the 'best' solution
-        best_overall_index, best_jump_index, best_strat_index, best_rate_index = self.prescription_maps[0].index
-        best_overall_score = self.prescription_maps[0].overall_fitness
-        best_jump_score = self.prescription_maps[0].jumps
-        best_strat_score = self.prescription_maps[0].strat
-        best_rate_score = self.prescription_maps[0].fertilizer_rate
+        best_overall_index, best_jump_index, best_strat_index, best_rate_index = self.curr_population[0].index
+        best_overall_score = self.curr_population[0].overall_fitness
+        best_jump_score = self.curr_population[0].jumps
+        best_strat_score = self.curr_population[0].strat
+        best_rate_score = self.curr_population[0].fertilizer_rate
 
         i = 0
         while i < self.population_size:
-            if self.prescription_maps[i].overall_fitness < best_overall_score:
-                best_overall_score = self.prescription_maps[i].overall_fitness
-                best_overall_index = self.prescription_maps[i].index
-            if self.prescription_maps[i].jumps < best_jump_score:
-                best_jump_score = self.prescription_maps[i].jumps
-                best_jump_index = self.prescription_maps[i].index
-            if self.prescription_maps[i].strat < best_strat_score:
-                best_strat_score = self.prescription_maps[i].strat
-                best_strat_index = self.prescription_maps[i].index
-            if self.prescription_maps[i].fertilizer_rate < best_rate_score:
-                best_rate_score = self.prescription_maps[i].fertilizer_rate
-                best_rate_index = self.prescription_maps[i].index
+            if self.curr_population[i].overall_fitness < best_overall_score:
+                best_overall_score = self.curr_population[i].overall_fitness
+                best_overall_index = self.curr_population[i].index
+            if self.curr_population[i].jumps < best_jump_score:
+                best_jump_score = self.curr_population[i].jumps
+                best_jump_index = self.curr_population[i].index
+            if self.curr_population[i].strat < best_strat_score:
+                best_strat_score = self.curr_population[i].strat
+                best_strat_index = self.curr_population[i].index
+            if self.curr_population[i].fertilizer_rate < best_rate_score:
+                best_rate_score = self.curr_population[i].fertilizer_rate
+                best_rate_index = self.curr_population[i].index
             i = i + 1
-        best_maps = [self.prescription_maps[best_overall_index], self.prescription_maps[best_jump_index],
-                     self.prescription_maps[best_strat_index], self.prescription_maps[best_rate_index]]
+        best_maps = [self.curr_population[best_overall_index], self.curr_population[best_jump_index],
+                     self.curr_population[best_strat_index], self.curr_population[best_rate_index]]
         return best_maps
 
     def create_offspring(self):
@@ -192,9 +196,9 @@ class GA:
         children = []
         while j < self.parent_pairs_size:
             first_map = self.tournament_selection(self.tournament_size)
-            self.prescription_maps.remove(first_map)
+            self.curr_population.remove(first_map)
             second_map = self.tournament_selection(self.tournament_size)
-            self.prescription_maps.append(first_map)
+            self.curr_population.append(first_map)
 
             if random.random() < self.crossover_rate:
                 child1, child2 = self.crossover(first_map, second_map)
@@ -210,10 +214,25 @@ class GA:
         return children
 
     def select_new_generation(self, total_population):
-        total_population.sort()
-        # check for non-domination after sorting, then sort based on diversity
-        self.prescription_maps = [x for i, x in enumerate(total_population) if i < self.population_size]
-        random.shuffle(self.prescription_maps)
+        # check for non-domination, then sort based on crowding distance
+        self.nondom_pop = self.pf.evaluate_pareto_dominance(total_population)
+        if len(self.nondom_pop) == self.population_size:
+            self.curr_population = [x for x in self.nondom_pop]
+        if len(self.nondom_pop) < self.population_size:
+            new_population = [x for x in self.nondom_pop]
+            total_population = [x for x in total_population if x not in self.nondom_pop]
+            sorted_population = self.diversity_sort(total_population)
+            new_population.extend(sorted_population[:(self.population_size-len(self.nondom_pop))])
+            self.curr_population = new_population
+        else:
+            sorted_population = self.diversity_sort(self.nondom_pop)
+            self.curr_population = sorted_population[:self.population_size]
+        random.shuffle(self.curr_population)
+
+    def diversity_sort(self, population):
+        fitnesses = np.array([x.objective_values for x in population])
+        distances = calc_crowding_distance(fitnesses)
+        return [x for y,x in sorted(zip(distances, population))]
 
     def run(self, progressbar=None, writer=None, field=None):
         """
@@ -234,7 +253,7 @@ class GA:
                                              stats_dict['Jumps_score']) + ".", i / self.ga_runs * 100)
 
             children = self.create_offspring()
-            total_population = self.prescription_maps + children
+            total_population = self.curr_population + children
             self.select_new_generation(total_population)
             i += 1
 
@@ -247,4 +266,5 @@ class GA:
             writer.writerow(self.calculate_statistics(self.ga_runs + 1))
 
         best_maps = self.find_best_solutions()
+        self.gbests = best_maps
         return best_maps, initial_map

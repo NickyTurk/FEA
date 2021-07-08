@@ -32,18 +32,30 @@ class Prescription:
             return False
 
     def __gt__(self, other):
-        if all(x >= y for x,y in zip(self.objective_values, other.objective_values)) \
+        if all(x >= y for x, y in zip(self.objective_values, other.objective_values)) \
                 and any(x > y for x,y in zip(self.objective_values, other.objective_values)):
             return True
         else:
             return False
 
+    # def __gt__(self, other):
+    #     if all(x > y for x, y in zip(self.objective_values, other.objective_values)):
+    #         return True
+    #     else:
+    #         return False
+
     def __lt__(self, other):
-        if all(x <= y for x,y in zip(self.objective_values, other.objective_values)) \
-                and any(x < y for x,y in zip(self.objective_values, other.objective_values)):
+        if all(x <= y for x, y in zip(self.objective_values, other.objective_values)) \
+                and any(x < y for x, y in zip(self.objective_values, other.objective_values)):
             return True
         else:
             return False
+
+    # def __lt__(self, other):
+    #     if all(x < y for x, y in zip(self.objective_values, other.objective_values)):
+    #         return True
+    #     else:
+    #         return False
 
     def run(self, x, i):
         if i < self.n_obj:

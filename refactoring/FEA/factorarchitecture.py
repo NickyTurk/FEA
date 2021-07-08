@@ -10,7 +10,6 @@ import os
 from refactoring.utilities.clustering import FuzzyKmeans
 
 
-@jit
 def rotate(xs, n):
     return xs[n:] + xs[:n]
 

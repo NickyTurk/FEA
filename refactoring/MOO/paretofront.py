@@ -1,4 +1,7 @@
+import itertools
+
 from pymoo.factory import get_performance_indicator
+from pymoo.algorithms.nsga2 import calc_crowding_distance
 import numpy as np
 import math
 from operator import attrgetter
@@ -6,11 +9,39 @@ from operator import attrgetter
 
 class ParetoOptimization:
 
-    def __init__(self, obj_size):
+    def __init__(self, obj_size=3):
         """
         :param obj_size: The number of objectives in the problem definition.
         """
         self.n_obj = obj_size
+        self.approximate_pareto_front = []
+
+    def evaluate_pareto_dominance(self, population, save=False):
+        """
+        check whether the solutions are non-dominated
+        """
+        non_dominated_solutions = []
+        for a, b in itertools.combinations(population, 2):
+            if a < b:
+                if b in non_dominated_solutions:
+                    non_dominated_solutions.remove(b)
+                if a not in non_dominated_solutions:
+                    non_dominated_solutions.append(a)
+            elif b < a:
+                if a in non_dominated_solutions:
+                    non_dominated_solutions.remove(a)
+                if b not in non_dominated_solutions:
+                    non_dominated_solutions.append(b)
+            elif a == b:
+                if b in non_dominated_solutions:
+                    non_dominated_solutions.append(a)
+                elif a in non_dominated_solutions:
+                    non_dominated_solutions.append(b)
+                else:
+                    non_dominated_solutions.append(a)
+                    non_dominated_solutions.append(b)
+        self.approximate_pareto_front.extend([s.variables for s in non_dominated_solutions])
+        return non_dominated_solutions
 
     def evaluate_solution(self, approx_pareto_set, reference_point):
         """
@@ -37,7 +68,7 @@ class ParetoOptimization:
         spread_indicator = 0
         sorted_set = sorted(approx_pareto_set, key=attrgetter('overall_fitness'))
 
-        for i in self.n_obj:
+        for i in range(self.n_obj):
             spread_indicator += np.square(sorted_set[-1].variables - sorted_set[0].variables)
         return np.sqrt(spread_indicator)
 

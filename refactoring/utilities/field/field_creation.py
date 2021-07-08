@@ -58,7 +58,7 @@ class Field:
             self.pro_file = None
             self.grid_file = None
             self.as_applied_file = None
-            self.buffer_ = -50/ 364567.2
+            self.buffer_ = -(50/364567.2)
             self.strip_trial = False
             self.binning_strategy = 'distr'
 
@@ -81,7 +81,7 @@ class Field:
         self.protein_points = None
 
         self.ylpro_string_matrix = []
-        self.expected_bin_strat, self.max_strat, self.min_strat = 0, 0, 0
+        self.expected_nitrogen_strat, self.max_strat, self.min_strat = 0, 0, 0
         self.max_fertilizer_rate = 0
         self.max_jumps = 0
 
@@ -103,11 +103,13 @@ class Field:
             self.protein_points = Protein(self.pro_file)
 
         # Set full grid creation in motion. Includes assigning yield and protein to cells.
-        if self.grid_file != '':
+        if self.grid_file:
             self.cell_list = self.create_grid_from_file()
 
         else:
             self.cell_list = self.create_grid_for_field()
+
+        print(self.cell_list)
 
         if self.strip_trial:
             self.create_strip_trial()
@@ -115,7 +117,7 @@ class Field:
         self.set_cell_bins()
         self.cell_list = self.assign_nitrogen_distribution()
         self.ylpro_string_matrix = self.create_ylpro_string_matrix()
-        self.expected_bin_strat, self.max_strat, self.min_strat = self.calc_expected_bin_strat()
+        self.expected_nitrogen_strat, self.max_strat, self.min_strat = self.calc_expected_bin_strat()
         self.max_fertilizer_rate = max(self.nitrogen_list) * len(self.cell_list)
         self.max_jumps = ((len(self.nitrogen_list) - 1) * (len(self.cell_list) - 1))
 
@@ -135,7 +137,6 @@ class Field:
         FOLLOWING CODE PARTIALLY THANKS TO:
         https://github.com/mlaloux/My-Python-GIS_StackExchange-answers/blob/master/Generate%20grid%20programmatically%20using%20QGIS%20from%20Python.md
         """
-
         # initialize values
         grid_cell_list = []
         xmin, ymin, xmax, ymax = self.field_shape.bounds
@@ -155,7 +156,6 @@ class Field:
             ring_ybottom = ring_ybottom_origin
             for j in np.arange(rows):
                 new_grid_cell = GridCell([ring_xleft_origin, ring_ybottom, ring_xright_origin, ring_ytop])
-
                 # Basic grid creation, checks if cell that was created falls into field bounds.
                 # Adjusts the current pointer coordinates
                 if self.field_shape_buffered.contains(new_grid_cell.small_bounds):
