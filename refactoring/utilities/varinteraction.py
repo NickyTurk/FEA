@@ -18,7 +18,8 @@ class MEE(object):
         self.use_mic_value = use_mic_value
 
         # Define measure
-        self.measure = Entropic(self.f, self.d, self.lb, self.ub, self.samples, self.delta, self.de_thresh)
+        # self.measure = Entropic(self.f, self.d, self.lb, self.ub, self.samples, self.delta, self.de_thresh)
+        self.measure = DGInteraction(self.f, self.d, 0.001, func.lbound, func.ubound, m=4)
 
     def get_IM(self):
         self.direct_IM()
@@ -86,7 +87,8 @@ class RandomTree(object):
         self.T = maximum_spanning_tree(self.G)  # just make a tree (they're all -1 so it is a boring tree)
 
         # Define measure
-        self.measure = Entropic(self.f, self.d, self.lb, self.ub, self.samples, self.delta, self.de_thresh)
+        # self.measure = Entropic(self.f, self.d, self.lb, self.ub, self.samples, self.delta, self.de_thresh)
+        self.measure = DGInteraction(self.f, self.d, 0.001, func.lbound, func.ubound, m=4)
 
     def run(self, trials):
         """
@@ -208,10 +210,8 @@ class DGInteraction(Measure):
         p1 = np.multiply(self.lbound, np.ones(self.dim))  # python does weird things if you set p2 = p1
         p2 = np.multiply(self.lbound, np.ones(self.dim))  # python does weird things if you set p2 = p1
         p2[i] = self.ubound
-        if self.m == 0:
-            delta1 = self.f.run(p1) - self.f.run(p2)
-        else:
-            delta1 = self.f.run(p1, m_group=self.m) - self.f.run(p2, m_group=self.m)
+
+        delta1 = self.f.run(p1) - self.f.run(p2)
 
         p3 = np.multiply(self.lbound, np.ones(self.dim))
         p4 = np.multiply(self.lbound, np.ones(self.dim))
@@ -219,10 +219,7 @@ class DGInteraction(Measure):
         p3[j] = 0  # In factorarcitecture.check_delta it is self.dimensions[j]. In ODG this is equivalent
         p4[j] = 0  # grabs dimension to compare to, same as home
 
-        if self.m == 0:
-            delta2 = self.f.run(p3) - self.f.run(p4)
-        else:
-            delta2 = self.f.run(p3, m_group=self.m) - self.f.run(p4, m_group=self.m)
+        delta2 = self.f.run(p3) - self.f.run(p4)
 
         return abs(delta1 - delta2)
 

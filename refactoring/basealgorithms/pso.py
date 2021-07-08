@@ -96,6 +96,11 @@ class PSO(object):
     def __init__(self, generations, pop_size, f, dim, factor=None, global_solution=None, omega=0.729, phi=1.49618):
         self.pop_size = pop_size
         self.pop = [Particle(f, dim, factor, global_solution) for x in range(pop_size)]
+        pos = [p.position for p in self.pop]
+        with open('pso2.o', 'a') as file:
+            file.write(str(pos))
+            file.write('\n')
+
         self.omega = omega
         self.phi = phi
         self.f = f
