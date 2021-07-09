@@ -20,8 +20,10 @@ class ParetoOptimization:
         """
         check whether the solutions are non-dominated
         """
+        pop = [x for x in population]
         non_dominated_solutions = []
-        for a, b in itertools.combinations(population, 2):
+        for comb in itertools.combinations(pop, 2):
+            a, b = comb
             if a < b:
                 if b in non_dominated_solutions:
                     non_dominated_solutions.remove(b)
@@ -32,14 +34,14 @@ class ParetoOptimization:
                     non_dominated_solutions.remove(a)
                 if b not in non_dominated_solutions:
                     non_dominated_solutions.append(b)
-            elif a == b:
-                if b in non_dominated_solutions:
-                    non_dominated_solutions.append(a)
-                elif a in non_dominated_solutions:
-                    non_dominated_solutions.append(b)
-                else:
-                    non_dominated_solutions.append(a)
-                    non_dominated_solutions.append(b)
+            # elif a == b:
+            #     if b in non_dominated_solutions:
+            #         non_dominated_solutions.append(a)
+            #     elif a in non_dominated_solutions:
+            #         non_dominated_solutions.append(b)
+            #     else:
+            #         non_dominated_solutions.append(a)
+            #         non_dominated_solutions.append(b)
         self.approximate_pareto_front.extend([s.variables for s in non_dominated_solutions])
         return non_dominated_solutions
 

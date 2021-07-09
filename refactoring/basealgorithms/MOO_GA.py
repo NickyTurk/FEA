@@ -30,6 +30,7 @@ class GA:
         self.parent_pairs_size = parent_pairs_size
         self.cell_distribution = data_distribution  # bins are equally distributed across cells: True or False
         self.stopping_run = False
+        self.field = None
         self.w = weight
         self.gbests = []
         self.nondom_pop = []
@@ -67,7 +68,7 @@ class GA:
         initial_solution = None
         while i < self.population_size:
             if field is not None:
-                new_map = Prescription(field=field, index=i)
+                new_map = Prescription(field=field, index=i, gs=self.global_solution, factor=self.factor)
                 self.curr_population.append(new_map)
                 if i == 0:
                     initial_solution = new_map
@@ -96,7 +97,7 @@ class GA:
         """
         num_cells = len(original_map.variables)
         rand = random.random()
-        _map = Prescription(original_map.variables)
+        _map = Prescription(original_map.variables, self.field, gs=self.global_solution, factor=self.factor)
         if self.mutation_type == "swap":
             # for index, gene in enumerate(map_dict.variables):
             if rand < self.mutation_rate:
@@ -131,8 +132,8 @@ class GA:
         Picks two indices and selects everything between those points.
         Type = single, multi or uniform
         """
-        _first_map = Prescription(first_map.variables)
-        _second_map = Prescription(second_map.variables)
+        _first_map = Prescription(first_map.variables, self.field, gs=self.global_solution, factor=self.factor)
+        _second_map = Prescription(second_map.variables, self.field, gs=self.global_solution, factor=self.factor)
         num_cells = len(first_map.variables)
         index_1 = random.randint(0, num_cells - 1)
         index_2 = random.randint(0, num_cells - 1)
@@ -166,7 +167,10 @@ class GA:
 
     def find_best_solutions(self):
         # finds index of the 'best' solution
-        best_overall_index, best_jump_index, best_strat_index, best_rate_index = self.curr_population[0].index
+        best_overall_index = self.curr_population[0].index
+        best_jump_index = self.curr_population[0].index
+        best_strat_index = self.curr_population[0].index
+        best_rate_index = self.curr_population[0].index
         best_overall_score = self.curr_population[0].overall_fitness
         best_jump_score = self.curr_population[0].jumps
         best_strat_score = self.curr_population[0].strat
@@ -191,6 +195,19 @@ class GA:
                      self.curr_population[best_strat_index], self.curr_population[best_rate_index]]
         return best_maps
 
+    def replace_worst_solution(self, gs):
+        """
+        :param gs: global solution
+        After FEA finishes competition, the global solution replaces the worst solution in each subpopulation
+        """
+        self.nondom_pop = self.pf.evaluate_pareto_dominance(self.curr_population)
+        dominated = [x for x in self.curr_population if x not in self.nondom_pop]
+        diverse_sort = self.diversity_sort(dominated)
+        worst = diverse_sort[-1]
+        idx = np.where(np.array(self.curr_population) == worst)
+        self.curr_population[idx[0][0]] = Prescription(variables=[gs.variables[i] for i in self.factor], field=self.field, gs= gs, factor=self.factor)
+        return worst
+
     def create_offspring(self):
         j = 0
         children = []
@@ -203,8 +220,8 @@ class GA:
             if random.random() < self.crossover_rate:
                 child1, child2 = self.crossover(first_map, second_map)
             else:
-                child1 = [x for x in first_map]
-                child2 = [x for x in second_map]
+                child1 = Prescription(first_map.variables, self.field, gs=self.global_solution, factor=self.factor)
+                child2 = Prescription(second_map.variables, self.field, gs=self.global_solution, factor=self.factor)
             child1 = self.mutate(child1)
             child2 = self.mutate(child2)
 
@@ -220,7 +237,8 @@ class GA:
             self.curr_population = [x for x in self.nondom_pop]
         if len(self.nondom_pop) < self.population_size:
             new_population = [x for x in self.nondom_pop]
-            total_population = [x for x in total_population if x not in self.nondom_pop]
+            for x in new_population:
+                total_population.remove(x)
             sorted_population = self.diversity_sort(total_population)
             new_population.extend(sorted_population[:(self.population_size-len(self.nondom_pop))])
             self.curr_population = new_population
@@ -230,7 +248,7 @@ class GA:
         random.shuffle(self.curr_population)
 
     def diversity_sort(self, population):
-        fitnesses = np.array([x.objective_values for x in population])
+        fitnesses = np.array([np.array(x.objective_values) for x in population])
         distances = calc_crowding_distance(fitnesses)
         return [x for y,x in sorted(zip(distances, population))]
 
@@ -238,6 +256,7 @@ class GA:
         """
         Run the entire genetic algorithm
         """
+        self.field = field
         initial_map = self.initialize_population(field)
 
         # the GA runs a specified number of times
@@ -253,7 +272,8 @@ class GA:
                                              stats_dict['Jumps_score']) + ".", i / self.ga_runs * 100)
 
             children = self.create_offspring()
-            total_population = self.curr_population + children
+            total_population = [x for x in self.curr_population]
+            total_population.extend(children)
             self.select_new_generation(total_population)
             i += 1
 

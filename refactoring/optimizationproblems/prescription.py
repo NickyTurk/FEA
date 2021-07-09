@@ -4,10 +4,10 @@ from ..utilities.field.field_creation import Field
 
 class Prescription:
 
-    def __init__(self, variables=None, field=None, index=-1):
+    def __init__(self, variables=None, field=None, gs=None, factor=None, index=-1):
         if variables is not None:
             self.variables = variables
-        elif field is not None:
+        elif field is not None and variables is None:
             self.variables = field.assign_nitrogen_distribution()
         else:
             self.variables = []
@@ -23,10 +23,12 @@ class Prescription:
         self.objectives = [self.maximize_stratification, self.minimize_jumps,
                            self.minimize_overall_fertilizer_rate]
         self.n_obj = len(self.objectives)
-        self.set_fitness()
+        self.gs = gs
+        self.factor = factor
+        self.set_fitness(global_solution=gs, factor=factor)
 
     def __eq__(self, other):
-        if self.objective_values == other.objective_values:
+        if self.variables == other.variables:
             return True
         else:
             return False
@@ -70,7 +72,7 @@ class Prescription:
         if solution is not None:
             self.variables = solution
         if global_solution is not None:
-            full_solution = [x for x in global_solution]
+            full_solution = [x for x in global_solution.variables]
             for i, x in zip(factor, self.variables):
                 full_solution[i] = x
         else:
