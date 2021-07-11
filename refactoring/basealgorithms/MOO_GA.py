@@ -1,7 +1,7 @@
 """
 The Genetic Algorithm implementation to maximize stratification while minimizing jumps between consecutive cells.
 
-Prescription class -- stores all relevant fitness score information for each map instance.
+Prescription class -- stores all relevant fitness score information for each solution instance.
 GA class -- algorithm instance
 """
 from refactoring.optimizationproblems.prescription import Prescription
@@ -39,10 +39,10 @@ class GA:
     def stop_ga_running(self):
         self.stopping_run = True
 
-    # calculate_statistics of the population of maps
+    # calculate_statistics of the population of solutions
     def calculate_statistics(self, run):
         """
-        Calculate statistics across all prescription maps for the current run.
+        Calculate statistics across all prescription solutions for the current run.
         Param:
             run -- generation index
         Returns:
@@ -51,12 +51,12 @@ class GA:
         """
         keys = ["run", "overall", "jumps", "strat", "fertilizer", "variance", "min_score", "max_score"]
         stat_values = []
-        scores = [_map.overall_fitness for _map in self.curr_population]
+        scores = [_solution.overall_fitness for _solution in self.curr_population]
         stat_values.append(run)
         stat_values.append(np.mean(scores))
-        stat_values.append(np.mean([_map.jumps for _map in self.curr_population]))
-        stat_values.append(np.mean([_map.strat for _map in self.curr_population]))
-        stat_values.append(np.mean([_map.fertilizer_rate for _map in self.curr_population]))
+        stat_values.append(np.mean([_solution.jumps for _solution in self.curr_population]))
+        stat_values.append(np.mean([_solution.strat for _solution in self.curr_population]))
+        stat_values.append(np.mean([_solution.fertilizer_rate for _solution in self.curr_population]))
         stat_values.append(np.var(scores))
         stat_values.append(min(scores))
         stat_values.append(max(scores))
@@ -68,10 +68,10 @@ class GA:
         initial_solution = None
         while i < self.population_size:
             if field is not None:
-                new_map = Prescription(field=field, index=i, gs=self.global_solution, factor=self.factor)
-                self.curr_population.append(new_map)
+                new_solution = Prescription(field=field, index=i, gs=self.global_solution, factor=self.factor)
+                self.curr_population.append(new_solution)
                 if i == 0:
-                    initial_solution = new_map
+                    initial_solution = new_solution
                 i = i + 1
             else:
                 print("No field was defined to base prescription generation on")
@@ -79,7 +79,7 @@ class GA:
 
     def tournament_selection(self, k_individuals):
         """
-        Picks a number of maps and finds and returns the map dict with the best prescription score
+        Picks a number of solutions and finds and returns the solution dict with the best prescription score
         """
         i = 0
         chosen_prescriptions = []
@@ -91,22 +91,22 @@ class GA:
         chosen_prescriptions.sort()
         return chosen_prescriptions[0]
 
-    def mutate(self, original_map):
+    def mutate(self, original_solution):
         """
         Type = Swap, scramble or inversion
         """
-        num_cells = len(original_map.variables)
+        num_cells = len(original_solution.variables)
         rand = random.random()
-        _map = Prescription(original_map.variables, self.field, gs=self.global_solution, factor=self.factor)
+        _solution = Prescription(original_solution.variables, self.field, gs=self.global_solution, factor=self.factor)
         if self.mutation_type == "swap":
-            # for index, gene in enumerate(map_dict.variables):
+            # for index, gene in enumerate(solution_dict.variables):
             if rand < self.mutation_rate:
                 index_1 = random.choice(list(range(0, num_cells)))
                 numbers = list(range(0, num_cells))
                 numbers.remove(index_1)
                 index_2 = random.choice(numbers)
-                _map.variables[index_1] = original_map.variables[index_2]
-                _map.variables[index_2] = original_map.variables[index_1]
+                _solution.variables[index_1] = original_solution.variables[index_2]
+                _solution.variables[index_2] = original_solution.variables[index_1]
         elif self.mutation_type == "scramble":
             if rand < self.mutation_rate:
                 index_1 = random.choice(list(range(0, num_cells)))
@@ -119,22 +119,20 @@ class GA:
                 else:
                     max_index = index_2
                     min_index = index_1
-                temp_list = original_map.variables[min_index:max_index]
+                temp_list = original_solution.variables[min_index:max_index]
                 np.random.shuffle(temp_list)
-                _map.variables[min_index:max_index] = temp_list
+                _solution.variables[min_index:max_index] = temp_list
 
-        _map.set_fitness(_map.variables, self.global_solution, self.factor)
+        return _solution
 
-        return _map
-
-    def crossover(self, first_map, second_map):
+    def crossover(self, first_solution, second_solution):
         """
         Picks two indices and selects everything between those points.
         Type = single, multi or uniform
         """
-        _first_map = Prescription(first_map.variables, self.field, gs=self.global_solution, factor=self.factor)
-        _second_map = Prescription(second_map.variables, self.field, gs=self.global_solution, factor=self.factor)
-        num_cells = len(first_map.variables)
+        _first_solution = Prescription(first_solution.variables, self.field, gs=self.global_solution, factor=self.factor)
+        _second_solution = Prescription(second_solution.variables, self.field, gs=self.global_solution, factor=self.factor)
+        num_cells = len(first_solution.variables)
         index_1 = random.randint(0, num_cells - 1)
         index_2 = random.randint(0, num_cells - 1)
 
@@ -145,25 +143,25 @@ class GA:
             max_index = index_2
             min_index = index_1
         max_index = max_index + 1
-        _first_map.variables[min_index:max_index] = second_map.variables[min_index:max_index]
-        _second_map.variables[min_index:max_index] = first_map.variables[min_index:max_index]
-        _first_map.set_fitness(_first_map.variables, self.global_solution, self.factor)
-        _second_map.set_fitness(_second_map.variables, self.global_solution, self.factor)
+        _first_solution.variables[min_index:max_index] = second_solution.variables[min_index:max_index]
+        _second_solution.variables[min_index:max_index] = first_solution.variables[min_index:max_index]
+        _first_solution.set_fitness(_first_solution.variables, self.global_solution, self.factor)
+        _second_solution.set_fitness(_second_solution.variables, self.global_solution, self.factor)
 
-        return _first_map, _second_map
+        return _first_solution, _second_solution
 
-    def possible_replacement(self, prescription_maps, given_map):
+    def possible_replacement(self, prescription_solutions, given_solution):
         """
-        Since two children are made every time, two old maps need to be replaced.
-        For the first map, it replaces the worst map in the prescription_maps list.
-        However, the second map can't replace the first in the case the first is the worst map.
-        So the function uses the index of the first maps position in order to avoid that
+        Since two children are made every time, two old solutions need to be replaced.
+        For the first solution, it replaces the worst solution in the prescription_solutions list.
+        However, the second solution can't replace the first in the case the first is the worst solution.
+        So the function uses the index of the first solutions position in order to avoid that
         """
 
-        scores = [map.score for map in self.curr_population]
+        scores = [solution.score for solution in self.curr_population]
         min_index = scores.index(min(scores))
-        prescription_maps[min_index] = [x for x in given_map]
-        return min_index, prescription_maps
+        prescription_solutions[min_index] = [x for x in given_solution]
+        return min_index, prescription_solutions
 
     def find_best_solutions(self):
         # finds index of the 'best' solution
@@ -191,9 +189,9 @@ class GA:
                 best_rate_score = self.curr_population[i].fertilizer_rate
                 best_rate_index = self.curr_population[i].index
             i = i + 1
-        best_maps = [self.curr_population[best_overall_index], self.curr_population[best_jump_index],
+        best_solutions = [self.curr_population[best_overall_index], self.curr_population[best_jump_index],
                      self.curr_population[best_strat_index], self.curr_population[best_rate_index]]
-        return best_maps
+        return best_solutions
 
     def replace_worst_solution(self, gs):
         """
@@ -212,18 +210,20 @@ class GA:
         j = 0
         children = []
         while j < self.parent_pairs_size:
-            first_map = self.tournament_selection(self.tournament_size)
-            self.curr_population.remove(first_map)
-            second_map = self.tournament_selection(self.tournament_size)
-            self.curr_population.append(first_map)
+            first_solution = self.tournament_selection(self.tournament_size)
+            self.curr_population.remove(first_solution)
+            second_solution = self.tournament_selection(self.tournament_size)
+            self.curr_population.append(first_solution)
 
             if random.random() < self.crossover_rate:
-                child1, child2 = self.crossover(first_map, second_map)
+                child1, child2 = self.crossover(first_solution, second_solution)
             else:
-                child1 = Prescription(first_map.variables, self.field, gs=self.global_solution, factor=self.factor)
-                child2 = Prescription(second_map.variables, self.field, gs=self.global_solution, factor=self.factor)
+                child1 = Prescription(first_solution.variables, self.field, gs=self.global_solution, factor=self.factor)
+                child2 = Prescription(second_solution.variables, self.field, gs=self.global_solution, factor=self.factor)
             child1 = self.mutate(child1)
+            child1.set_fitness(global_solution=self.global_solution, factor=self.factor)
             child2 = self.mutate(child2)
+            child2.set_fitness(global_solution=self.global_solution, factor=self.factor)
 
             children.append(child1)
             children.append(child2)
@@ -257,7 +257,7 @@ class GA:
         Run the entire genetic algorithm
         """
         self.field = field
-        initial_map = self.initialize_population(field)
+        initial_solution = self.initialize_population(field)
 
         # the GA runs a specified number of times
         i = 1
@@ -285,6 +285,6 @@ class GA:
         if writer is not None:
             writer.writerow(self.calculate_statistics(self.ga_runs + 1))
 
-        best_maps = self.find_best_solutions()
-        self.gbests = best_maps
-        return best_maps, initial_map
+        best_solutions = self.find_best_solutions()
+        self.gbests = best_solutions
+        return best_solutions, initial_solution
