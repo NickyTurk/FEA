@@ -85,7 +85,7 @@ class TestOptimization():
 
         self.domain = [-50, 50]
 
-    def harness(self, algorithm, iterations=10, repeats=1):
+    def harness(self, algorithm, iterations=5, repeats=1):
         summary = {}
         fitnesses = []
         for trial in range(0, iterations):
@@ -120,8 +120,8 @@ class TestOptimization():
 
 
 if __name__ == '__main__':
-    function_nrs = [19]
-    dim = [50]  # dim
+    function_nrs = [5]
+    dim = [20]  # dim
 
     thr = 0.2 #fuzzy threshold
     for nr in function_nrs:
