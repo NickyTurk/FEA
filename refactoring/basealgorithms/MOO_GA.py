@@ -287,14 +287,10 @@ class NSGA2:
         # the GA runs a specified number of times
         i = 1
         while i < self.ga_runs and len(self.nondom_archive) < 200:  # TODO: ADD CONVERGENCE CRITERIUM
-            stats_dict = self.calculate_statistics(i)
 
-            if writer is not None:
-                writer.writerow(stats_dict)
-
-            if progressbar is not None:
-                progressbar.update_progress_bar("Genetic Algorithm run: " + str(i) + ". \n Number of jumps: " + str(
-                                             stats_dict['Jumps_score']) + ".", i / self.ga_runs * 100)
+            # if progressbar is not None:
+            #     progressbar.update_progress_bar("Genetic Algorithm run: " + str(i) + ". \n Number of jumps: " + str(
+            #                                  self.stats_dict['Jumps_score']) + ".", i / self.ga_runs * 100)
 
             children = self.create_offspring()
             total_population = [x for x in self.curr_population]
