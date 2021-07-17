@@ -5,6 +5,7 @@ Contains 'field', 'GridCell', and 'DataPoint' classes.
 """
 import re
 
+import pyproj
 from shapely.geometry import Polygon, shape, Point
 import numpy as np
 import pysal as ps
@@ -81,9 +82,14 @@ class Field:
         self.protein_points = None
 
         self.ylpro_string_matrix = []
+        self.ylpro_dict = None
+        self.n_dict = {st:idx for idx, st in enumerate(self.nitrogen_list)}
         self.expected_nitrogen_strat, self.max_strat, self.min_strat = 0, 0, 0
         self.max_fertilizer_rate = 0
         self.max_jumps = 0
+        self.latlong_crs = 'epsg:4326'
+        self.field_crs = ''
+        self.aa_crs = ''
 
     def print_field_info(self):
         print("buffer: ", self.buffer_, "\ncell height: ", self.cell_height, "\ncell width: ", self.cell_width, "\n nitrogen values: ", self.nitrogen_list)
@@ -109,26 +115,38 @@ class Field:
         else:
             self.cell_list = self.create_grid_for_field()
 
-        print(self.cell_list)
-
+        print('number of cells: ', len(self.cell_list))
         if self.strip_trial:
-            self.create_strip_trial()
+            self.cell_list = self.create_strip_trial()
+
+        if self.as_applied_file:
+            self.order_cells()
+
         self.define_binning_bounds()
         self.set_cell_bins()
         self.cell_list = self.assign_nitrogen_distribution()
         self.ylpro_string_matrix = self.create_ylpro_string_matrix()
+        self.ylpro_dict = {st: idx for idx, st in enumerate(self.ylpro_string_matrix)}
         self.expected_nitrogen_strat, self.max_strat, self.min_strat = self.calc_expected_bin_strat()
         self.max_fertilizer_rate = max(self.nitrogen_list) * len(self.cell_list)
         self.max_jumps = ((len(self.nitrogen_list) - 1) * (len(self.cell_list) - 1))
 
     def create_field_shape(self):
-        from shapely import speedups
-        speedups.disable()
+        # from shapely import speedups
+        # speedups.disable()
         # takes all the chunks of a field and then composes them to make a giant
         # polygon out of the field boundaries
-        polygons = [shape(feature['geometry']) for feature in fiona.open(self.field_shape_file)]
+        shapefile = fiona.open(self.field_shape_file)
+        self.field_crs = shapefile.crs['init']
+        polygons = [shape(feature['geometry']) for feature in shapefile]
         self.field_shape = cascaded_union(polygons)
+        if self.field_crs.lower() != self.latlong_crs:
+            print('transforming fiel shape: ', self.field_crs, self.latlong_crs)
+            project = pyproj.Transformer.from_crs(pyproj.CRS(self.field_crs), pyproj.CRS(self.latlong_crs),
+                                                  always_xy=True).transform
+            self.field_shape = transform(project, self.field_shape)
         self.field_shape_buffered = self.field_shape.buffer(self.buffer_, cap_style=3)
+
 
     def create_grid_for_field(self):
         """
@@ -193,18 +211,23 @@ class Field:
         grid_cell_list = []
         full_strip_set = []
         x_coord = 0
-
-        for cell in self.cell_list:
+        cell_list = [x for x in self.cell_list]
+        for i, cell in enumerate(cell_list):
             if x_coord == 0:
                 if self.field_shape.contains(cell.small_bounds):
                     x_coord = cell.bottomleft_x
-                    grid_cell_list.append(deepcopy(cell.true_bounds))
+                    grid_cell_list.append(cell)
+            elif i == len(cell_list)-1:
+                if self.field_shape.contains(cell.small_bounds):
+                    grid_cell_list.append(cell)
+                if len(grid_cell_list) != 0:
+                    full_strip_set.append(grid_cell_list)
             else:
                 # Check if x-coordinate matches for the consecutive cells
                 if self.field_shape.contains(cell.small_bounds) \
                         and x_coord == cell.bottomleft_x:
                     # Append cell to current strip if it does
-                    grid_cell_list.append(deepcopy(cell.true_bounds))
+                    grid_cell_list.append(cell)
                 elif not self.field_shape.contains(
                         cell.small_bounds) and x_coord == cell.bottomleft_x:
                     if len(grid_cell_list) != 0:
@@ -217,45 +240,77 @@ class Field:
                     grid_cell_list = []
                     x_coord = cell.bottomleft_x
                     if self.field_shape.contains(cell.small_bounds):
-                        grid_cell_list.append(deepcopy(cell.true_bounds))
+                        grid_cell_list.append(cell)
 
         final_cells = []
-        for i, s in enumerate(full_strip_set):
+        for i, c in enumerate(full_strip_set):
+            cell_indeces = [x.original_index for x in c]
+            s = [s.true_bounds for s in c]
             strip = cascaded_union(s)
             cell_strip = GridCell(strip.bounds)
             cell_strip.sorted_index = i
+            cell_strip.original_index = cell_indeces
             final_cells.append(cell_strip)
 
-        self.cell_list = deepcopy(final_cells)
+        return final_cells
 
     def order_cells(self, progressbar=None):
         """
         Looks at the as applied map and orders cells accordingly.
-        TODO: check if this is working for shapefiles and csv files with different fields.
         """
         start_time = time.time()
         id_val = 0
         as_applied_points = []
-        latlong = False
+        aa_points = fiona.open(self.as_applied_file)
+        self.aa_crs = aa_points.crs['init']
+        project = pyproj.Transformer.from_crs(pyproj.CRS(self.aa_crs), pyproj.CRS(self.latlong_crs),
+                                              always_xy=True).transform
+        if self.aa_crs.lower() != self.latlong_crs:
+            latlong_convert = True
+        else:
+            latlong_convert = False
         filepath, file_extension = os.path.splitext(self.as_applied_file)
-
         if file_extension == '.shp':
-            for i,point in enumerate(list(fiona.open(self.as_applied_file))):
-                if point['geometry']['type'] == "Polygon":
-                    as_applied_points.append([Point(float(point['properties']['LONGITUDE']), float(point['properties']['LATITUDE'])),i])
+            for i,point in enumerate(list(aa_points)):
+                if point['geometry']['type'] == "Point":
+                    if i==0:
+                        print(".......................................................\nAs Applied type is Point")
+                    pt = Point(point['geometry']['coordinates'])
+                    if latlong_convert:
+                        pt = transform(project, pt)
+                    as_applied_points.append(pt)
+                elif point['geometry']['type'] == "MultiPoint":
+                    if i==0:
+                        print(":::::::::::::::::::::::::::::::::::\nAs Applied type is MultiPoint")
+                    pt = Point(point['geometry']['coordinates'][0])
+                    if latlong_convert:
+                        pt = transform(project, pt)
+                    as_applied_points.append(pt)
+                elif i == 0 and point['geometry']['type'] == "Polygon" and len(point['geometry']['coordinates'][0]) > 1:
+                    print('field data line')
+                elif i >= 0 and point['geometry']['type'] == "Polygon" and point['properties'].contains('LONGITUDE'):
+                    as_applied_points.append(Point(float(point['properties']['LONGITUDE']), float(point['properties']['LATITUDE'])))
                     if i == 0:
-                        latlong = True
-                elif point['geometry']['type'] == "Point":
-                    as_applied_points.append([Point(point['geometry']['coordinates']),i])
+                        print("---------------------------------\nAs Applied type is Polygon")
+                else:
+                    print('OTHER CASES')
+                    print(point['geometry']['type'])
+                    print(point['geometry']['coordinates'])
+                    print(point['properties'])
+            print('length of points set ',len(as_applied_points))
 
-        if file_extension == '.csv':
+        elif file_extension == '.csv':
             data = pandas.read_csv(self.as_applied_file)
             data.columns = data.columns.str.lower()
             data.columns = data.columns.str.strip()
             for i, row in data.iterrows():
                 if is_hex(row['geometry']):
+                    if i == 0:
+                        print("******************************\nAs Applied type is hexagon geometry")
                     wkt_point = wkb.loads(row['geometry'], hex=True)  # ogr.CreateGeometryFromWkb(bts)
                 else:
+                    if i == 0:
+                        print("=======================\nAs Applied type is regular geometry")
                     wkt_point = row['geometry']
                 point = ogr.CreateGeometryFromWkt(str(wkt_point))
                 as_applied_points.append(Point(point.GetX(), point.GetY()))
@@ -273,26 +328,20 @@ class Field:
                     points.append([Point(float(l), float(y[i])), i])
             """
         else:
-            print("As applied file is not a csv")
+            print("As applied file is not a csv or shp file")
 
-        if latlong:
-            shape_ = transform(project, self.field_shape_buffered)
-        else:
-            shape_ = self.field_shape_buffered
+        shape_ = self.field_shape_buffered
         good_as_applied_points = [point for point in as_applied_points if shape_.contains(point)]
         i = 0
 
-        ordered_cells = deepcopy(self.cell_list)
+        ordered_cells = [x for x in self.cell_list]
         counter = 0
         for p, point in enumerate(good_as_applied_points):
             while i < len(ordered_cells):
                 cell = next(x for x in self.cell_list if x.original_index == ordered_cells[i].original_index)
-                if latlong:
-                    bounds = transform(project, cell.true_bounds)
-                else:
-                    bounds = cell.true_bounds
+                bounds = cell.true_bounds
                 if bounds.contains(point) and cell.is_sorted:
-                    og_index = deepcopy(cell.original_index)
+                    og_index = cell.original_index
                     if progressbar is not None:
                         progressbar.update_progress_bar("Ordering cell... " + str(og_index), (counter / len(self.cell_list)) * 100)
                     cell.sorted_index = id_val
@@ -307,9 +356,9 @@ class Field:
 
         for t in unordered:
             i = t[0]
-            for next_cell in self.cell_list[i + 1:]:
+            for j, next_cell in enumerate(self.cell_list[i + 1:]):
                 if next_cell.is_sorted:
-                    self.cell_list[i].sorted_index = next_cell.sorted_index - 1
+                    self.cell_list[i].sorted_index = next_cell.sorted_index - 1 - j
                     self.cell_list[i].is_sorted = True
 
         elapsed_time = time.time() - start_time
@@ -476,7 +525,7 @@ class Field:
 
 
 class GridCell:
-    def __init__(self, coordinates):
+    def __init__(self, coordinates, nitrogen=-1):
         self.is_sorted = False
         self.original_index = -1
         self.sorted_index = -1
@@ -486,6 +535,7 @@ class GridCell:
         self.bottomleft_y = coordinates[1]
         self.upperright_x = coordinates[2]
         self.upperright_y = coordinates[3]
+        self.coordinates = coordinates
         self.true_bounds = Polygon(
             [(coordinates[0], coordinates[1]), (coordinates[2], coordinates[1]), (coordinates[2], coordinates[3]),
              (coordinates[0], coordinates[3])])
@@ -505,7 +555,7 @@ class GridCell:
         # values to be assigned
         self.yield_bin = -1
         self.pro_bin = -1
-        self.nitrogen = -1
+        self.nitrogen = nitrogen
 
     def to_dict(self):
         return {
@@ -520,6 +570,7 @@ class GridCell:
         if yld is not None:
             self.yield_points = yld.set_datapoints(self)
             if len(self.yield_points) !=0:
+                print('there are yield points in this cell: ', len(self.yield_points))
                 self.set_avg_yield()
             else:
                 self.yield_ = 0
@@ -531,10 +582,10 @@ class GridCell:
                 self.pro_ = 0
 
     def set_avg_yield(self):
-        self.yield_ = np.mean(self.yield_points)
+        self.yield_ = np.mean(self.yield_points[:, 2])
 
     def set_avg_protein(self):
-        self.pro_ = np.mean(self.protein_points)
+        self.pro_ = np.mean(self.protein_points[:, 2])
 
 
 class DataPoint:
@@ -574,7 +625,7 @@ class DataPoint:
                                          (self.datapoints[:, 0] <= gridcell.upperright_x) &
                                          (self.datapoints[:, 1] <= gridcell.upperright_y) &
                                          (self.datapoints[:, 1] >= gridcell.bottomleft_y)]
-        return points_in_cell[:, 2]
+        return points_in_cell
         # if not math.isnan(yieldInSquare[:, 2].mean()) and len(yieldInSquare) != 0:
         #     gridcell.yield_ = yieldInSquare[:, 2].mean()
         # else:

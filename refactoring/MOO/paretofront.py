@@ -1,6 +1,7 @@
 import itertools
 
 from pymoo.factory import get_performance_indicator
+from pygmo.core import hypervolume
 from pymoo.algorithms.nsga2 import calc_crowding_distance
 import numpy as np
 import math
@@ -9,10 +10,11 @@ from operator import attrgetter
 
 class ParetoOptimization:
 
-    def __init__(self, obj_size=3):
+    def __init__(self, obj_size=3, objectives=['jumps', 'strat', 'fertilizer_rate']):
         """
         :param obj_size: The number of objectives in the problem definition.
         """
+        self.objectives = objectives
         self.n_obj = obj_size
         self.approximate_pareto_front = []
 
@@ -51,9 +53,13 @@ class ParetoOptimization:
         :param reference_point: Which reference point to use to calculate HV
         """
         # reference_points = self.calculate_ref_points(h, self.obj_size)
-        hv = get_performance_indicator("hv", ref_point=reference_point)
+        #hv = get_performance_indicator("hv", ref_point=ref_point)
         diversity = self.calculate_diversity(approx_pareto_set)
-        return {'hypervolume': hv.calc(approx_pareto_set), 'diversity': diversity}
+        updated_pareto_set = [np.array(sol.objective_values) for sol in approx_pareto_set]
+#        for sol in approx_pareto_set:
+#            updated_pareto_set.append(np.array([x.nitrogen for x in sol.variables]))
+        hv = hypervolume(np.array(updated_pareto_set))
+        return {'hypervolume': hv.compute(ref_point=np.array(reference_point)), 'diversity': diversity}
 
     def calculate_diversity(self, approx_pareto_set):
         """
@@ -68,10 +74,12 @@ class ParetoOptimization:
         """
 
         spread_indicator = 0
-        sorted_set = sorted(approx_pareto_set, key=attrgetter('overall_fitness'))
 
-        for i in range(self.n_obj):
-            spread_indicator += np.square(sorted_set[-1].variables - sorted_set[0].variables)
+        for obj in self.objectives:
+            sorted_set = sorted(approx_pareto_set, key=attrgetter(obj))
+            last = np.array([c.nitrogen for c in sorted_set[-1].variables])
+            first = np.array([c.nitrogen for c in sorted_set[0].variables])
+            spread_indicator += np.square(np.linalg.norm(last - first))
         return np.sqrt(spread_indicator)
 
     def calculate_ref_points(self, h: int):

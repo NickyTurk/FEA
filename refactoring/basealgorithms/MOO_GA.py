@@ -9,20 +9,25 @@ from refactoring.MOO.paretofront import *
 
 import numpy as np
 from pymoo.algorithms.nsga2 import calc_crowding_distance
+from pymoo.util.nds.non_dominated_sorting import find_non_dominated
+from pymoo.util.nds.fast_non_dominated_sort import fast_non_dominated_sort
+
 import random
 
 
-class GA:
-    def __init__(self, population_size=200, tournament_size=20, mutation_rate=0.1, crossover_rate=0.90,
-                 ga_runs=20, mutation_type="swap", crossover_type="multi",
+class NSGA2:
+    def __init__(self, population_size=200, tournament_size=5, mutation_rate=0.1, crossover_rate=0.90,
+                 ga_runs=100, mutation_type="swap", crossover_type="multi",
                  parent_pairs_size=20, data_distribution=False, weight=.75, factor=None, global_solution=None):
         self.run_algorithm_bool = False
+        self.initial_solution = []
         self.curr_population = []
         self.population_size = population_size
         self.tournament_size = tournament_size
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
         self.factor = factor
+        self.po = ParetoOptimization()
         self.global_solution = global_solution
         self.ga_runs = ga_runs
         self.mutation_type = mutation_type
@@ -34,7 +39,8 @@ class GA:
         self.w = weight
         self.gbests = []
         self.nondom_pop = []
-        self.pf = ParetoOptimization()
+        self.nondom_archive = []
+        self.iteration_stats = []
 
     def stop_ga_running(self):
         self.stopping_run = True
@@ -87,8 +93,6 @@ class GA:
             rand = random.randint(0, len(self.curr_population) - 1)
             chosen_prescriptions.append(self.curr_population[rand])
             i += 1
-
-        chosen_prescriptions.sort()
         return chosen_prescriptions[0]
 
     def mutate(self, original_solution):
@@ -97,7 +101,7 @@ class GA:
         """
         num_cells = len(original_solution.variables)
         rand = random.random()
-        _solution = Prescription(original_solution.variables, self.field, gs=self.global_solution, factor=self.factor)
+        _solution = Prescription([x for x in original_solution.variables], self.field, gs=self.global_solution, factor=self.factor)
         if self.mutation_type == "swap":
             # for index, gene in enumerate(solution_dict.variables):
             if rand < self.mutation_rate:
@@ -130,8 +134,8 @@ class GA:
         Picks two indices and selects everything between those points.
         Type = single, multi or uniform
         """
-        _first_solution = Prescription(first_solution.variables, self.field, gs=self.global_solution, factor=self.factor)
-        _second_solution = Prescription(second_solution.variables, self.field, gs=self.global_solution, factor=self.factor)
+        _first_solution = Prescription([x for x in first_solution.variables], self.field, gs=self.global_solution, factor=self.factor)
+        _second_solution = Prescription([x for x in second_solution.variables], self.field, gs=self.global_solution, factor=self.factor)
         num_cells = len(first_solution.variables)
         index_1 = random.randint(0, num_cells - 1)
         index_2 = random.randint(0, num_cells - 1)
@@ -198,13 +202,20 @@ class GA:
         :param gs: global solution
         After FEA finishes competition, the global solution replaces the worst solution in each subpopulation
         """
-        self.nondom_pop = self.pf.evaluate_pareto_dominance(self.curr_population)
+        nondom_indeces = find_non_dominated(np.array([np.array(x.objective_values) for x in self.curr_population]))
+        self.nondom_pop = [self.curr_population[i] for i in nondom_indeces]
         dominated = [x for x in self.curr_population if x not in self.nondom_pop]
-        diverse_sort = self.diversity_sort(dominated)
+        if len(dominated) != 0:
+            diverse_sort = self.diversity_sort(dominated)
+        else:
+            diverse_sort = self.diversity_sort(self.nondom_pop)
         worst = diverse_sort[-1]
         idx = np.where(np.array(self.curr_population) == worst)
         self.curr_population[idx[0][0]] = Prescription(variables=[gs.variables[i] for i in self.factor], field=self.field, gs= gs, factor=self.factor)
-        return worst
+        worst_solution_vars = [x for x in self.global_solution.variables]
+        for i, x in zip(self.factor, worst.variables):
+            worst_solution_vars[i] = x
+        return Prescription(worst_solution_vars, field=self.field)
 
     def create_offspring(self):
         j = 0
@@ -218,8 +229,8 @@ class GA:
             if random.random() < self.crossover_rate:
                 child1, child2 = self.crossover(first_solution, second_solution)
             else:
-                child1 = Prescription(first_solution.variables, self.field, gs=self.global_solution, factor=self.factor)
-                child2 = Prescription(second_solution.variables, self.field, gs=self.global_solution, factor=self.factor)
+                child1 = Prescription([x for x in first_solution.variables], self.field, gs=self.global_solution, factor=self.factor)
+                child2 = Prescription([x for x in second_solution.variables], self.field, gs=self.global_solution, factor=self.factor)
             child1 = self.mutate(child1)
             child1.set_fitness(global_solution=self.global_solution, factor=self.factor)
             child2 = self.mutate(child2)
@@ -230,17 +241,31 @@ class GA:
             j += 1
         return children
 
-    def select_new_generation(self, total_population):
+    def select_new_generation(self, total_population, method='NSGA2'):
         # check for non-domination, then sort based on crowding distance
-        self.nondom_pop = self.pf.evaluate_pareto_dominance(total_population)
+        fitnesses = np.array([np.array(x.objective_values) for x in total_population])
+        nondom_indeces = find_non_dominated(fitnesses)
+        self.nondom_pop = [total_population[i] for i in nondom_indeces]
+        self.nondom_archive.extend(self.nondom_pop)
         if len(self.nondom_pop) == self.population_size:
             self.curr_population = [x for x in self.nondom_pop]
         if len(self.nondom_pop) < self.population_size:
-            new_population = [x for x in self.nondom_pop]
-            for x in new_population:
-                total_population.remove(x)
-            sorted_population = self.diversity_sort(total_population)
-            new_population.extend(sorted_population[:(self.population_size-len(self.nondom_pop))])
+            new_population = []
+            fronts = fast_non_dominated_sort(fitnesses)
+            last_front = []
+            n_ranked = 0
+            for front in fronts:
+                # increment the n_ranked solution counter
+                n_ranked += len(front)
+                # stop if more than this solutions are n_ranked
+                if n_ranked >= self.population_size:
+                    last_front = front
+                    break
+                new_population.extend([total_population[i] for i in front])
+
+            sorted_population = self.diversity_sort([total_population[i] for i in last_front])
+            length_to_add = self.population_size - len(new_population)
+            new_population.extend(sorted_population[:length_to_add])
             self.curr_population = new_population
         else:
             sorted_population = self.diversity_sort(self.nondom_pop)
@@ -257,11 +282,11 @@ class GA:
         Run the entire genetic algorithm
         """
         self.field = field
-        initial_solution = self.initialize_population(field)
+        self.initial_solution = self.initialize_population(field)
 
         # the GA runs a specified number of times
         i = 1
-        while i < self.ga_runs:  # TODO: ADD CONVERGENCE CRITERIUM
+        while i < self.ga_runs and len(self.nondom_archive) < 200:  # TODO: ADD CONVERGENCE CRITERIUM
             stats_dict = self.calculate_statistics(i)
 
             if writer is not None:
@@ -275,6 +300,15 @@ class GA:
             total_population = [x for x in self.curr_population]
             total_population.extend(children)
             self.select_new_generation(total_population)
+            if self.factor is None and i!=1:
+                archive_nondom_indeces = find_non_dominated(
+                    np.array([np.array(x.objective_values) for x in self.nondom_archive]))
+                nondom_archive = [self.nondom_archive[i] for i in archive_nondom_indeces]
+                self.nondom_archive = list(set(nondom_archive))
+                eval_dict = self.po.evaluate_solution(self.nondom_archive, [1, 1, 1])
+                eval_dict['GA_run'] = i
+                eval_dict['ND_size'] = len(self.nondom_archive)
+                self.iteration_stats.append(eval_dict)
             i += 1
 
             if self.stopping_run:
@@ -285,6 +319,4 @@ class GA:
         if writer is not None:
             writer.writerow(self.calculate_statistics(self.ga_runs + 1))
 
-        best_solutions = self.find_best_solutions()
-        self.gbests = best_solutions
-        return best_solutions, initial_solution
+        self.gbests = self.find_best_solutions()

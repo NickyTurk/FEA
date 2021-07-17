@@ -1,6 +1,6 @@
 from refactoring.optimizationproblems.prescription import Prescription
 from refactoring.MOO.FEAMOO import FEAMOO
-from refactoring.basealgorithms.MOO_GA import GA
+from refactoring.basealgorithms.MOO_GA import NSGA2
 from refactoring.FEA.factorarchitecture import FactorArchitecture
 from refactoring.utilities.field.field_creation import Field
 
@@ -12,7 +12,7 @@ field.create_field()
 FA = FactorArchitecture(len(field.cell_list))
 FA.linear_grouping(width=5, offset=3)
 
-ga = GA
+ga = NSGA2
 
 p = Prescription(field=field)
 p.jumps = 0.8
@@ -44,7 +44,7 @@ feamoo = FEAMOO(Prescription, 3, 3, 100, FA, ga, 3, combinatorial_options=field.
 
 sols = feamoo.pf.evaluate_pareto_dominance(pop)
 [print(s.objective_values) for s in sols]
-ga2 = GA()
+ga2 = NSGA2()
 sorted = ga2.diversity_sort(pop)
 pop.sort()
 

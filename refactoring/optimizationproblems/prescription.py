@@ -1,5 +1,7 @@
+import random
+
 import numpy as np
-from ..utilities.field.field_creation import Field
+from ..utilities.field.field_creation import Field, GridCell
 
 
 class Prescription:
@@ -7,8 +9,11 @@ class Prescription:
     def __init__(self, variables=None, field=None, gs=None, factor=None, index=-1):
         if variables is not None:
             self.variables = variables
-        elif field is not None and variables is None:
+        elif field is not None and variables is None and factor is None:
             self.variables = field.assign_nitrogen_distribution()
+        elif factor is not None and field is not None and variables is None:
+            field_cells = field.assign_nitrogen_distribution()
+            self.variables = [field_cells[i] for i in factor]
         else:
             self.variables = []
         self.index = index
@@ -28,10 +33,16 @@ class Prescription:
         self.set_fitness(global_solution=gs, factor=factor)
 
     def __eq__(self, other):
-        if self.variables == other.variables:
+        self_vars = [x.nitrogen for x in self.variables]
+        other_vars = [x.nitrogen for x in other.variables]
+        if all(x==y for x,y in zip(self_vars,other_vars)):
             return True
         else:
             return False
+
+    def __hash__(self):
+        string = str([str(x.nitrogen) for x in self.variables])
+        return hash(string)
 
     def __gt__(self, other):
         if all(x >= y for x, y in zip(self.objective_values, other.objective_values)) \
@@ -46,18 +57,18 @@ class Prescription:
     #     else:
     #         return False
 
-    def __lt__(self, other):
+    def __le__(self, other):
         if all(x <= y for x, y in zip(self.objective_values, other.objective_values)) \
                 and any(x < y for x, y in zip(self.objective_values, other.objective_values)):
             return True
         else:
             return False
 
-    # def __lt__(self, other):
-    #     if all(x < y for x, y in zip(self.objective_values, other.objective_values)):
-    #         return True
-    #     else:
-    #         return False
+    def __lt__(self, other):
+        if any(x < y for x, y in zip(self.objective_values, other.objective_values)):
+            return True
+        else:
+            return False
 
     def run(self, x, i):
         if i < self.n_obj:
@@ -97,8 +108,8 @@ class Prescription:
         for i, c in enumerate(solution):
             # calculate jump between nitrogen values for consecutive cells
             if i + 1 != len(solution):
-                index_1 = self.field.nitrogen_list.index(c.nitrogen)
-                index_2 = self.field.nitrogen_list.index(solution[i + 1].nitrogen)
+                index_1 = self.field.n_dict[c.nitrogen]
+                index_2 = self.field.n_dict[solution[i + 1].nitrogen]
                 temp_jump = abs(index_1 - index_2)
                 if temp_jump > 1:
                     jump_diff = jump_diff + temp_jump
@@ -112,8 +123,8 @@ class Prescription:
         for i, c in enumerate(solution):
             # Count nitrogen values across yield and protein bin combinations
             ylpro_bin_string = int(str(c.yield_bin) + str(c.pro_bin - 1))
-            ylpro_idx = self.field.ylpro_string_matrix.index(ylpro_bin_string)
-            nitrogen_idx = self.field.nitrogen_list.index(c.nitrogen)
+            ylpro_idx = self.field.ylpro_dict[ylpro_bin_string]
+            nitrogen_idx = self.field.n_dict[c.nitrogen]
             curr_val = nitrogen_counts[nitrogen_idx, ylpro_idx]
             nitrogen_counts[nitrogen_idx, ylpro_idx] = curr_val + 1
 

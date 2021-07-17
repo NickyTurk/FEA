@@ -14,12 +14,14 @@ class ShapeFiles:
 
     def read_shape_file(self, datatype=''):
         datapoints = []
+        match_on = ''
         if datatype == 'yld':
             match_on = re.compile('.*(yl|yield).*')
         elif datatype == 'pro':
             match_on = re.compile('.*pro.*')
 
         with fiona.open(self.filename) as data:
+            print(data.crs)
             column_to_get = ''
             for i, pt in enumerate(data):
                 datapoint = [pt['geometry']['coordinates'][0], pt['geometry']['coordinates'][1]]
@@ -27,7 +29,6 @@ class ShapeFiles:
                     for prop in pt['properties']:
                         matched = match_on.match(prop.lower())
                         if matched:
-                            print(pt['properties'][prop])
                             if 200 > float(pt['properties'][prop]) >= 0:
                                 column_to_get = prop
                                 break
