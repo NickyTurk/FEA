@@ -30,7 +30,7 @@ class Particle(object):
             return self.fitness > other.fitness
 
     def __eq__(self, other):
-        return (self.position == other.position)
+        return (self.position == other.position).all()
 
     def __str__(self):
         return ' '.join(
