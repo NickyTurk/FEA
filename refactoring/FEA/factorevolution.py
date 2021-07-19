@@ -51,7 +51,7 @@ class FEA:
         print('===================================================')
         for alg in self.subpopulations:
             # update fitnesses
-            alg.pop = [individual.update_individual_after_compete(individual.position, gs) for individual in alg.pop]
+            alg.pop = [individual.update_individual_after_compete(gs) for individual in alg.pop]
             # set best solution and replace worst solution with global solution across FEA
             alg.replace_worst_solution(gs)
 
@@ -82,7 +82,7 @@ class FEA:
                     best_value_for_var = var_candidate_value
             sol[var_idx] = best_value_for_var
         self.global_solution = sol
-        self.global_fitness = curr_fitness
+        self.global_fitness = f.run(sol)
         self.solution_history.append(sol)
 
 
@@ -94,5 +94,5 @@ if __name__ == '__main__':
     fa = FactorArchitecture()
     fa.load_csv_architecture(file="../../results/factors/F1_m4_diff_grouping.csv", dim=50)
     func = Function(function_number=1, shift_data_file="f01_o.txt")
-    fea = FEA(func, fea_runs=100, generations=100, pop_size=500, factor_architecture=fa, base_algorithm=PSO)
+    fea = FEA(func, fea_runs=100, generations=1000, pop_size=500, factor_architecture=fa, base_algorithm=PSO)
     fea.run()

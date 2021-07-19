@@ -1,21 +1,24 @@
 import numpy as np
 import random
 from operator import attrgetter
+from copy import deepcopy, copy
 
 
 class Particle(object):
-    def __init__(self, f, size, position = None, factor=None, global_solution=None):
+    def __init__(self, f, size, position=None, factor=None, global_solution=None, lbest_pos=None):
         self.f = f
-        if position is None:
-            self.position = np.random.uniform(f.lbound, f.ubound, size=size)
-        elif position is not None:
-            self.position = position
-        self.lbest_position = self.position
+        self.lbest_fitness = float('inf')
         self.dim = size
         self.factor = factor
+        if position is None:
+            self.position = np.random.uniform(f.lbound, f.ubound, size=size)
+            self.lbest_position = np.array([x for x in self.position])
+        elif position is not None:
+            self.position = position
+            self.lbest_position = lbest_pos
+            self.lbest_fitness = self.calculate_fitness(global_solution, lbest_pos)
         self.velocity = np.zeros(size)
-        self.fitness = self.calculate_fitness(self.position, global_solution)
-        self.lbest_fitness = float('inf')
+        self.fitness = self.calculate_fitness(global_solution)
 
     def __le__(self, other):
         if self.fitness is float:
@@ -39,35 +42,39 @@ class Particle(object):
     def set_fitness(self, fit):
         self.fitness = fit
         if fit < self.lbest_fitness:
-            self.lbest_fitness = fit
-            self.lbest_position = self.position
+            self.lbest_fitness = deepcopy(fit)
+            self.lbest_position = np.array([x for x in self.position])
 
     def set_position(self, position):
         self.position = np.array(position)
 
-    def update_individual_after_compete(self, position, global_solution=None):
-        self.position = position
-        fitness = self.calculate_fitness(position, global_solution)
+    def update_individual_after_compete(self, global_solution=None):
+        fitness = self.calculate_fitness(global_solution)
         if fitness < self.lbest_fitness:
-            self.lbest_fitness = fitness
+            self.lbest_fitness = deepcopy(fitness)
         self.fitness = fitness
         return self
 
-    def calculate_fitness(self, position, glob_solution):
+    def calculate_fitness(self, glob_solution, position=None):
         if glob_solution is None:
-            return self.f.run(position)
+            fitness = self.f.run(self.position)
         else:
             solution = [x for x in glob_solution]
-            for i, x in zip(self.factor, position):
-                solution[i] = x
-            return self.f.run(np.array(solution))
+            if position is None:
+                for i, x in zip(self.factor, self.position):
+                    solution[i] = x
+            else:
+                for i, x in zip(self.factor, position):
+                    solution[i] = x
+            fitness = self.f.run(np.array(solution))
+        return fitness
 
     def update_particle(self, omega, phi, global_best_position, v_max, global_solution=None):
         self.update_velocity(omega, phi, global_best_position, v_max)
         self.update_position(global_solution)
 
     def update_velocity(self, omega, phi, global_best_position, v_max):
-        velocity = self.velocity
+        velocity = [x for x in self.velocity]
         n = self.dim
 
         inertia = np.multiply(omega, velocity)
@@ -83,12 +90,8 @@ class Particle(object):
     def update_position(self, global_solution=None):
         lo, hi = self.f.lbound, self.f.ubound
         position = self.velocity + self.position
-        position = np.array([self.clamp_value(p, lo, hi) for p in position])
-        fitness = self.calculate_fitness(position, global_solution)
-
-        if fitness < self.lbest_fitness:
-            self.lbest_position, self.lbest_fitness = position, fitness
-        self.position, self.fitness = position, fitness
+        self.position = np.array([self.clamp_value(p, lo, hi) for p in position])
+        self.fitness = self.calculate_fitness(global_solution)
 
     def clamp_value(self, to_clamp, lo, hi):
         if lo < to_clamp < hi:
@@ -124,13 +127,16 @@ class PSO(object):
     def find_current_best(self):
         sorted_ = sorted(np.array(self.pop), key=attrgetter('fitness'))
         return Particle(self.f, self.dim, position=sorted_[0].position, factor=self.factor,
-                 global_solution=self.global_solution)
+                 global_solution=self.global_solution, lbest_pos=sorted_[0].lbest_position)
 
     def find_local_best(self):
         pass
 
     def update_swarm(self):
-        global_solution = [x for x in self.global_solution]
+        if self.global_solution is not None:
+            global_solution = [x for x in self.global_solution]
+        else:
+            global_solution = None
         omega, phi, v_max = self.omega, self.phi, self.v_max
         global_best_position = [x for x in self.gbest.position]
         for p in self.pop:
@@ -144,11 +150,13 @@ class PSO(object):
         # find worst particle
         self.global_solution = np.array([x for x in global_solution])
         self.pop.sort(key=attrgetter('fitness'))
+        print('replacing')
+        print(self.pop[-1], self.pop[0])
         partial_solution = [x for i, x in enumerate(global_solution) if i in self.factor] # if i in self.factor
         self.pop[-1].set_position(partial_solution)
         self.pop[-1].set_fitness(self.f.run(self.global_solution))
         curr_best = Particle(self.f, self.dim, position=self.pop[0].position, factor=self.factor,
-                 global_solution=self.global_solution)
+                 global_solution=self.global_solution, lbest_pos=self.pop[0].lbest_position)
         random.shuffle(self.pop)
         if curr_best.fitness < self.gbest.fitness:
             self.gbest = curr_best
@@ -157,7 +165,7 @@ class PSO(object):
         for i in range(self.generations):
             self.update_swarm()
             self.current_loop += 1
-            # print('-----------------------------------------')
+            # print(self.gbest)
         return self.gbest.position
 
 
@@ -165,6 +173,6 @@ if __name__ == '__main__':
     from refactoring.optimizationproblems.continuous_functions import Function
 
     f = Function(function_number=1, shift_data_file="f01_o.txt")
-    pso = PSO(10, 10, 10, f)
+    pso = PSO(generations=1000, population_size=500, function=f, dim=50)
     pso.run()
     # [print(x) for x in pso.pop]
