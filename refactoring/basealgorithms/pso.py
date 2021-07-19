@@ -93,9 +93,9 @@ class Particle(object):
 
 
 class PSO(object):
-    def __init__(self, generations, pop_size, f, dim, factor=None, global_solution=None, omega=0.729, phi=1.49618):
-        self.pop_size = pop_size
-        self.pop = [Particle(f, dim, factor, global_solution) for x in range(pop_size)]
+    def __init__(self, generations, population_size, function, dim, factor=None, global_solution=None, omega=0.729, phi=1.49618):
+        self.pop_size = population_size
+        self.pop = [Particle(function, dim, factor, global_solution) for x in range(population_size)]
         pos = [p.position for p in self.pop]
         with open('pso2.o', 'a') as file:
             file.write(str(pos))
@@ -103,13 +103,13 @@ class PSO(object):
 
         self.omega = omega
         self.phi = phi
-        self.f = f
+        self.f = function
         self.dim = dim
-        pbest_particle = Particle(f, dim, factor, global_solution)
+        pbest_particle = Particle(function, dim, factor, global_solution)
         pbest_particle.set_fitness(float('inf'))
         self.pbest_history = [pbest_particle]
         self.gbest = pbest_particle
-        self.v_max = abs((f.ubound - f.lbound))
+        self.v_max = abs((function.ubound - function.lbound))
         self.generations = generations
         self.current_loop = 0
         self.factor = np.array(factor)

@@ -38,7 +38,7 @@ class FEA:
         fa = self.factor_architecture
         alg = self.base_algorithm
         return [
-            alg(function=self.function, ga_runs=self.base_alg_iterations, population_size=self.pop_size, factor=factor)
+            alg(function=self.function, dim=len(factor), generations=self.base_alg_iterations, population_size=self.pop_size, factor=factor, global_solution=self.global_solution)
             for factor in fa.factors]
 
     def share_solution(self):
@@ -93,5 +93,5 @@ if __name__ == '__main__':
     fa = FactorArchitecture()
     fa.load_csv_architecture(file="../../results/factors/F1_overlapping_diff_grouping.csv", dim=50)
     func = Function(function_number=1, shift_data_file="f01_o.txt")
-    fea = FEA(func, 10, 10, 3, fa, PSO)
+    fea = FEA(func, fea_runs=100, generations=100, pop_size=200, factor_architecture=fa, base_algorithm=PSO)
     fea.run()

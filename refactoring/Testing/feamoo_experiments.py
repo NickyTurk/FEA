@@ -15,7 +15,7 @@ field_names = ['Henrys', 'Sec35Mid', 'Sec35West']
 field_1 = pickle.load(open('../utilities/saved_fields/Henrys.pickle', 'rb'))
 field_2 = pickle.load(open('../utilities/saved_fields/sec35mid.pickle', 'rb'))
 field_3 = pickle.load(open('../utilities/saved_fields/sec35west.pickle', 'rb'))
-fields_to_test = [field_1, field_2, field_3]
+fields_to_test = [field_3]
 
 fea_runs = 100
 ga_runs = [50, 100]
@@ -23,14 +23,14 @@ population_sizes= [200]
 
 for i,field in enumerate(fields_to_test):
     FA = FactorArchitecture(len(field.cell_list))
-    FA.linear_grouping(10, 5)
-    # cell_indeces = field.create_strip_trial()
-    # factors = []
-    # sum = 0
-    # for j,strip in enumerate(cell_indeces):
-    #     factors.append([i+sum for i, og in enumerate(strip.original_index)])
-    #     sum = sum + len(strip.original_index)
-    # FA.factors = factors
+    # FA.linear_grouping(10, 5)
+    cell_indeces = field.create_strip_trial()
+    factors = []
+    sum = 0
+    for j,strip in enumerate(cell_indeces):
+        factors.append([i+sum for i, og in enumerate(strip.original_index)])
+        sum = sum + len(strip.original_index)
+    FA.factors = factors
     FA.get_factor_topology_elements()
 
     ga = NSGA2

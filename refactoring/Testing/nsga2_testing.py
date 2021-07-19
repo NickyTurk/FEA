@@ -19,7 +19,6 @@ ga_runs = [500]
 population_sizes= [100, 200, 500]
 
 for i,field in enumerate(fields_to_test):
-    print(field.cell_list)
     for pop_size in population_sizes:
         for ga_run in ga_runs:
             start = time.time()
