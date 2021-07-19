@@ -3,9 +3,12 @@ import random
 
 
 class Particle(object):
-    def __init__(self, f, size, factor=None, global_solution=None):
+    def __init__(self, f, size, position = None, factor=None, global_solution=None):
         self.f = f
-        self.position = np.random.uniform(f.lbound, f.ubound, size=size)
+        if position is None:
+            self.position = np.random.uniform(f.lbound, f.ubound, size=size)
+        elif position is not None:
+            self.position = position
         self.lbest_position = self.position
         self.dim = size
         self.factor = factor
@@ -20,14 +23,14 @@ class Particle(object):
 
     def __lt__(self, other):
         if self.lbest_fitness is float:
-            return self.lbest_fitness < other.lbest_fitness
+            return self.fitness < other.fitness
 
     def __gt__(self, other):
         if self.lbest_fitness is float:
-            return self.lbest_fitness > other.lbest_fitness
+            return self.fitness > other.fitness
 
     def __eq__(self, other):
-        return (self.position == other.position).all()
+        return (self.position == other.position)
 
     def __str__(self):
         return ' '.join(
@@ -56,11 +59,11 @@ class Particle(object):
                 solution[i] = x
             return self.f.run(np.array(solution))
 
-    def update_particle(self, omega, phi, global_best, v_max, global_solution=None):
-        self.update_velocity(omega, phi, global_best, v_max)
+    def update_particle(self, omega, phi, global_best_position, v_max, global_solution=None):
+        self.update_velocity(omega, phi, global_best_position, v_max)
         self.update_position(global_solution)
 
-    def update_velocity(self, omega, phi, global_best, v_max):
+    def update_velocity(self, omega, phi, global_best_position, v_max):
         velocity = self.velocity
         n = self.dim
 
@@ -69,7 +72,7 @@ class Particle(object):
         personal_exploitation = self.lbest_position - self.position  # exploitation
         personal = phi_1 * personal_exploitation
         phi_2 = np.array([random.random() * phi for i in range(n)])  # exploration
-        social_exploitation = global_best.position - self.position  # exploitation
+        social_exploitation = global_best_position - self.position  # exploitation
         social = phi_2 * social_exploitation
         new_velocity = inertia + personal + social
         self.velocity = np.array([self.clamp_value(v, -v_max, v_max) for v in new_velocity])
@@ -95,7 +98,7 @@ class Particle(object):
 class PSO(object):
     def __init__(self, generations, population_size, function, dim, factor=None, global_solution=None, omega=0.729, phi=1.49618):
         self.pop_size = population_size
-        self.pop = [Particle(function, dim, factor, global_solution) for x in range(population_size)]
+        self.pop = [Particle(function, dim, factor=factor, global_solution=global_solution) for x in range(population_size)]
         pos = [p.position for p in self.pop]
         with open('pso2.o', 'a') as file:
             file.write(str(pos))
@@ -105,7 +108,7 @@ class PSO(object):
         self.phi = phi
         self.f = function
         self.dim = dim
-        pbest_particle = Particle(function, dim, factor, global_solution)
+        pbest_particle = Particle(function, dim, factor=factor, global_solution=global_solution)
         pbest_particle.set_fitness(float('inf'))
         self.pbest_history = [pbest_particle]
         self.gbest = pbest_particle
@@ -123,10 +126,11 @@ class PSO(object):
 
     def update_swarm(self):
         global_solution = [x for x in self.global_solution]
-        omega, phi, global_best, v_max = self.omega, self.phi, self.gbest, self.v_max
+        omega, phi, v_max = self.omega, self.phi, self.v_max
+        global_best_position = [x for x in self.gbest.position]
         for p in self.pop:
-            p.update_particle(omega, phi, global_best, v_max, global_solution)
-        curr_best = self.find_current_best()
+            p.update_particle(omega, phi, global_best_position, v_max, global_solution)
+        curr_best = Particle(self.f, self.dim, position=self.find_current_best().position, factor=self.factor, global_solution=global_solution)
         self.pbest_history.append(curr_best)
         self.gbest = min(curr_best, self.gbest)
 

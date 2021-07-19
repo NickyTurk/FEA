@@ -45,7 +45,7 @@ class FEA:
         """
         Construct new global solution based on best shared variables from all swarms
         """
-        gs = self.global_solution
+        gs = [x for x in self.global_solution]
         print('global fitness found: ', self.global_fitness)
         print('===================================================')
         for alg in self.subpopulations:
