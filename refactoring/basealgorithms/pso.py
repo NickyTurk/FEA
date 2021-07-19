@@ -1,5 +1,6 @@
 import numpy as np
 import random
+from operator import attrgetter
 
 
 class Particle(object):
@@ -13,20 +14,19 @@ class Particle(object):
         self.dim = size
         self.factor = factor
         self.velocity = np.zeros(size)
-        # TODO: change this to accept MOO fitness i.o. single fitness: this means changing the fitness comparison
         self.fitness = self.calculate_fitness(self.position, global_solution)
         self.lbest_fitness = float('inf')
 
     def __le__(self, other):
-        if self.lbest_fitness is float:
-            return self.lbest_fitness <= other.lbest_fitness
+        if self.fitness is float:
+            return self.fitness <= other.fitness
 
     def __lt__(self, other):
-        if self.lbest_fitness is float:
+        if self.fitness is float:
             return self.fitness < other.fitness
 
     def __gt__(self, other):
-        if self.lbest_fitness is float:
+        if self.fitness is float:
             return self.fitness > other.fitness
 
     def __eq__(self, other):
@@ -47,7 +47,10 @@ class Particle(object):
 
     def update_individual_after_compete(self, position, global_solution=None):
         self.position = position
-        self.fitness = self.calculate_fitness(position, global_solution)
+        fitness = self.calculate_fitness(position, global_solution)
+        if fitness < self.lbest_fitness:
+            self.lbest_fitness = fitness
+        self.fitness = fitness
         return self
 
     def calculate_fitness(self, position, glob_solution):
@@ -119,7 +122,9 @@ class PSO(object):
         self.global_solution = global_solution
 
     def find_current_best(self):
-        return min(self.pop)
+        sorted_ = sorted(np.array(self.pop), key=attrgetter('fitness'))
+        return Particle(self.f, self.dim, position=sorted_[0].position, factor=self.factor,
+                 global_solution=self.global_solution)
 
     def find_local_best(self):
         pass
@@ -130,25 +135,29 @@ class PSO(object):
         global_best_position = [x for x in self.gbest.position]
         for p in self.pop:
             p.update_particle(omega, phi, global_best_position, v_max, global_solution)
-        curr_best = Particle(self.f, self.dim, position=self.find_current_best().position, factor=self.factor, global_solution=global_solution)
+        curr_best = self.find_current_best()
         self.pbest_history.append(curr_best)
-        self.gbest = min(curr_best, self.gbest)
+        if curr_best.fitness < self.gbest.fitness:
+            self.gbest = curr_best
 
     def replace_worst_solution(self, global_solution):
         # find worst particle
         self.global_solution = np.array([x for x in global_solution])
-        worst_particle = max(self.pop)
-        worst_particle_index = [i for i, x in enumerate(self.pop) if x == worst_particle]
+        self.pop.sort(key=attrgetter('fitness'))
         partial_solution = [x for i, x in enumerate(global_solution) if i in self.factor] # if i in self.factor
-        self.pop[worst_particle_index[0]].set_position(partial_solution)
-        self.pop[worst_particle_index[0]].set_fitness(self.f.run(self.global_solution))
+        self.pop[-1].set_position(partial_solution)
+        self.pop[-1].set_fitness(self.f.run(self.global_solution))
+        curr_best = Particle(self.f, self.dim, position=self.pop[0].position, factor=self.factor,
+                 global_solution=self.global_solution)
+        random.shuffle(self.pop)
+        if curr_best.fitness < self.gbest.fitness:
+            self.gbest = curr_best
 
     def run(self):
         for i in range(self.generations):
             self.update_swarm()
             self.current_loop += 1
             # print('-----------------------------------------')
-            # print(self.pbest_history[i])
         return self.gbest.position
 
 
