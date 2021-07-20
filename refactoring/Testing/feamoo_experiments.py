@@ -11,15 +11,17 @@ from refactoring.basealgorithms.MOO_GA import NSGA2
 from refactoring.FEA.factorarchitecture import FactorArchitecture
 from refactoring.utilities.field.field_creation import Field
 
-field_names = ['Henrys', 'Sec35Mid', 'Sec35West']
-field_1 = pickle.load(open('../utilities/saved_fields/Henrys.pickle', 'rb'))
-field_2 = pickle.load(open('../utilities/saved_fields/sec35mid.pickle', 'rb'))
-field_3 = pickle.load(open('../utilities/saved_fields/sec35west.pickle', 'rb'))
-fields_to_test = [field_3]
+field_names = ['Henrys'] #  'Henrys', 'Sec35West']
+current_working_dir = os.getcwd()
+print(current_working_dir)
+field_1 = pickle.load(open(current_working_dir + '/refactoring/utilities/saved_fields/Henrys.pickle', 'rb')) # /home/alinck/FEA
+field_2 = pickle.load(open('/home/alinck/FEA/refactoring/utilities/saved_fields/sec35mid.pickle', 'rb'))
+field_3 = pickle.load(open('/home/alinck/FEA/refactoring/utilities/saved_fields/sec35west.pickle', 'rb'))
+fields_to_test = [field_1]
 
 fea_runs = 100
-ga_runs = [50, 100]
-population_sizes= [200]
+ga_runs = [100]
+population_sizes= [500]
 
 for i,field in enumerate(fields_to_test):
     FA = FactorArchitecture(len(field.cell_list))
@@ -37,7 +39,7 @@ for i,field in enumerate(fields_to_test):
     for population in population_sizes:
         for ga_run in ga_runs:
             start = time.time()
-            filename = '../../results/FEAMOO/CCEAMOO_' + field_names[i] + '_trial_3_objectives_strip_topo_ga_runs_' + str(ga_run) + '_population_' + str(population) + time.strftime('_%d%m%H%M%S') + '.pickle'
+            filename = '/home/alinck/FEA/results/FEAMOO/CCEAMOO_' + field_names[i] + '_trial_3_objectives_strip_topo_ga_runs_' + str(ga_run) + '_population_' + str(population) + time.strftime('_%d%m%H%M%S') + '.pickle'
             feamoo = FEAMOO(Prescription, fea_runs, ga_run, population, FA, ga, dimensions=len(field.cell_list), combinatorial_options=field.nitrogen_list, field=field)
             feamoo.run()
             end = time.time()

@@ -10,12 +10,12 @@ from refactoring.basealgorithms.MOO_GA import NSGA2
 from refactoring.utilities.field.field_creation import Field
 
 field_names = ['Henrys', 'Sec35Mid', 'Sec35West']
-field_1 = pickle.load(open('/home/alinck/FEA/refactoring/utilities/saved_fields/Henrys.pickle', 'rb'))
-field_2 = pickle.load(open('/home/alinck/FEA/refactoring/utilities/saved_fields/sec35mid.pickle', 'rb'))
-field_3 = pickle.load(open('/home/alinck/FEA/refactoring/utilities/saved_fields/sec35west.pickle', 'rb'))
+field_1 = pickle.load(open('../utilities/saved_fields/Henrys.pickle', 'rb'))
+field_2 = pickle.load(open('../utilities/saved_fields/sec35mid.pickle', 'rb'))
+field_3 = pickle.load(open('../utilities/saved_fields/sec35west.pickle', 'rb'))
 fields_to_test = [field_1, field_2, field_3]
 
-ga_runs = [500]
+ga_runs = [200]
 population_sizes= [500]
 
 for i,field in enumerate(fields_to_test):
