@@ -304,6 +304,7 @@ class NSGA2:
                 eval_dict = self.po.evaluate_solution(self.nondom_archive, [1, 1, 1])
                 eval_dict['GA_run'] = i
                 eval_dict['ND_size'] = len(self.nondom_archive)
+                print(eval_dict)
                 self.iteration_stats.append(eval_dict)
             i += 1
 
