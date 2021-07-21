@@ -14,6 +14,7 @@ aggregated_data_files = ["../../../Documents/Work/OFPE/Data/Henrys/wood_henrys_1
 field_files= ["../utilities/saved_fields/Henrys.pickle", "../utilities/saved_fields/sec35mid.pickle"] #, "../utilities/saved_fields/sec35west.pickle"]
 for agg_file, experiment, fieldfile in zip(aggregated_data_files, experiment_filenames, field_files):
     feamoo = pickle.load(open(experiment, 'rb'))
+    print(feamoo.iteration_stats[-1]['diversity'])
     field = pickle.load(open(fieldfile, 'rb'))
     field_name = re.search(r'.*\/FEAMOO\/(.*)_trial',experiment)
     objectives = ['jumps', 'strat', 'fertilizer_rate']
@@ -32,9 +33,13 @@ for agg_file, experiment, fieldfile in zip(aggregated_data_files, experiment_fil
     dps = df.to_numpy()
     project_from_latlong = Transformer.from_crs(field.latlong_crs, field.aa_crs)
     for obj in objectives:
+        print(obj)
         filename_to_write = '../../MOO_prescriptions/' + field_name.group(1) + '_prescription_' + obj + '_objective_runs_' + str(
             feamoo.base_alg_iterations) + '_pop_' + str(feamoo.pop_size) + '_UPDATED.csv'
-        prescription = min(feamoo.nondom_archive, key=attrgetter(obj))
+        feamoo.nondom_archive.sort(key=attrgetter(obj))
+        prescription = feamoo.nondom_archive[0]
+        print(prescription.objective_values)
+        print([x.nitrogen for x in prescription.variables])
         prescribed_n_datapoints = []
         # [print(dp) for dp in feamoo.field.yield_points.datapoints]
         all_points_df = pd.DataFrame()

@@ -4,6 +4,8 @@ The Genetic Algorithm implementation to maximize stratification while minimizing
 Prescription class -- stores all relevant fitness score information for each solution instance.
 GA class -- algorithm instance
 """
+import gc
+
 from refactoring.optimizationproblems.prescription import Prescription
 from refactoring.MOO.paretofront import *
 
@@ -111,6 +113,8 @@ class NSGA2:
                 index_2 = random.choice(numbers)
                 _solution.variables[index_1] = original_solution.variables[index_2]
                 _solution.variables[index_2] = original_solution.variables[index_1]
+                del numbers
+                gc.collect()
         elif self.mutation_type == "scramble":
             if rand < self.mutation_rate:
                 index_1 = random.choice(list(range(0, num_cells)))
@@ -126,7 +130,8 @@ class NSGA2:
                 temp_list = original_solution.variables[min_index:max_index]
                 np.random.shuffle(temp_list)
                 _solution.variables[min_index:max_index] = temp_list
-
+                del temp_list, numbers
+                gc.collect()
         return _solution
 
     def crossover(self, first_solution, second_solution):
@@ -193,9 +198,8 @@ class NSGA2:
                 best_rate_score = self.curr_population[i].fertilizer_rate
                 best_rate_index = self.curr_population[i].index
             i = i + 1
-        best_solutions = [self.curr_population[best_overall_index], self.curr_population[best_jump_index],
+        return [self.curr_population[best_overall_index], self.curr_population[best_jump_index],
                      self.curr_population[best_strat_index], self.curr_population[best_rate_index]]
-        return best_solutions
 
     def replace_worst_solution(self, gs):
         """
@@ -239,6 +243,8 @@ class NSGA2:
             children.append(child1)
             children.append(child2)
             j += 1
+        del child1, child2
+        gc.collect()
         return children
 
     def select_new_generation(self, total_population, method='NSGA2'):
@@ -270,6 +276,8 @@ class NSGA2:
         else:
             sorted_population = self.diversity_sort(self.nondom_pop)
             self.curr_population = sorted_population[:self.population_size]
+        del sorted_population, new_population, length_to_add, fronts, nondom_indeces, fitnesses
+        gc.collect()
         random.shuffle(self.curr_population)
 
     def diversity_sort(self, population):
@@ -296,6 +304,8 @@ class NSGA2:
             total_population = [x for x in self.curr_population]
             total_population.extend(children)
             self.select_new_generation(total_population)
+            del total_population, children
+            gc.collect()
             if self.factor is None and i!=1:
                 archive_nondom_indeces = find_non_dominated(
                     np.array([np.array(x.objective_values) for x in self.nondom_archive]))

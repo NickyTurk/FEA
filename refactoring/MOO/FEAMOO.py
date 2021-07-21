@@ -29,20 +29,20 @@ class FEAMOO:
         self.po = ParetoOptimization()
         # keep track to have a reference point for the HV indicator
         self.subpopulations = self.initialize_moo_subpopulations(combinatorial_options)
-        self.iteration_stats = [{'iteration':0,'nondom solutions': self.nondom_archive}]
+        self.iteration_stats = [{'iteration':0}]
 
     def initialize_moo_subpopulations(self, combinatorial_options):
         random_global_solution = self.function(self.field.assign_nitrogen_distribution(), field=self.field)
         self.global_solutions.append(random_global_solution)
-        fa = self.factor_architecture
-        alg = self.base_algorithm
-        return [alg(ga_runs=self.base_alg_iterations, population_size=self.pop_size, factor=factor,
-                    global_solution=random_global_solution) for factor in fa.factors]
+        return [self.base_algorithm(ga_runs=self.base_alg_iterations, population_size=self.pop_size, factor=factor,
+                    global_solution=random_global_solution) for factor in self.factor_architecture.factors]
 
     def update_archive(self):
         nondom_indeces = find_non_dominated(np.array([np.array(x.objective_values) for x in self.nondom_archive]))
         nondom_archive = [self.nondom_archive[i] for i in nondom_indeces]
         self.nondom_archive = list(set(nondom_archive))
+        del nondom_archive, nondom_indeces
+        gc.collect()
 
     def run(self):
         '''
@@ -74,6 +74,8 @@ class FEAMOO:
             eval_dict['ND_size'] = len(self.nondom_archive)
             self.iteration_stats.append(eval_dict)
             print(eval_dict)
+            del eval_dict
+            gc.collect()
             # [print(s.objective_values) for s in self.nondom_archive]
             # [print(i, ': ', s.objective_values) for i,s in enumerate(self.iteration_stats[fea_run+1]['global solutions'])]
             fea_run = fea_run+1
@@ -101,7 +103,8 @@ class FEAMOO:
                     pop_var_idx = np.where(np.array(curr_pop.factor) == var_idx)
                     # randomly pick one of the nondominated solutions from this population
                     if len(curr_pop.nondom_pop) != 0:
-                        random_sol = random.choice(curr_pop.nondom_pop)
+                        sorted = curr_pop.diversity_sort(curr_pop.nondom_pop)
+                        random_sol = sorted[0]
                     else:
                         random_sol = random.choice(curr_pop.gbests)
                     var_candidate_value = random_sol.variables[pop_var_idx[0][0]]
@@ -122,6 +125,8 @@ class FEAMOO:
         new_solutions = list(set(new_solutions))
         nondom_indeces = find_non_dominated(np.array([np.array(x.objective_values) for x in new_solutions]))
         self.global_solutions = [new_solutions[i] for i in nondom_indeces]
+        del new_solutions, nondom_indeces
+        gc.collect()
         self.nondom_archive.extend(self.global_solutions)
 
     def share_solution(self):
@@ -151,4 +156,6 @@ class FEAMOO:
             alg.global_solution = gs
             alg.curr_population = [self.function([x for x in p.variables], self.field, gs, alg.factor) for p in alg.curr_population]
             # set best solution and replace worst solution with global solution across FEA
-            temp_worst = alg.replace_worst_solution(gs)
+            alg.replace_worst_solution(gs)
+        del to_pick
+        gc.collect()
