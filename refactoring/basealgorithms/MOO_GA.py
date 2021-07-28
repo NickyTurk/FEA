@@ -294,7 +294,9 @@ class NSGA2:
 
         # the GA runs a specified number of times
         i = 1
-        while i < self.ga_runs and len(self.nondom_archive) < 200:  # TODO: ADD CONVERGENCE CRITERIUM
+        change_in_nondom_size = []
+        old_archive_length = 0
+        while i != self.ga_runs and len(change_in_nondom_size) < 4:  # TODO: ADD CONVERGENCE CRITERIUM
 
             # if progressbar is not None:
             #     progressbar.update_progress_bar("Genetic Algorithm run: " + str(i) + ". \n Number of jumps: " + str(
@@ -311,6 +313,12 @@ class NSGA2:
                     np.array([np.array(x.objective_values) for x in self.nondom_archive]))
                 nondom_archive = [self.nondom_archive[i] for i in archive_nondom_indeces]
                 self.nondom_archive = list(set(nondom_archive))
+                if len(self.nondom_archive) == old_archive_length and len(self.nondom_archive) >= 10:
+                    change_in_nondom_size.append(True)
+                else:
+                    change_in_nondom_size = []
+                old_archive_length = len(self.nondom_archive)
+
                 eval_dict = self.po.evaluate_solution(self.nondom_archive, [1, 1, 1])
                 eval_dict['GA_run'] = i
                 eval_dict['ND_size'] = len(self.nondom_archive)

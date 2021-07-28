@@ -58,7 +58,7 @@ class FEAMOO:
         change_in_nondom_size = []
         old_archive_length = 0
         fea_run = 0
-        while len(change_in_nondom_size) < 5 and fea_run != self.fea_runs:
+        while len(change_in_nondom_size) < 4 and fea_run != self.fea_runs:
             for alg in self.subpopulations:
                 alg.run(field=self.field)
             self.compete()

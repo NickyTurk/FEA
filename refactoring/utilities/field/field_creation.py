@@ -65,9 +65,9 @@ class Field:
 
             self.num_yield_bins = 3
             self.num_pro_bins = 1
-            self.cell_width = 150/364567.2
+            self.cell_width = 200/364567.2
             self.cell_height = 300/364567.2
-            self.nitrogen_list = [20,40,60]
+            self.nitrogen_list = [20,40,60,80,100,120]
 
         self.total_ylpro_bins = self.num_pro_bins * self.num_yield_bins
 
@@ -141,7 +141,7 @@ class Field:
         polygons = [shape(feature['geometry']) for feature in shapefile]
         self.field_shape = cascaded_union(polygons)
         if self.field_crs.lower() != self.latlong_crs:
-            print('transforming fiel shape: ', self.field_crs, self.latlong_crs)
+            # print('transforming fiel shape: ', self.field_crs, self.latlong_crs)
             project = pyproj.Transformer.from_crs(pyproj.CRS(self.field_crs), pyproj.CRS(self.latlong_crs),
                                                   always_xy=True).transform
             self.field_shape = transform(project, self.field_shape)
@@ -570,7 +570,6 @@ class GridCell:
         if yld is not None:
             self.yield_points = yld.set_datapoints(self)
             if len(self.yield_points) !=0:
-                print('there are yield points in this cell: ', len(self.yield_points))
                 self.set_avg_yield()
             else:
                 self.yield_ = 0

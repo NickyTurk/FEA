@@ -22,7 +22,7 @@ for i,field in enumerate(fields_to_test):
     for pop_size in population_sizes:
         for ga_run in ga_runs:
             start = time.time()
-            filename = '/home/alinck/FEA/results/FEAMOO/NSGA2_' + field_names[
+            filename = '../../../FEA/results/FEAMOO/NSGA2_' + field_names[
                 i] + '_trial_3_objectives_ga_runs_' + str(ga_run) + '_population_' + str(
                 pop_size) + time.strftime('_%d%m%H%M%S') + '.pickle'
             nsga = NSGA2(population_size=pop_size, ga_runs=ga_run)
