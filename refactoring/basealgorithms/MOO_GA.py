@@ -276,7 +276,6 @@ class NSGA2:
         else:
             sorted_population = self.diversity_sort(self.nondom_pop)
             self.curr_population = sorted_population[:self.population_size]
-        del sorted_population, new_population, length_to_add, fronts, nondom_indeces, fitnesses
         gc.collect()
         random.shuffle(self.curr_population)
 

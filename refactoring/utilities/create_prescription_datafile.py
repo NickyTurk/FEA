@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 
 
-experiment_filenames = ["../../results/FEAMOO/NSGA2_Henrys_trial_3_objectives_ga_runs_200_population_500_1907215351.pickle", "../../results/FEAMOO/NSGA2_Sec35Mid_trial_3_objectives_ga_runs_200_population_500_1907215548.pickle", "../../results/FEAMOO/NSGA2_Sec35West_trial_3_objectives_ga_runs_200_population_500_1907215723.pickle"] #, "../../results/FEAMOO/FEAMOO_Sec35West_trial_3_objectives_linear_topo_ga_runs_100_population_200_1707230035.pickle"]
+experiment_filenames = ["../../results/FEAMOO/NSGA2_Henrys_trial_3_objectives_ga_runs_200_population_500_2807110247.pickle", "../../results/FEAMOO/NSGA2_Sec35Mid_trial_3_objectives_ga_runs_200_population_500_2807110338.pickle", "../../results/FEAMOO/NSGA2_Sec35West_trial_3_objectives_ga_runs_200_population_500_2807110402.pickle"] #, "../../results/FEAMOO/FEAMOO_Sec35West_trial_3_objectives_linear_topo_ga_runs_100_population_200_1707230035.pickle"]
 aggregated_data_files = ["../../../Documents/Work/OFPE/Data/Henrys/wood_henrys_10m_yld_2016-2020_UPDATE.csv", "../../../Documents/Work/OFPE/Data/Sec35Mid/broyles_sec35mid_10m_yld_2016-2020_UPDATE.csv", "../../../Documents/Work/OFPE/Data/Sec35West/broyles_sec35west_10m_yld_2016-2020_UPDATE.csv"]
 field_files= ["../utilities/saved_fields/Henrys.pickle", "../utilities/saved_fields/sec35mid.pickle", "../utilities/saved_fields/sec35west.pickle"]
 
@@ -60,7 +60,7 @@ for agg_file, experiment, fieldfile in zip(aggregated_data_files, experiment_fil
     for obj in objectives:
         print(obj)
         filename_to_write = '../../MOO_prescriptions/' + field_name.group(1) + '_prescription_' + obj + '_objective_runs_' + str(
-            feamoo.ga_runs) + '_pop_' + str(feamoo.population_size) + '_UPDATED.csv'
+            feamoo.base_alg_iterations) + '_pop_' + str(feamoo.pop_size) + '_UPDATED.csv'
         feamoo.nondom_archive.sort(key=attrgetter(obj))
         prescription = feamoo.nondom_archive[0]
         find_center_obj.append(np.array(prescription.objective_values))
@@ -68,17 +68,18 @@ for agg_file, experiment, fieldfile in zip(aggregated_data_files, experiment_fil
         print([x.nitrogen for x in prescription.variables])
         all_points_df = create_pd_dataframe(prescription, field, headers, dps)
         all_points_df.to_csv(filename_to_write)
-    length = np.array(find_center_obj).shape[0]
-    sum_x = np.sum(arr[:, 0])
-    sum_y = np.sum(arr[:, 1])
-    sum_z = np.sum(arr[:, 2])
+    find_center_obj = np.array(find_center_obj)
+    length = find_center_obj.shape[0]
+    sum_x = np.sum(find_center_obj[:, 0])
+    sum_y = np.sum(find_center_obj[:, 1])
+    sum_z = np.sum(find_center_obj[:, 2])
     point = np.array([sum_x/length, sum_y/length, sum_z/length])
-    objectives = np.array([np.array(sol.objective_values) for sol in nondom_archive])
+    objectives = np.array([np.array(sol.objective_values) for sol in feamoo.nondom_archive])
     dist = np.sum((objectives-point)**2, axis=1)
     idx = np.argmin(dist)
-    prescription = nondom_archive[idx]
+    prescription = feamoo.nondom_archive[idx]
     print(point, prescription.objective_values)
-    filename_to_write = '../../MOO_prescriptions/' + field_name.group(1) + '_prescription_center_objective_runs_' + str(
-            feamoo.ga_runs) + '_pop_' + str(feamoo.population_size) + '_UPDATED.csv'
+    filename_to_write = '../../MOO_final_prescriptions/' + field_name.group(1) + '_prescription_center_objective_runs_' + str(
+            feamoo.base_alg_iterations) + '_pop_' + str(feamoo.pop_size) + '_UPDATED.csv'
     all_points_df = create_pd_dataframe(prescription, field, headers, dps)
     all_points_df.to_csv(filename_to_write)

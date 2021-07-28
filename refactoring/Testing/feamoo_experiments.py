@@ -21,7 +21,7 @@ field_3 = pickle.load(open(path + '/refactoring/utilities/saved_fields/sec35west
 fields_to_test = [field_2, field_3]
 
 fea_runs = 100
-ga_runs = [200]
+ga_runs = [100]
 population_sizes= [500]
 
 for i,field in enumerate(fields_to_test):
