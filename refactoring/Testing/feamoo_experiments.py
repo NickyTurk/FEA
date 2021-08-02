@@ -11,29 +11,40 @@ from refactoring.basealgorithms.MOO_GA import NSGA2
 from refactoring.FEA.factorarchitecture import FactorArchitecture
 from refactoring.utilities.field.field_creation import Field
 
-field_names = ['Sec35Mid', 'Sec35wEST'] #  'Henrys', 'Sec35West']
+field_names = ['Henrys'] #  'Henrys', 'Sec35West']
 current_working_dir = os.getcwd()
 path = re.search(r'^(.*?\/FEA)',current_working_dir)
 path = path.group()
 field_1 = pickle.load(open(path + '/refactoring/utilities/saved_fields/Henrys.pickle', 'rb')) # /home/alinck/FEA
 field_2 = pickle.load(open(path + '/refactoring/utilities/saved_fields/sec35mid.pickle', 'rb'))
 field_3 = pickle.load(open(path + '/refactoring/utilities/saved_fields/sec35west.pickle', 'rb'))
-fields_to_test = [field_2, field_3]
+fields_to_test = [field_1]
 
 fea_runs = 100
 ga_runs = [100]
 population_sizes= [500]
 
-for i,field in enumerate(fields_to_test):
-    FA = FactorArchitecture(len(field.cell_list))
-    # FA.linear_grouping(10, 5)
+def create_strip_groups(field):
     cell_indeces = field.create_strip_trial()
     factors = []
+    single_cells = []
     sum = 0
     for j,strip in enumerate(cell_indeces):
-        factors.append([i+sum for i, og in enumerate(strip.original_index)])
+        if len(strip.original_index) == 1:
+            single_cells.append(sum)
+        else:
+            factors.append([i+sum for i, og in enumerate(strip.original_index)])
         sum = sum + len(strip.original_index)
-    FA.factors = factors
+    if single_cells:
+        factors.append(single_cells)
+    print(factors)
+    return factors
+
+for i,field in enumerate(fields_to_test):
+    print(field_names[i], '-- CCEA')
+    FA = FactorArchitecture(len(field.cell_list))
+    #FA.linear_grouping(10, 5)
+    FA.factors = create_strip_groups(field)
     FA.get_factor_topology_elements()
 
     ga = NSGA2
