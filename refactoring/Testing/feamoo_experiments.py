@@ -11,16 +11,16 @@ from refactoring.basealgorithms.MOO_GA import NSGA2
 from refactoring.FEA.factorarchitecture import FactorArchitecture
 from refactoring.utilities.field.field_creation import Field
 
-field_names = ['Henrys'] #  'Henrys', 'Sec35West']
+field_names = ['Sec35Mid'] #  'Henrys', 'Sec35West']
 current_working_dir = os.getcwd()
 path = re.search(r'^(.*?\/FEA)',current_working_dir)
 path = path.group()
 field_1 = pickle.load(open(path + '/refactoring/utilities/saved_fields/Henrys.pickle', 'rb')) # /home/alinck/FEA
 field_2 = pickle.load(open(path + '/refactoring/utilities/saved_fields/sec35mid.pickle', 'rb'))
 field_3 = pickle.load(open(path + '/refactoring/utilities/saved_fields/sec35west.pickle', 'rb'))
-fields_to_test = [field_1]
+fields_to_test = [field_2]
 
-fea_runs = 100
+fea_runs = 50
 ga_runs = [100]
 population_sizes= [500]
 
@@ -41,17 +41,17 @@ def create_strip_groups(field):
     return factors
 
 for i,field in enumerate(fields_to_test):
-    print(field_names[i], '-- CCEA')
+    print(field_names[i], '-- FEA')
     FA = FactorArchitecture(len(field.cell_list))
-    #FA.linear_grouping(10, 5)
-    FA.factors = create_strip_groups(field)
+    FA.linear_grouping(10, 5)
+    #FA.factors = create_strip_groups(field)
     FA.get_factor_topology_elements()
 
     ga = NSGA2
     for population in population_sizes:
         for ga_run in ga_runs:
             start = time.time()
-            filename = path + '/results/FEAMOO/CCEAMOO_' + field_names[i] + '_trial_3_objectives_strip_topo_ga_runs_' + str(ga_run) + '_population_' + str(population) + time.strftime('_%d%m%H%M%S') + '.pickle'
+            filename = path + '/results/FEAMOO/FEAMOO_' + field_names[i] + '_trial_3_objectives_strip_topo_ga_runs_' + str(ga_run) + '_population_' + str(population) + time.strftime('_%d%m%H%M%S') + '.pickle'
             feamoo = FEAMOO(Prescription, fea_runs, ga_run, population, FA, ga, dimensions=len(field.cell_list), combinatorial_options=field.nitrogen_list, field=field)
             feamoo.run()
             end = time.time()

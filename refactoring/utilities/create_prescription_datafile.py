@@ -10,9 +10,9 @@ import re
 import pandas as pd
 import numpy as np
 
-experiment_filenames = ["../../results/FEAMOO/CCEAMOO_Sec35Mid_trial_3_objectives_strip_topo_ga_runs_100_population_500_2207202949.pickle", "../../results/FEAMOO/CCEAMOO_Sec35West_trial_3_objectives_strip_topo_ga_runs_100_population_500_2307190202.pickle"] #"../../results/FEAMOO/CCEAMOO_Henrys_trial_3_objectives_strip_topo_ga_runs_100_population_500_2007202659.pickle"
-aggregated_data_files = ["../../../Documents/Work/OFPE/Data/Sec35Mid/broyles_sec35mid_10m_yld_2016-2020_UPDATE.csv", "../../../Documents/Work/OFPE/Data/Sec35West/broyles_sec35west_10m_yld_2016-2020_UPDATE.csv"] #"../../../Documents/Work/OFPE/Data/Henrys/wood_henrys_10m_yld_2016-2020_UPDATE.csv"]
-field_files= ["../utilities/saved_fields/sec35mid.pickle", "../utilities/saved_fields/sec35west.pickle"] #"../utilities/saved_fields/Henrys.pickle"
+experiment_filenames = ["../../results/FEAMOO/CCEAMOO_Henrys_trial_3_objectives_linear_topo_ga_runs_100_population_500_0508121527.pickle","../../results/FEAMOO/CCEAMOO_Sec35West_trial_3_objectives_strip_topo_ga_runs_100_population_500_0408143024.pickle"] #, "../../results/FEAMOO/CCEAMOO_Sec35West_trial_3_objectives_strip_topo_ga_runs_100_population_500_2307190202.pickle"] #"../../results/FEAMOO/CCEAMOO_Henrys_trial_3_objectives_strip_topo_ga_runs_100_population_500_2007202659.pickle"
+aggregated_data_files = ["../../../Documents/Work/OFPE/Data/Henrys/wood_henrys_10m_yld_2016-2020_UPDATE.csv", "../../../Documents/Work/OFPE/Data/Sec35West/broyles_sec35west_10m_yld_2016-2020_UPDATE.csv"] #, "../../../Documents/Work/OFPE/Data/Sec35West/broyles_sec35west_10m_yld_2016-2020_UPDATE.csv"] #"../../../Documents/Work/OFPE/Data/Henrys/wood_henrys_10m_yld_2016-2020_UPDATE.csv"]
+field_files= ["../utilities/saved_fields/Henrys.pickle","../utilities/saved_fields/sec35west.pickle"] #, "../utilities/saved_fields/sec35west.pickle"] #"../utilities/saved_fields/Henrys.pickle"
 
 def create_pd_dataframe(prescription, field, headers, dps):
     all_points_df = pd.DataFrame()
