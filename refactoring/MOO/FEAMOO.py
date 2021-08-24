@@ -29,7 +29,7 @@ class FEAMOO:
         self.po = ParetoOptimization()
         # keep track to have a reference point for the HV indicator
         self.subpopulations = self.initialize_moo_subpopulations(combinatorial_options)
-        self.iteration_stats = [{'iteration':0}]
+        self.iteration_stats = []
 
     def initialize_moo_subpopulations(self, combinatorial_options):
         random_global_solution = self.function(self.field.assign_nitrogen_distribution(), field=self.field)

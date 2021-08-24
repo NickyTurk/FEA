@@ -11,16 +11,16 @@ from refactoring.basealgorithms.MOO_GA import NSGA2
 from refactoring.FEA.factorarchitecture import FactorArchitecture
 from refactoring.utilities.field.field_creation import Field
 
-field_names = ['Sec35Mid'] #  'Henrys', 'Sec35West']
+field_names = ['Henrys'] #  'Henrys', 'Sec35West']
 current_working_dir = os.getcwd()
 path = re.search(r'^(.*?\/FEA)',current_working_dir)
 path = path.group()
 field_1 = pickle.load(open(path + '/refactoring/utilities/saved_fields/Henrys.pickle', 'rb')) # /home/alinck/FEA
 field_2 = pickle.load(open(path + '/refactoring/utilities/saved_fields/sec35mid.pickle', 'rb'))
 field_3 = pickle.load(open(path + '/refactoring/utilities/saved_fields/sec35west.pickle', 'rb'))
-fields_to_test = [field_2]
+fields_to_test = [field_1]
 
-fea_runs = 50
+fea_runs = 20
 ga_runs = [100]
 population_sizes= [500]
 
