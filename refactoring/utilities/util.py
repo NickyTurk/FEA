@@ -2,6 +2,18 @@ from functools import wraps
 import pyproj, string
 from functools import partial
 
+PopulationMember = namedtuple('PopulationMember', ['variables', 'fitness'])
+
+def add_method(cls):
+    def decorator(func):
+        @wraps(func) 
+        def wrapper(self, *args, **kwargs): 
+            return func(*args, **kwargs)
+        setattr(cls, func.__name__, wrapper)
+        # Note we are not binding func, but wrapper which accepts self but does exactly the same as func
+        return func # returning func means func can still be used normally
+    return decorator
+
 
 def memo(f):
     cache = {}
@@ -29,3 +41,26 @@ def project_to_meters(x, y):
 def is_hex(s):
     hex_digits = set(string.hexdigits)
     return all(c in hex_digits for c in s)
+
+def calculate_statistics(run, curr_population):
+    """
+    Calculate statistics across all prescription solutions for the current run.
+    Param:
+        run -- generation index
+    Returns:
+        Dictionary containing statistics:
+            overall fitness, jump score, stratification score, variance, worst and best score.
+    """
+    keys = ["run", "overall", "jumps", "strat", "fertilizer", "variance", "min_score", "max_score"]
+    stat_values = []
+    scores = [_solution.overall_fitness for _solution in curr_population]
+    stat_values.append(run)
+    stat_values.append(np.mean(scores))
+    stat_values.append(np.mean([_solution.jumps for _solution in curr_population]))
+    stat_values.append(np.mean([_solution.strat for _solution in curr_population]))
+    stat_values.append(np.mean([_solution.fertilizer_rate for _solution in curr_population]))
+    stat_values.append(np.var(scores))
+    stat_values.append(min(scores))
+    stat_values.append(max(scores))
+    stats_dictionary = dict(zip(keys, stat_values))
+    return stats_dictionary

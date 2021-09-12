@@ -48,6 +48,13 @@ for i,field in enumerate(fields_to_test):
     FA.get_factor_topology_elements()
 
     ga = NSGA2
+    @add_method(NSGA2)
+    def calc_fitness(variables, gs, factor):
+        pres = Prescription(variables = variables, field = field, factor = factor)
+        pres.set_fitness(global_solution=gs)
+        return pres.objective_values
+
+
     for population in population_sizes:
         for ga_run in ga_runs:
             start = time.time()

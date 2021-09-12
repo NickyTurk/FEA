@@ -6,7 +6,7 @@ from ..utilities.field.field_creation import Field, GridCell
 
 class Prescription:
 
-    def __init__(self, variables=None, field=None, gs=None, factor=None, index=-1):
+    def __init__(self, variables=None, field=None, factor=None, index=-1):
         if variables is not None:
             self.variables = variables
         elif field is not None and variables is None and factor is None:
@@ -28,9 +28,8 @@ class Prescription:
         self.objectives = [self.maximize_stratification, self.minimize_jumps,
                            self.minimize_overall_fertilizer_rate]
         self.n_obj = len(self.objectives)
-        self.gs = gs
         self.factor = factor
-        self.set_fitness(global_solution=gs, factor=factor)
+        #self.set_fitness(factor=factor)
 
     def __eq__(self, other):
         self_vars = [x.nitrogen for x in self.variables]
@@ -79,12 +78,12 @@ class Prescription:
                 f.append(self.objectives[j](x))
             return f
 
-    def set_fitness(self, solution=None, global_solution=None, factor=None):
+    def set_fitness(self, solution=None, global_solution=None):
         if solution is not None:
             self.variables = solution
         if global_solution is not None:
             full_solution = [x for x in global_solution.variables]
-            for i, x in zip(factor, self.variables):
+            for i, x in zip(self.factor, self.variables):
                 full_solution[i] = x
         else:
             full_solution = self.variables
