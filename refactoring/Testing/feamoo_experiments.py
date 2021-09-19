@@ -7,9 +7,11 @@ import time
 from refactoring.optimizationproblems.prescription import Prescription
 from refactoring.MOO.FEAMOO import FEAMOO
 from refactoring.MOO.paretofront import *
-from refactoring.basealgorithms.MOO_GA import NSGA2
+from refactoring.basealgorithms.MOO_GA import *
+from refactoring.basealgorithms.ga import *
 from refactoring.FEA.factorarchitecture import FactorArchitecture
 from refactoring.utilities.field.field_creation import Field
+from refactoring.utilities.util import *
 
 field_names = ['Henrys'] #  'Henrys', 'Sec35West']
 current_working_dir = os.getcwd()
@@ -37,7 +39,6 @@ def create_strip_groups(field):
         sum = sum + len(strip.original_index)
     if single_cells:
         factors.append(single_cells)
-    print(factors)
     return factors
 
 for i,field in enumerate(fields_to_test):
@@ -47,19 +48,22 @@ for i,field in enumerate(fields_to_test):
     #FA.factors = create_strip_groups(field)
     FA.get_factor_topology_elements()
 
-    ga = NSGA2
+    nsga = NSGA2
     @add_method(NSGA2)
-    def calc_fitness(variables, gs, factor):
-        pres = Prescription(variables = variables, field = field, factor = factor)
-        pres.set_fitness(global_solution=gs)
+    def calc_fitness(variables, gs=None, factor=None):
+        pres = Prescription(variables=variables, field=field, factor=factor)
+        if gs is not None:
+            global_solution = Prescription(variables = gs.variables, field = field)
+            pres.set_fitness(global_solution=global_solution)
+        else:
+            pres.set_fitness()
         return pres.objective_values
-
 
     for population in population_sizes:
         for ga_run in ga_runs:
             start = time.time()
             filename = path + '/results/FEAMOO/FEAMOO_' + field_names[i] + '_trial_3_objectives_strip_topo_ga_runs_' + str(ga_run) + '_population_' + str(population) + time.strftime('_%d%m%H%M%S') + '.pickle'
-            feamoo = FEAMOO(Prescription, fea_runs, ga_run, population, FA, ga, dimensions=len(field.cell_list), combinatorial_options=field.nitrogen_list, field=field)
+            feamoo = FEAMOO(fea_runs, ga_run, population, FA, nsga, dimensions=len(field.cell_list), combinatorial_options=field.nitrogen_list, field=field)
             feamoo.run()
             end = time.time()
             file = open(filename, "wb")

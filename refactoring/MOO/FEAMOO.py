@@ -1,4 +1,5 @@
 import gc
+from refactoring.utilities.util import PopulationMember
 
 from ..MOO.paretofront import ParetoOptimization
 from ..FEA.factorarchitecture import FactorArchitecture
@@ -9,12 +10,10 @@ import random
 
 
 class FEAMOO:
-    def __init__(self, problem, fea_iterations, alg_iterations, pop_size, fa, base_alg, dimensions,
-                 combinatorial_options=None, field=None):
-        if combinatorial_options is None:
-            combinatorial_options = []
+    def __init__(self, fea_iterations, alg_iterations, pop_size, fa, base_alg, dimensions,
+                 combinatorial_options=[], field=None):
+        self.combinatorial_options = combinatorial_options
         self.field = field
-        self.function = problem
         self.dim = dimensions
         self.nondom_archive = []
         self.population = []
@@ -28,13 +27,15 @@ class FEAMOO:
         self.worst_fitness_ref = [1, 1, 1]
         self.po = ParetoOptimization()
         # keep track to have a reference point for the HV indicator
-        self.subpopulations = self.initialize_moo_subpopulations(combinatorial_options)
+        self.subpopulations = self.initialize_moo_subpopulations()
         self.iteration_stats = []
 
-    def initialize_moo_subpopulations(self, combinatorial_options):
-        random_global_solution = self.function(self.field.assign_nitrogen_distribution(), field=self.field)
+    def initialize_moo_subpopulations(self):
+        random_global_variables = random.choices(self.combinatorial_options,k=self.dim)
+        objs = self.base_algorithm().calc_fitness(random_global_variables)
+        random_global_solution = PopulationMember(random_global_variables,objs)
         self.global_solutions.append(random_global_solution)
-        return [self.base_algorithm(ga_runs=self.base_alg_iterations, population_size=self.pop_size, factor=factor,
+        return [self.base_algorithm(ea_runs=self.base_alg_iterations, dimensions=len(factor), combinatorial_values=self.combinatorial_options, population_size=self.pop_size, factor=factor,
                     global_solution=random_global_solution) for factor in self.factor_architecture.factors]
 
     def update_archive(self):
@@ -60,7 +61,7 @@ class FEAMOO:
         fea_run = 0
         while len(change_in_nondom_size) < 4 and fea_run != self.fea_runs:
             for alg in self.subpopulations:
-                alg.run(field=self.field)
+                alg.run()
             self.compete()
             self.share_solution()
             self.update_archive()
@@ -93,7 +94,8 @@ class FEAMOO:
         for var_idx in range(self.dim):
             # randomly pick one of the global solutions to perform competition for this variable
             chosen_global_solution = random.choice(self.global_solutions)
-            sol = self.function([x for x in chosen_global_solution.variables], self.field)
+            vars = [x for x in chosen_global_solution.variables]
+            sol = PopulationMember(vars, self.base_algorithm().calc_fitness(vars))
             if chosen_global_solution not in new_solutions:
                 new_solutions.append(chosen_global_solution)
             # for each population with said variable perform competition on this single randomly chosen global solution
@@ -154,8 +156,6 @@ class FEAMOO:
                 raise IndexError
             # update fitnesses
             alg.global_solution = gs
-            alg.curr_population = [self.function([x for x in p.variables], self.field, gs, alg.factor) for p in alg.curr_population]
+            alg.curr_population = [PopulationMember(p.variables, self.base_algorithm().calc_fitness(p.variables)) for p in alg.curr_population]
             # set best solution and replace worst solution with global solution across FEA
             alg.replace_worst_solution(gs)
-        del to_pick
-        gc.collect()

@@ -17,17 +17,42 @@ from pymoo.util.nds.fast_non_dominated_sort import fast_non_dominated_sort
 import random
 
 
-class NSGA2:
-    def __init__(self, evolutionary_algorithm, dimensions = 100, population_size=200, ea_runs=100,  #data_distribution=False, 
+class MOOEA:
+    def __init__(self, combinatorial_options, population_size, dimensions):
+        self.combinatorial_values = combinatorial_options
+        self.population_size = population_size
+        self.dimensions = dimensions
+
+    def initialize_population(self, gs=None, factor=None):
+        i = 0
+        curr_population = []
+        while i < self.population_size:
+            if self.combinatorial_values != []:
+                new_solution = random.choices(self.combinatorial_values,k=self.dimensions) #Prescription(field=field, index=i, gs=self.global_solution, factor=self.factor)
+            else:
+                new_solution = [random.random() for x in range(self.dimensions)]
+            fitness = self.calc_fitness(new_solution, gs = gs, factor=factor)
+            curr_population.append(PopulationMember(new_solution, fitness))
+            if i == 0:
+                initial_solution = new_solution
+            i = i + 1
+        return curr_population, initial_solution
+
+    def calc_fitness(self, variables, gs=None, factor=None):
+        pass
+
+class NSGA2(MOOEA):
+    def __init__(self, evolutionary_algorithm=None, dimensions=100, population_size=200, ea_runs=100,  #data_distribution=False, 
                 combinatorial_values=[], factor=None, global_solution=None):
         """
         :param: evolutionary_algorithm -- currently only GA class exists: from refactoring.basealgorithms.ga import GA
         """
+        super().__init__(combinatorial_values, population_size, dimensions)
         self.dimensions = dimensions
         self.population_size = population_size
-        self.ea = evolutionary_algorithm
+        self.ea = GA(dimensions=dimensions)
         self.curr_population = []
-        self.initial_solution = None
+        self.initial_solution = []
         self.factor = factor
         self.global_solution = global_solution
         self.ea_runs = ea_runs
@@ -35,34 +60,6 @@ class NSGA2:
         self.nondom_pop = []
         self.nondom_archive = []
         self.iteration_stats = []
-        self.combinatorial_values = combinatorial_values
-
-    def initialize_population(self, field=None):
-        i = 0
-        while i < self.population_size:
-            #if field is not None:
-            if self.combinatorial_values != []:
-                new_solution = random.choices(self.combinatorial_values,k=self.dimensions) #Prescription(field=field, index=i, gs=self.global_solution, factor=self.factor)
-            else:
-                new_solution = [random.random() for x in range(self.dimensions)]
-            fitness = self.calc_fitness(new_solution, gs = self.global_solution, factor=self.factor)
-            self.curr_population.append(PopulationMember(new_solution, fitness))
-            if i == 0:
-                self.initial_solution = new_solution
-            i = i + 1
-
-    def possible_replacement(self, solutions, given_solution):
-        """
-        Since two children are made every time, two old solutions need to be replaced.
-        For the first solution, it replaces the worst solution in the solutions list.
-        However, the second solution can't replace the first in the case the first is the worst solution.
-        So the function uses the index of the first solutions position in order to avoid that
-        """
-
-        scores = [solution.score for solution in self.curr_population]
-        min_index = scores.index(min(scores))
-        solutions[min_index] = [x for x in given_solution]
-        return min_index, solutions
 
     def replace_worst_solution(self, gs):
         """
@@ -114,34 +111,26 @@ class NSGA2:
         else:
             sorted_population = self.diversity_sort(self.nondom_pop)
             self.curr_population = sorted_population[:self.population_size]
-        gc.collect()
         random.shuffle(self.curr_population)
 
     def diversity_sort(self, population):
         fitnesses = np.array([np.array(x.fitness) for x in population])
         distances = calc_crowding_distance(fitnesses)
         return [x for y,x in sorted(zip(distances, population))]
-
     
-    def calc_fitness(self, variables, gs=None, factor=None):
-        pass
-    
-    def run(self, progressbar=None, writer=None, field=None):
+    def run(self, progressbar=None, writer=None):
         """
-        Run the entire genetic algorithm
+        Run the entire non-dominated sorting EA
         """
-        self.field = field
-        self.initial_solution = self.initialize_population(field)
+        self.curr_population, self.initial_solution = self.initialize_population(gs=self.global_solution, factor=self.factor)
 
-        # the GA runs a specified number of times
         i = 1
         change_in_nondom_size = []
         old_archive_length = 0
-        while i != self.ea_runs and len(change_in_nondom_size) < 4:  # TODO: ADD CONVERGENCE CRITERIUM
-
-            # if progressbar is not None:
-            #     progressbar.update_progress_bar("Genetic Algorithm run: " + str(i) + ". \n Number of jumps: " + str(
-            #                                  self.stats_dict['Jumps_score']) + ".", i / self.ea_runs * 100)
+        '''
+        Convergence criterion based on change in non-dominated solution set size
+        '''
+        while i != self.ea_runs and len(change_in_nondom_size) < 4:
 
             children = self.ea.create_offspring(self.curr_population)
             self.curr_population.extend([PopulationMember(c, self.calc_fitness(c, self.global_solution, self.factor)) for c in children])
@@ -161,11 +150,52 @@ class NSGA2:
                 eval_dict = po.evaluate_solution(self.nondom_archive, [1, 1, 1])
                 eval_dict['GA_run'] = i
                 eval_dict['ND_size'] = len(self.nondom_archive)
-                print(eval_dict)
                 self.iteration_stats.append(eval_dict)
             i += 1
 
-            if self.stopping_run:
-                if progressbar is not None:
-                    progressbar.progress_window.destroy()
-                break
+
+class SPEA2(MOOEA):
+    def __init__(self, evolutionary_algorithm, dimensions = 100, population_size=200, ea_runs=100,  #data_distribution=False, 
+                combinatorial_values=[], factor=None, global_solution=None):
+        super().__init__(combinatorial_values, population_size, dimensions)
+        self.dimensions = dimensions
+        self.population_size = population_size
+        self.ea = evolutionary_algorithm(dimensions, population_size)
+        self.curr_population, self.initial_solution = self.initialize_population(gs=global_solution, factor=factor)
+        self.factor = factor
+        self.global_solution = global_solution
+        self.ea_runs = ea_runs
+        self.nondom_pop = []
+        self.nondom_archive = []
+        self.iteration_stats = []
+    
+class MOEAD(MOOEA):
+    def __init__(self, evolutionary_algorithm, dimensions = 100, population_size=200, ea_runs=100,  #data_distribution=False, 
+                combinatorial_values=[], factor=None, global_solution=None):
+        super().__init__(combinatorial_values, population_size, dimensions)
+        self.dimensions = dimensions
+        self.population_size = population_size
+        self.ea = evolutionary_algorithm(dimensions, population_size)
+        self.curr_population, self.initial_solution = self.initialize_population(gs=global_solution, factor=factor)
+        self.factor = factor
+        self.global_solution = global_solution
+        self.ea_runs = ea_runs
+        self.nondom_pop = []
+        self.nondom_archive = []
+        self.iteration_stats = []
+
+class HYPE(MOOEA):
+    def __init__(self, evolutionary_algorithm, dimensions = 100, population_size=200, ea_runs=100,  #data_distribution=False, 
+                combinatorial_values=[], factor=None, global_solution=None):
+        super().__init__(combinatorial_values, population_size, dimensions)
+        self.dimensions = dimensions
+        self.population_size = population_size
+        self.ea = evolutionary_algorithm(dimensions, population_size)
+        self.curr_population, self.initial_solution = self.initialize_population(gs=global_solution, factor=factor)
+        self.factor = factor
+        self.global_solution = global_solution
+        self.ea_runs = ea_runs
+        self.nondom_pop = []
+        self.nondom_archive = []
+        self.iteration_stats = []
+    

@@ -1,6 +1,8 @@
 from functools import wraps
 import pyproj, string
 from functools import partial
+import numpy as np
+from collections import namedtuple
 
 PopulationMember = namedtuple('PopulationMember', ['variables', 'fitness'])
 
@@ -13,7 +15,6 @@ def add_method(cls):
         # Note we are not binding func, but wrapper which accepts self but does exactly the same as func
         return func # returning func means func can still be used normally
     return decorator
-
 
 def memo(f):
     cache = {}

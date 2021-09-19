@@ -7,8 +7,18 @@ from ..utilities.field.field_creation import Field, GridCell
 class Prescription:
 
     def __init__(self, variables=None, field=None, factor=None, index=-1):
-        if variables is not None:
+        if variables is not None and factor is None and field is None:
             self.variables = variables
+        elif variables is not None and factor is not None and field is not None:
+            field_cells = [field.cell_list[i] for i in factor]
+            for i, c in enumerate(field_cells):
+                c.nitrogen = variables[i]
+            self.variables = field_cells
+        elif variables is not None and factor is None and field is not None:
+            field_cells = [f for f in field.cell_list]
+            for i, c in enumerate(field_cells):
+                c.nitrogen = variables[i]
+            self.variables = field_cells
         elif field is not None and variables is None and factor is None:
             self.variables = field.assign_nitrogen_distribution()
         elif factor is not None and field is not None and variables is None:
