@@ -3,16 +3,17 @@ Classes to create and edit the Python representation of the field.
 Contains 'field', 'GridCell', and 'DataPoint' classes.
 'DataPoint' has two child classes: Yield and Protein Points.
 """
-import re
 
-import pyproj
 from shapely.geometry import Polygon, shape, Point
 import numpy as np
 import pysal as ps
 from shapely.ops import cascaded_union, transform
 from shapely import wkb
-from copy import deepcopy
-import os, math, pandas, time, ogr, random, fiona, shortuuid, ast
+try:
+    import ogr
+except:
+    from osgeo import ogr
+import os, math, pandas, time, random, fiona, shortuuid, ast
 
 from ..filereaders import WKTFiles, ShapeFiles
 from ..util import *

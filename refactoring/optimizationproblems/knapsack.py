@@ -20,42 +20,39 @@ from deap import base
 from deap import creator
 from deap import tools
 
-IND_INIT_SIZE = 5
-MAX_ITEM = 50
-MAX_WEIGHT = 50
-NBR_ITEMS = 20
+
+class Knapsack:
+    def __init__(self, number_of_items=100, max_bag_weight=50, max_nr_items=50, max_bag_volume=100):
+        self.init_size = 5
+        self.max_nr_items = max_nr_items
+        self.max_bag_weight = max_bag_weight
+        self.max_bag_volume = max_bag_volume
+        self.number_of_items = number_of_items
 
 
-NGEN = 50
-MU = 50
-LAMBDA = 2
-CXPB = 0.7
-MUTPB = 0.2
+        # Create random items and store them in the items' dictionary.
+        self.total_items = []
+        for i in range(self.number_of_items):
+            self.total_items[i] = (random.randint(1, 10), random.uniform(0, 100))
 
-# Create random items and store them in the items' dictionary.
-items = {}
-for i in range(NBR_ITEMS):
-    items[i] = (random.randint(1, 10), random.uniform(0, 100))
+    def eval_knapsack(self, individual):
+        weight = 0.0
+        value = 0.0
+        for item in individual:
+            weight += self.total_items[item][0]
+            value += self.total_items[item][1]
+        if len(individual) > self.max_nr_items or weight > self.max_bag_weight:
+            return 1e30, 0.0 # Ensure overweighted bags are dominated
+        return weight, value
 
-
-def evalKnapsack(individual):
-    weight = 0.0
-    value = 0.0
-    for item in individual:
-        weight += items[item][0]
-        value += items[item][1]
-    if len(individual) > MAX_ITEM or weight > MAX_WEIGHT:
-        return 1e30, 0.0 # Ensure overweighted bags are dominated
-    return weight, value
-
-def evalKnapsackBalanced(individual):
-    """
-    Variant of the original weight-value knapsack problem with added third object being minimizing weight difference between items.
-    """
-    weight, value = evalKnapsack(individual)
-    balance = 0.0
-    for a,b in zip(individual, list(individual)[1:]):
-        balance += abs(items[a][0]-items[b][0])
-    if len(individual) > MAX_ITEM or weight > MAX_WEIGHT:
-        return weight, value, 1e30 # Ensure overweighted bags are dominated
-    return weight, value, balance
+    def eval_knapsack_balanced(self, individual):
+        """
+        Variant of the original weight-value knapsack problem with added third object being minimizing weight difference between items.
+        """
+        weight, value = self.eval_knapsack(individual)
+        balance = 0.0
+        for a, b in zip(individual, list(individual)[1:]):
+            balance += abs(self.total_items[a][0]-self.total_items[b][0])
+        if len(individual) > self.max_nr_items or weight > self.max_bag_weight:
+            return weight, value, 1e30 # Ensure overweighted bags are dominated
+        return weight, value, balance
