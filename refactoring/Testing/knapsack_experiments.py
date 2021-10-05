@@ -9,17 +9,18 @@ from refactoring.basealgorithms.MOO_GA import NSGA2
 from refactoring.FEA.factorarchitecture import FactorArchitecture
 from refactoring.utilities.util import *
 
-nr_items = 100
+nr_items = 1000
+sizes = [200]  #, 100, 200]c
+overlaps = [20]  #, 10, 20]
+fea_runs = [20]
+ga_run = 100
+population = 500
 
 FA = FactorArchitecture(nr_items)
 
 ga = NSGA2
-ks = Knapsack(number_of_items=nr_items, max_bag_weight=150, max_nr_items=nr_items, max_bag_volume=250,
+ks = Knapsack(number_of_items=nr_items, max_bag_weight=1600, max_nr_items=nr_items, max_bag_volume=2600,
               nr_objectives=3)
-
-fea_runs = [20]
-ga_run = 100
-population = 500
 
 current_working_dir = os.getcwd()
 path = re.search(r'^(.*?\/FEA)', current_working_dir)
@@ -36,10 +37,6 @@ def calc_fitness(variables, gs=None, factor=None):
         full_solution = variables
     ks.set_fitness(full_solution)
     return ks.objective_values
-
-
-sizes = [20]  #, 100, 200]c
-overlaps = [2]  #, 10, 20]
 
 for i in range(1):
     for s, o in zip(sizes, overlaps):

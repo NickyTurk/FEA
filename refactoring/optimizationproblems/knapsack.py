@@ -28,8 +28,8 @@ class Knapsack:
         self.max_bag_weight = max_bag_weight
         self.max_bag_volume = max_bag_volume
         self.number_of_items = number_of_items
-        self.objective_values = (1e3, 1e3, 1e3)
-        self.ref_point = (1e4, 1e4, 1e4)
+        self.objective_values = (1e4, 1e4, 1e4)
+        self.ref_point = (1e5, 1e5, 1e5)
         self.nr_objectives = nr_objectives
 
         # Create random items
@@ -58,13 +58,13 @@ class Knapsack:
             volume += item.volume
         #print(weight, volume)
         if len(individual) > self.max_nr_items:
-            return (1e3, 1e3, 1e3)  # Ensure overweighted bags are dominated
+            return (1e4, 1e4, 1e4)  # Ensure overweighted bags are dominated
         elif weight > self.max_bag_weight:
-            return (1e3, 1e3, 1e3)
+            return (1e4, 1e4, 1e4)
         elif volume > self.max_bag_volume:
-            return (1e3, 1e3, 1e3)
+            return (1e4, 1e4, 1e4)
         elif len(individual) == 0:
-            return (1e3, 1e3, 1e3)
+            return (1e4, 1e4, 1e4)
         return (weight, -value, volume)
 
     def eval_knapsack_balanced_weight(self, individual):
