@@ -81,9 +81,9 @@ class FactorArchitecture(object):
             self.__dict__.update(pickle_object)
 
     def load_csv_architecture(self, file, dim, method=""):
-        from refactoring.utilities.CSVreader import CSVReader
+        from refactoring.utilities.multifilereader import MultiFileReader
 
-        csv = CSVReader(file)
+        csv = MultiFileReader(file)
         self.factors, f = csv.import_factors(dim)
         self.dim = dim
         self.get_factor_topology_elements()

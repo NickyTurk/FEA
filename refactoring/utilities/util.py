@@ -1,3 +1,4 @@
+from collections import namedtuple
 from functools import wraps
 import pyproj, string
 from functools import partial

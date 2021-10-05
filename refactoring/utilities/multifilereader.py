@@ -1,4 +1,5 @@
 import os.path
+from refactoring.setup import ROOT_DIR
 
 import pandas as pd
 import numpy as np
@@ -6,7 +7,7 @@ import re
 from ast import literal_eval
 
 
-class CSVReader(object):
+class MultiFileReader(object):
     def __init__(self, file_regex=""):
         self.file_regex = file_regex
         self.path_to_files = self.get_files_list()  # array of all files and their path that match the regex or string
@@ -33,10 +34,13 @@ class CSVReader(object):
 
     def get_files_list(self):
         result = []
-        search_path = os.path.dirname(os.path.abspath('.gitignore'))
+        search_path = os.path.dirname(ROOT_DIR)#os.path.abspath('FunctionTesting.py'))
+        print(search_path)
+        r = re.compile(self.file_regex)
         for root, dir, files in os.walk(search_path):
-            if self.file_regex in files:
-                result.append(os.path.join(root, self.file_regex))
+            for x in files:
+                if r.match(x):
+                    result.append(os.path.join(root, x))
         return result
 
     def import_factors(self, dim, epsilon=0):

@@ -6,8 +6,8 @@ class GA:
     Basic GA methods: tournament selection, mutation and crossover.
     To be reused in any MOO EA method.
     """
-    def __init__(self, dimensions = 100, population_size=200, tournament_size=5, mutation_rate=0.1, crossover_rate=0.90,
-                 ga_runs=100, mutation_type="swap", crossover_type="multi", offspring_size=100):
+    def __init__(self, dimensions = 100, population_size=200, tournament_size=5, mutation_rate=0.2, crossover_rate=0.95,
+                 ga_runs=100, mutation_type="inversion", crossover_type="single", offspring_size=100):
         self.name = 'genetic algorithm'
         self.population_size = population_size
         self.offspring_size = offspring_size
@@ -27,17 +27,21 @@ class GA:
         i = 0
         chosen_solution = None
         curr_fitness = None
+        idx = 0
         while i < self.tournament_size:
             rand = random.randint(0, len(population) - 1)
             temp = population[rand]
-            if curr_fitness:
+            if curr_fitness is not None:
                 if temp.fitness <= curr_fitness:
                     chosen_solution = temp
                     curr_fitness = temp.fitness
+                    idx = rand
             else:
                 curr_fitness = temp.fitness
+                chosen_solution = temp
+                idx = rand
             i += 1
-        return chosen_solution
+        return chosen_solution, idx
 
     def mutate(self, original_solution):
         """
@@ -68,6 +72,14 @@ class GA:
                 temp_list = original_solution[min_index:max_index]
                 np.random.shuffle(temp_list)
                 _solution[min_index:max_index] = temp_list
+            if self.mutation_type == "inversion":
+                numbers = list(range(0, self.dimensions))
+                index_1 = random.choice(numbers)
+                temp = _solution[index_1]
+                if temp == 0:
+                    _solution[index_1] = 1
+                elif temp ==1:
+                    _solution[index_1] = 0
             return _solution
         else:
             return original_solution
@@ -80,17 +92,22 @@ class GA:
         if random.random() < self.crossover_rate:
             _first_solution = [x for x in first_solution]
             _second_solution = [x for x in second_solution]
-            index_1 = random.randint(0, self.dimensions - 1)
-            index_2 = random.randint(0, self.dimensions - 1)
-            if index_1 > index_2:
-                max_index = index_1
-                min_index = index_2
-            else:
-                max_index = index_2
-                min_index = index_1
-            max_index = max_index + 1
-            _first_solution[min_index:max_index] = second_solution[min_index:max_index]
-            _second_solution[min_index:max_index] = first_solution[min_index:max_index]
+            if self.crossover_type == 'multi':
+                index_1 = random.randint(0, self.dimensions - 1)
+                index_2 = random.randint(0, self.dimensions - 1)
+                if index_1 > index_2:
+                    max_index = index_1
+                    min_index = index_2
+                else:
+                    max_index = index_2
+                    min_index = index_1
+                max_index = max_index + 1
+                _first_solution[min_index:max_index] = second_solution[min_index:max_index]
+                _second_solution[min_index:max_index] = first_solution[min_index:max_index]
+            elif self.crossover_type == 'single':
+                index_1 = random.randint(0, self.dimensions - 1)
+                _first_solution[0:index_1] = second_solution[0:index_1]
+                _second_solution[index_1:-1] = first_solution[index_1:-1]
 
             return [_first_solution, _second_solution]
         else:
@@ -101,10 +118,10 @@ class GA:
         children = []
         population = [x for x in curr_population]
         while j < self.offspring_size:
-            first_solution = self.tournament_selection(population)
-            population.remove(first_solution)
-            second_solution = self.tournament_selection(population)
-            population.append(first_solution)
+            first_solution, idx1 = self.tournament_selection(population)
+            population.pop(idx1)
+            second_solution, idx2 = self.tournament_selection(population)
+            population.insert(idx1, first_solution)
             first_solution = [x for x in first_solution.variables]
             second_solution = [x for x in second_solution.variables]
             crossed_over = self.crossover(first_solution, second_solution)
