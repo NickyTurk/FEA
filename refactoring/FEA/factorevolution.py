@@ -24,7 +24,7 @@ class FEA:
         for fea_run in range(self.fea_runs):
             for alg in self.subpopulations:
                 # print('NEW SUBPOPULATION\n---------------------------------------------------------------')
-                alg.run()
+                alg.run(fea_run)
             self.compete()
             self.share_solution()
             print('fea run ', fea_run, self.global_fitness)

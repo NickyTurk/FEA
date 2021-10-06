@@ -1,18 +1,6 @@
-#    This file is part of DEAP.
-#    Edited by: https://github.com/mbelmadani/moead-py/blob/master/knapsack.py
-#
-#    DEAP is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU Lesser General Public License as
-#    published by the Free Software Foundation, either version 3 of
-#    the License, or (at your option) any later version.
-#
-#    DEAP is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-#    GNU Lesser General Public License for more details.
-#
-#    You should have received a copy of the GNU Lesser General Public
-#    License along with DEAP. If not, see <http://www.gnu.org/licenses/>.
+"""
+
+"""
 
 import random
 from collections import namedtuple
@@ -23,6 +11,14 @@ KsItem = namedtuple('Item', ('weight', 'value', 'volume'))
 
 class Knapsack:
     def __init__(self, number_of_items=100, max_bag_weight=50, max_nr_items=100, max_bag_volume=250, nr_objectives=3):
+        """
+        The Multi-Objective Knapsack base problem.
+        @param number_of_items:
+        @param max_bag_weight:
+        @param max_nr_items:
+        @param max_bag_volume:
+        @param nr_objectives:
+        """
         self.init_size = 5
         self.max_nr_items = max_nr_items
         self.max_bag_weight = max_bag_weight
@@ -39,6 +35,11 @@ class Knapsack:
             self.total_items.append(item)
 
     def set_fitness(self, variables):
+        """
+
+        @param variables:
+        @return:
+        """
         items_in_knapsack = [x for i, x in enumerate(self.total_items) if variables[i] == 1]
         objective_values = self.eval_knapsack(items_in_knapsack)
         if self.nr_objectives == 4:
@@ -49,6 +50,11 @@ class Knapsack:
         #print('fitness ', objective_values)
 
     def eval_knapsack(self, individual):
+        """
+
+        @param individual:
+        @return:
+        """
         weight = 0.0
         value = 0.0
         volume = 0.0
@@ -70,6 +76,8 @@ class Knapsack:
     def eval_knapsack_balanced_weight(self, individual):
         """
         Variant of the original weight-value knapsack problem with added third object being minimizing weight difference between items.
+        @param individual:
+        @return:
         """
         balance = 0.0
         for a, b in zip(individual, list(individual)[1:]):
@@ -79,6 +87,8 @@ class Knapsack:
     def eval_knapsack_balanced_volume(self, individual):
         """
         Variant of the original weight-value knapsack problem with added third object being minimizing weight difference between items.
+        @param individual:
+        @return:
         """
         balance = 0.0
         for a, b in zip(individual, list(individual)[1:]):

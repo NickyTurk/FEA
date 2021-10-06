@@ -1,3 +1,7 @@
+"""
+Running Knapsack experiments.
+"""
+
 import os, re
 import pickle
 from datetime import timedelta

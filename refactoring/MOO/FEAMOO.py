@@ -54,7 +54,7 @@ class FEAMOO:
         Compete (based on non-domination of solution, i.e. overall fitness)
         -> or ignore compete and create set of solutions based on overlapping variables: improves diversity? Check this with diversity measure
         -> spread different non-domination solutions across different subpopulations, i.e., different subpopulations have different global solutions: this should also improve diversity along the PF?
-            :return:
+        @return: eval_dict {HV, diversity, ND_size, FEA_run}
         '''
         change_in_nondom_size = []
         old_archive_length = 0
@@ -159,4 +159,4 @@ class FEAMOO:
             alg.global_solution = gs
             alg.curr_population = [PopulationMember(p.variables, self.base_algorithm().calc_fitness(p.variables, alg.global_solution, alg.factor)) for p in alg.curr_population]
             # set best solution and replace worst solution with global solution across FEA
-            alg.replace_worst_solution(gs)
+            alg.replace_worst_solution(self.global_solutions)
