@@ -109,6 +109,7 @@ class NSGA2(MOOEA):
         self.iteration_stats = []
         self.worst_fitness_ref = ref_point
         self.worst_index = None
+        self.random_nondom_solutions = []
 
     def replace_worst_solution(self, gs):
         """
@@ -171,6 +172,11 @@ class NSGA2(MOOEA):
             worst_fitness = tuple([x for x in self.curr_population[-1].fitness])
         random.shuffle(self.curr_population)
         if i == self.ea_runs-1:
+            nondom_indeces = find_non_dominated(np.array([np.array(x.fitness) for x in self.nondom_archive]))
+            nondom_archive = [self.nondom_archive[i] for i in nondom_indeces]
+            seen = set()
+            self.nondom_archive = [seen.add(s.fitness) or s for s in nondom_archive if s.fitness not in seen]
+            self.random_nondom_solutions.append(random.choice(self.nondom_archive))
             self.worst_index = [i for i, x in enumerate(self.curr_population) if x.fitness == worst_fitness]  # np.where(np.array(self.curr_population, dtype=object) == worst)
 
     def diversity_sort(self, population):

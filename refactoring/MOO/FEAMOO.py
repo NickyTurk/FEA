@@ -92,6 +92,7 @@ class FEAMOO:
         Set new global solution after all variables have been checked
         """
         new_solutions = []
+        seen_populations = set()
         for var_idx in range(self.dim):
             # randomly pick one of the global solutions to perform competition for this variable
             chosen_global_solution = random.choice(self.global_solutions)
@@ -103,6 +104,9 @@ class FEAMOO:
             if len(self.factor_architecture.optimizers[var_idx]) > 1:
                 for pop_idx in self.factor_architecture.optimizers[var_idx]:
                     curr_pop = self.subpopulations[pop_idx]
+                    if pop_idx not in seen_populations:
+                        seen_populations.add(pop_idx)
+                        new_solutions.append([x for x in curr_pop.random_nondom_solutions[-1].variables])
                     pop_var_idx = np.where(np.array(curr_pop.factor) == var_idx)
                     # randomly pick one of the nondominated solutions from this population
                     if len(curr_pop.nondom_pop) != 0:
