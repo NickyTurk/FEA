@@ -14,8 +14,8 @@ from refactoring.FEA.factorarchitecture import FactorArchitecture
 from refactoring.utilities.util import *
 
 nr_items = 1000
-sizes = [200]  #, 100, 200]c
-overlaps = [20]  #, 10, 20]
+sizes = [100, 200]  #, 100, 200]c
+overlaps = [100, 200]  #, 10, 20]
 fea_runs = [20]
 ga_run = 100
 population = 500
@@ -42,14 +42,15 @@ def calc_fitness(variables, gs=None, factor=None):
     ks.set_fitness(full_solution)
     return ks.objective_values
 
-for i in range(1):
+
+for i in range(4):
     for s, o in zip(sizes, overlaps):
         FA.linear_grouping(s, o)
         # FA.factors = create_strip_groups(field)
         FA.get_factor_topology_elements()
         for fea_run in fea_runs:
                 start = time.time()
-                filename = path + '/results/Knapsack/FEA/FEA_knapsack_3_objectives_fea_runs_' + str(
+                filename = path + '/results/Knapsack/FEA/CCEA_knapsack_3_objectives_fea_runs_' + str(
                     fea_run) + '_grouping_' + str(s) + '_' + str(o) + time.strftime('_%d%m%H%M%S') + '.pickle'
                 feamoo = FEAMOO(fea_run, ga_run, population, FA, ga, dimensions=nr_items,
                                 combinatorial_options=[0, 1], ref_point=ks.ref_point)

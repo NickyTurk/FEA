@@ -1,6 +1,7 @@
 from collections import namedtuple
 from functools import wraps
-import pyproj, string
+#import pyproj
+import string
 from functools import partial
 import numpy as np
 from collections import namedtuple
@@ -27,18 +28,18 @@ def memo(f):
             return cache['arg']
     return wrap
 
-def project():
-    return partial(
-        pyproj.transform,
-        pyproj.Proj('+init=EPSG:26912', preserve_units=True),  # 26912 , 32612
-        pyproj.Proj('+init=EPSG:4326'))  # 4326
+# def project():
+#     return partial(
+#         pyproj.transform,
+#         pyproj.Proj('+init=EPSG:26912', preserve_units=True),  # 26912 , 32612
+#         pyproj.Proj('+init=EPSG:4326'))  # 4326
 
 
-def project_to_meters(x, y):
-    inProj = pyproj.Proj(init='epsg:4326')
-    outProj = pyproj.Proj(init='epsg:3857')
-    xp, yp = pyproj.transform(inProj, outProj, x, y)
-    return xp, yp
+# def project_to_meters(x, y):
+#     inProj = pyproj.Proj(init='epsg:4326')
+#     outProj = pyproj.Proj(init='epsg:3857')
+#     xp, yp = pyproj.transform(inProj, outProj, x, y)
+#     return xp, yp
 
 def is_hex(s):
     hex_digits = set(string.hexdigits)

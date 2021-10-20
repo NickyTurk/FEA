@@ -41,9 +41,10 @@ class FEAMOO:
         nondom_indeces = find_non_dominated(np.array([np.array(x.fitness) for x in self.nondom_archive]))
         nondom_archive = [self.nondom_archive[i] for i in nondom_indeces]
         seen = set()
-        self.nondom_archive = [seen.add(s.fitness) or s for s in nondom_archive if s.fitness not in seen]
-        print(seen)
-        [print(s.fitness) for s in self.nondom_archive]
+        for s in nondom_archive:
+            if s.fitness not in seen:
+                seen.add(s.fitness)
+                self.nondom_archive.append(s)
 
     def run(self):
         '''
@@ -106,7 +107,7 @@ class FEAMOO:
                     curr_pop = self.subpopulations[pop_idx]
                     if pop_idx not in seen_populations:
                         seen_populations.add(pop_idx)
-                        new_solutions.append([x for x in curr_pop.random_nondom_solutions[-1].variables])
+                        new_solutions.append([x for x in curr_pop.random_nondom_solutions[-1]])
                     pop_var_idx = np.where(np.array(curr_pop.factor) == var_idx)
                     # randomly pick one of the nondominated solutions from this population
                     if len(curr_pop.nondom_pop) != 0:

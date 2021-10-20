@@ -119,7 +119,7 @@ class NSGA2(MOOEA):
         Finds the worst solution based on fitness values and replaces with global solution.
         There can be multiple "worst" solutions, in which case as many are replaces as there are global solutions.
         """
-        if self.worst_index is None:
+        if self.worst_index is None or self.worst_index == []:
             diverse_sort = self.diversity_sort(self.curr_population)
             self.worst_index = [i for i, x in enumerate(self.curr_population) if x.fitness == diverse_sort[-1].fitness]
         if len(gs) > len(self.worst_index):
@@ -127,10 +127,10 @@ class NSGA2(MOOEA):
                 self.curr_population[idx] = PopulationMember(variables=[gs[i].variables[j] for j in self.factor], fitness=gs[i].fitness)
         elif len(self.worst_index) > len(gs):
             for i, sol in enumerate(gs):
-                self.curr_population[self.worst_index[i]] = PopulationMember(variables=[sol[j] for j in self.factor], fitness=sol.fitness)
+                self.curr_population[self.worst_index[i]] = PopulationMember(variables=[sol.variables[j] for j in self.factor], fitness=sol.fitness)
         elif len(self.worst_index) == len(gs):
             for idx, sol in zip (self.worst_index, gs):
-                self.curr_population[idx] = PopulationMember(variables=[sol[j] for j in self.factor], fitness=sol.fitness)
+                self.curr_population[idx] = PopulationMember(variables=[sol.variables[j] for j in self.factor], fitness=sol.fitness)
 
     def select_new_generation(self, i):
         """
@@ -171,12 +171,19 @@ class NSGA2(MOOEA):
             self.curr_population = sorted_population[:self.population_size]
             worst_fitness = tuple([x for x in self.curr_population[-1].fitness])
         random.shuffle(self.curr_population)
-        if i == self.ea_runs-1:
-            nondom_indeces = find_non_dominated(np.array([np.array(x.fitness) for x in self.nondom_archive]))
-            nondom_archive = [self.nondom_archive[i] for i in nondom_indeces]
+        if i == self.ea_runs-1 and self.factor is not None:
+            #nondom_indeces = find_non_dominated(np.array([np.array(x.fitness) for x in self.nondom_archive]))
+            #nondom_archive = [self.nondom[i] for i in nondom_indeces]
             seen = set()
-            self.nondom_archive = [seen.add(s.fitness) or s for s in nondom_archive if s.fitness not in seen]
-            self.random_nondom_solutions.append(random.choice(self.nondom_archive))
+            for s in self.nondom_pop:
+                if s.fitness not in seen:
+                    seen.add(s.fitness)
+                    self.nondom_archive.append(s)
+            choice = random.choice(self.nondom_archive)
+            full_solution = [x for x in self.global_solution.variables]
+            for i, x in zip(self.factor, choice.variables):
+                full_solution[i] = x
+            self.random_nondom_solutions.append(full_solution)
             self.worst_index = [i for i, x in enumerate(self.curr_population) if x.fitness == worst_fitness]  # np.where(np.array(self.curr_population, dtype=object) == worst)
 
     def diversity_sort(self, population):
@@ -211,7 +218,7 @@ class NSGA2(MOOEA):
             self.select_new_generation(i)
             '''
             Only run this part of the algorithm in the single-population case.
-            I.e. when NSGA2 is NOT used as the bae-algorithm for FEA.
+            I.e. when NSGA2 is NOT used as the base-algorithm for FEA.
             '''
             if self.factor is None and i != 1:
                 archive_nondom_indeces = find_non_dominated(
