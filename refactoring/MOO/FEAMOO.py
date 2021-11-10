@@ -41,6 +41,7 @@ class FEAMOO:
         nondom_indeces = find_non_dominated(np.array([np.array(x.fitness) for x in self.nondom_archive]))
         nondom_archive = [self.nondom_archive[i] for i in nondom_indeces]
         seen = set()
+        self.nondom_archive = []
         for s in nondom_archive:
             if s.fitness not in seen:
                 seen.add(s.fitness)
@@ -70,7 +71,6 @@ class FEAMOO:
                 change_in_nondom_size.append(True)
             else:
                 change_in_nondom_size = []
-            print('archive length: ', len(self.nondom_archive))
             # [print(x.fitness) for x in self.nondom_archive]
             print(self.nondom_archive[-1].fitness)
             old_archive_length = len(self.nondom_archive)

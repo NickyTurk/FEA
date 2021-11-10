@@ -14,16 +14,16 @@ from refactoring.FEA.factorarchitecture import FactorArchitecture
 from refactoring.utilities.util import *
 
 nr_items = 1000
-sizes = [100, 200]  #, 100, 200]c
-overlaps = [100, 200]  #, 10, 20]
-fea_runs = [20]
+sizes = [250]  #, 100, 200]c
+overlaps = [250]  #, 10, 20]
+fea_runs = [40]
 ga_run = 100
 population = 500
 
 FA = FactorArchitecture(nr_items)
 
 ga = NSGA2
-ks = Knapsack(number_of_items=nr_items, max_bag_weight=1600, max_nr_items=nr_items, max_bag_volume=2600,
+ks = Knapsack(number_of_items=nr_items, max_bag_weight=1500, max_nr_items=nr_items, max_bag_volume=2500,
               nr_objectives=3)
 
 current_working_dir = os.getcwd()
@@ -43,7 +43,7 @@ def calc_fitness(variables, gs=None, factor=None):
     return ks.objective_values
 
 
-for i in range(4):
+for i in range(9):
     for s, o in zip(sizes, overlaps):
         FA.linear_grouping(s, o)
         # FA.factors = create_strip_groups(field)
