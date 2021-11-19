@@ -11,7 +11,7 @@ import random
 
 class FEAMOO:
     def __init__(self, fea_iterations, alg_iterations, pop_size, fa, base_alg, dimensions,
-                 combinatorial_options=[], ref_point = [1e30,1e30,1e30]):
+                 combinatorial_options=[], ref_point = [1,1,1]):
         self.combinatorial_options = combinatorial_options
         self.dim = dimensions
         self.nondom_archive = []

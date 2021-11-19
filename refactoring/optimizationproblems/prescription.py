@@ -31,7 +31,7 @@ class Prescription:
         self.jumps = -1
         self.strat = -1
         self.fertilizer_rate = -1
-        self.objective_values = [self.jumps, self.strat, self.fertilizer_rate]
+        self.objective_values = (self.jumps, self.strat, self.fertilizer_rate)
         self.standard_nitrogen = 0
         self.size = len(self.variables)
         self.field = field
@@ -39,6 +39,7 @@ class Prescription:
                            self.minimize_overall_fertilizer_rate]
         self.n_obj = len(self.objectives)
         self.factor = factor
+        self.ref_point = [1,1,1]
         #self.set_fitness(factor=factor)
 
     def __eq__(self, other):
@@ -99,7 +100,7 @@ class Prescription:
             full_solution = self.variables
         self.overall_fitness, self.jumps, self.strat, self.fertilizer_rate \
             = self.calculate_overall_fitness(full_solution)
-        self.objective_values = [self.jumps, self.strat, self.fertilizer_rate]
+        self.objective_values = (self.jumps, self.strat, self.fertilizer_rate)
 
     def set_field(self, field):
         self.field = field
