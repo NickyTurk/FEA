@@ -4,3 +4,4 @@ venv/
 *.asv
 .idea/
 /results/Knapsack/
+/results/prescriptions/
