@@ -1,12 +1,12 @@
 from refactoring.utilities.multifilereader import MultiFileReader
 import pickle
 
-file_regex = 'NSGA_knapsack_3_objectives_ga_runs_'
+file_regex = r'Sec35Mid_(.*)trial_3_objectives_'
 
 stored_files = MultiFileReader(file_regex)
 file_list = stored_files.path_to_files
 
-parameters = [50, 100, 200]
+parameters = ['FEA_', 'CCEA_']
 
 for param in parameters:
     spread = 0
@@ -15,7 +15,6 @@ for param in parameters:
     amount = 0
     for file in file_list:
         if str(param) in file:
-            #print(file)
             amount += 1
             obj = pickle.load(open(file, 'rb'))
             spread = spread + obj.iteration_stats[-1]['diversity']

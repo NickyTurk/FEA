@@ -35,8 +35,8 @@ class MultiFileReader(object):
     def get_files_list(self):
         result = []
         search_path = os.path.dirname(ROOT_DIR)#os.path.abspath('FunctionTesting.py'))
-        print(search_path)
-        r = re.compile(self.file_regex)
+        regex = r'(.*)' + self.file_regex + r'(.*)'
+        r = re.compile(regex)
         for root, dir, files in os.walk(search_path):
             for x in files:
                 if r.match(x):
