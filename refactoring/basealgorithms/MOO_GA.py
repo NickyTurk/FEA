@@ -228,7 +228,11 @@ class NSGA2(MOOEA):
                 '''
                 seen = set()
                 nondom_archive = [self.nondom_archive[i] for i in archive_nondom_indeces]
-                self.nondom_archive = [seen.add(s.fitness) or s for s in nondom_archive if s.fitness not in seen]
+                self.nondom_archive = []
+                for s in nondom_archive:
+                    if s.fitness not in seen:
+                        seen.add(s.fitness)
+                        self.nondom_archive.append(s)
                 if len(self.nondom_archive) == old_archive_length and len(self.nondom_archive) >= 10:
                     change_in_nondom_size.append(True)
                 else:

@@ -1,7 +1,7 @@
 import pickle
 import numpy as np
 import itertools
-from pygmo.core import hypervolume
+#from pygmo.core import hypervolume
 from pymoo.util.nds.non_dominated_sorting import find_non_dominated
 from refactoring.MOO.paretofront import ParetoOptimization
 
@@ -18,7 +18,6 @@ experiment_filenames = [
 
 field_names = [ 'sec35west','sec35middle', 'henrys']
 methods = ["CCEAMOO", "NSGA2", "FEAMOO"]
-iterations = []
 nondom_solutions = dict()
 for field_name in field_names:
     full_solutions = []
@@ -43,10 +42,10 @@ for field_name in field_names:
     indeces = find_non_dominated(total_front)
     global_solutions = [total_front[i] for i in indeces]
     all_solutions = [full_solutions[i] for i in indeces]
-    hv = hypervolume(np.array(global_solutions))
+    #hv = hypervolume(np.array(global_solutions))
     po = ParetoOptimization()
     print('diversity: ', po.calculate_diversity(all_solutions))
-    print('hypervolume: ', hv.compute(ref_point=np.array([1,1,1])))
+    #print('hypervolume: ', hv.compute(ref_point=np.array([1,1,1])))
     print('CCEA value', len([x for x in indeces if x < ccea_len]) / len(indeces))
     print('FEA value', len([x for x in indeces if  ccea_len <= x < ccea_len+fea_len])/len(indeces))
     print('NSGA value', len([x for x in indeces if ccea_len+fea_len <= x <= ccea_len + fea_len + nsga_len]) / len(indeces))

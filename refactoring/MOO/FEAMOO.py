@@ -41,6 +41,7 @@ class FEAMOO:
         nondom_indeces = find_non_dominated(np.array([np.array(x.fitness) for x in self.nondom_archive]))
         nondom_archive = [self.nondom_archive[i] for i in nondom_indeces]
         seen = set()
+        self.nondom_archive = []
         for s in nondom_archive:
             if s.fitness not in seen:
                 seen.add(s.fitness)
