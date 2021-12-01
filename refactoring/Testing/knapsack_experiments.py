@@ -43,12 +43,11 @@ def calc_fitness(variables, gs=None, factor=None):
     return ks.objective_values
 
 
-for i in range(5):
+for i in range(9):
     for s, o in zip(sizes, overlaps):
         FA.linear_grouping(s, o)
         # FA.factors = create_strip_groups(field)
         FA.get_factor_topology_elements()
-        print(FA.factors)
         for fea_run in fea_runs:
                 start = time.time()
                 filename = path + '/results/Knapsack/FEA2/CCEA_knapsack_3_objectives_fea_runs_' + str(

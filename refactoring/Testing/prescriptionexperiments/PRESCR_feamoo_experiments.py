@@ -13,18 +13,20 @@ from refactoring.FEA.factorarchitecture import FactorArchitecture
 from refactoring.utilities.field.field_creation import Field
 from refactoring.utilities.util import *
 
-field_names = ['Henrys'] #  'Henrys', 'Sec35West']
+field_names = ['Sec35Mid', 'Sec35West']
 current_working_dir = os.getcwd()
-path = re.search(r'^(.*?\/FEA)',current_working_dir)
+path = re.search(r'^(.*?\\FEA)',current_working_dir)
 path = path.group()
+
 field_1 = pickle.load(open(path + '/refactoring/utilities/saved_fields/Henrys.pickle', 'rb')) # /home/alinck/FEA
 field_2 = pickle.load(open(path + '/refactoring/utilities/saved_fields/sec35mid.pickle', 'rb'))
 field_3 = pickle.load(open(path + '/refactoring/utilities/saved_fields/sec35west.pickle', 'rb'))
-fields_to_test = [field_1]
+fields_to_test = [field_2, field_3]
 
 fea_runs = 20
 ga_runs = [100]
 population_sizes= [500]
+
 
 def create_strip_groups(field):
     cell_indeces = field.create_strip_trial()
@@ -41,14 +43,19 @@ def create_strip_groups(field):
         factors.append(single_cells)
     return factors
 
+
 for i,field in enumerate(fields_to_test):
     print(field_names[i], '-- FEA')
     FA = FactorArchitecture(len(field.cell_list))
-    FA.linear_grouping(10, 5)
+    factors = create_strip_groups(field)
+    print(factors)
+    factor_size = np.mean([len(f) for f in factors])
+    print('avg size of strips: ', np.round(factor_size))
+    FA.linear_grouping(int(np.round(factor_size)), int(np.round(factor_size/2)))
     #FA.factors = create_strip_groups(field)
     FA.get_factor_topology_elements()
-
     nsga = NSGA2
+
     @add_method(NSGA2)
     def calc_fitness(variables, gs=None, factor=None):
         pres = Prescription(variables=variables, field=field, factor=factor)
@@ -59,14 +66,15 @@ for i,field in enumerate(fields_to_test):
             pres.set_fitness()
         return pres.objective_values
 
-    for population in population_sizes:
-        for ga_run in ga_runs:
-            start = time.time()
-            filename = path + '/results/FEAMOO/FEAMOO_' + field_names[i] + '_trial_3_objectives_strip_topo_ga_runs_' + str(ga_run) + '_population_' + str(population) + time.strftime('_%d%m%H%M%S') + '.pickle'
-            feamoo = FEAMOO(fea_runs, ga_run, population, FA, nsga, dimensions=len(field.cell_list), combinatorial_options=field.nitrogen_list, field=field)
-            feamoo.run()
-            end = time.time()
-            file = open(filename, "wb")
-            pickle.dump(feamoo, file)
-            elapsed = end-start
-            print("FEA with ga runs %d and population %d took %s"%(ga_run, population, str(timedelta(seconds=elapsed))))
+    for j in range(5):
+        for population in population_sizes:
+            for ga_run in ga_runs:
+                start = time.time()
+                filename = path + '/results/prescriptions/FEA_' + field_names[i] + '_strip_trial_3_objectives_strip_topo_ga_runs_' + str(ga_run) + '_population_' + str(population) + time.strftime('_%d%m%H%M%S') + '.pickle'
+                feamoo = FEAMOO(fea_runs, ga_run, population, FA, nsga, dimensions=len(field.cell_list), combinatorial_options=field.nitrogen_list)
+                feamoo.run()
+                end = time.time()
+                file = open(filename, "wb")
+                pickle.dump(feamoo, file)
+                elapsed = end-start
+                print("FEA with ga runs %d and population %d took %s"%(ga_run, population, str(timedelta(seconds=elapsed))))

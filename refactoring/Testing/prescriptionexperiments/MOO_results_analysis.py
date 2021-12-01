@@ -15,7 +15,7 @@ experiment_filenames = [
     "../../results/FEAMOO/FEAMOO_Sec35Middle_trial_3_objectives_linear_topo_ga_runs_100_population_500_2807191458.pickle",
     "../../results/FEAMOO/FEAMOO_Henrys_trial_3_objectives_strip_topo_ga_runs_100_population_500_1008025822.pickle"]
 
-field_names = [ 'sec35west','sec35middle', 'henrys']
+field_names = ['sec35west','sec35middle', 'henrys']
 methods = ["CCEAMOO", "NSGA2", "FEAMOO"]
 iterations = []
 alg_stats = dict()
