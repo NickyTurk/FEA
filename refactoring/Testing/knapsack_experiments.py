@@ -14,16 +14,16 @@ from refactoring.FEA.factorarchitecture import FactorArchitecture
 from refactoring.utilities.util import *
 
 nr_items = 1000
-sizes = [250]  #, 100, 200]c
-overlaps = [250]  #, 10, 20]
-fea_runs = [40]
+sizes = [200]  #, 100, 200]c
+overlaps = [200]  #, 10, 20]
+fea_runs = [20]
 ga_run = 100
 population = 500
 
 FA = FactorArchitecture(nr_items)
 
 ga = NSGA2
-ks = Knapsack(number_of_items=nr_items, max_bag_weight=1500, max_nr_items=nr_items, max_bag_volume=2500,
+ks = Knapsack(number_of_items=nr_items, max_bag_weight=1600, max_nr_items=nr_items, max_bag_volume=2600,
               nr_objectives=3)
 
 current_working_dir = os.getcwd()
@@ -50,7 +50,7 @@ for i in range(9):
         FA.get_factor_topology_elements()
         for fea_run in fea_runs:
                 start = time.time()
-                filename = path + '/results/Knapsack/FEA/CCEA_knapsack_3_objectives_fea_runs_' + str(
+                filename = path + '/results/Knapsack/FEA2/CCEA_knapsack_3_objectives_fea_runs_' + str(
                     fea_run) + '_grouping_' + str(s) + '_' + str(o) + time.strftime('_%d%m%H%M%S') + '.pickle'
                 feamoo = FEAMOO(fea_run, ga_run, population, FA, ga, dimensions=nr_items,
                                 combinatorial_options=[0, 1], ref_point=ks.ref_point)

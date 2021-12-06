@@ -111,7 +111,7 @@ class FEAMOO:
                     pop_var_idx = np.where(np.array(curr_pop.factor) == var_idx)
                     # randomly pick one of the nondominated solutions from this population
                     if len(curr_pop.nondom_pop) != 0:
-                        sorted = curr_pop.diversity_sort(curr_pop.nondom_pop)
+                        sorted = curr_pop.sorting_mechanism(curr_pop.nondom_pop)
                         random_sol = sorted[0]
                     else:
                         random_sol = random.choice(curr_pop.gbests)
