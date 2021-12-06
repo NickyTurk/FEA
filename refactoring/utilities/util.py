@@ -8,6 +8,32 @@ from collections import namedtuple
 
 PopulationMember = namedtuple('PopulationMember', ['variables', 'fitness'])
 
+def compare_solutions(self, solution1, solution2, n_objs):
+    dominate1 = False
+    dominate2 = False
+    
+    for i in range(n_objs):
+        o1 = solution1.fitness[i]
+        o2 = solution2.fitness[i]
+
+        if o1 < o2:
+            dominate1 = True
+                
+            if dominate2:
+                return 0
+        elif o1 > o2:
+            dominate2 = True
+            
+            if dominate1:
+                return 0
+        
+    if dominate1 == dominate2:
+        return 0
+    elif dominate1:
+        return -1
+    else:
+        return 1
+
 def add_method(cls):
     def decorator(func):
         @wraps(func) 

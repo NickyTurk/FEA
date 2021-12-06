@@ -7,13 +7,17 @@ HypE class --
 MOEAD class --
 """
 
+from pymoo.util.misc import euclidean_distance
 from refactoring.MOO.paretofront import *
 from refactoring.basealgorithms.ga import GA
-from refactoring.utilities.util import PopulationMember
+from refactoring.utilities.util import PopulationMember, compare_solutions
 
 from pymoo.algorithms.nsga2 import calc_crowding_distance
 from pymoo.util.nds.non_dominated_sorting import find_non_dominated
 from pymoo.util.nds.fast_non_dominated_sort import fast_non_dominated_sort
+
+from platypus.tools import DistanceMatrix
+from platypus.indicators import Hypervolume
 
 import numpy as np
 import random
@@ -120,7 +124,7 @@ class NSGA2(MOOEA):
         There can be multiple "worst" solutions, in which case as many are replaces as there are global solutions.
         """
         if self.worst_index is None or self.worst_index == []:
-            diverse_sort = self.diversity_sort(self.curr_population)
+            diverse_sort = self.sorting_mechanism(self.curr_population)
             self.worst_index = [i for i, x in enumerate(self.curr_population) if x.fitness == diverse_sort[-1].fitness]
         if len(gs) > len(self.worst_index):
             for i, idx in enumerate(self.worst_index):
@@ -161,13 +165,13 @@ class NSGA2(MOOEA):
                     break
                 new_population.extend([total_population[i] for i in front])
 
-            sorted_population = self.diversity_sort([total_population[i] for i in last_front])
+            sorted_population = self.sorting_mechanism([total_population[i] for i in last_front])
             length_to_add = self.population_size - len(new_population)
             new_population.extend(sorted_population[:length_to_add])
             self.curr_population = new_population
             worst_fitness = tuple([x for x in self.curr_population[-1].fitness])
         else:
-            sorted_population = self.diversity_sort(self.nondom_pop)
+            sorted_population = self.sorting_mechanism(self.nondom_pop)
             self.curr_population = sorted_population[:self.population_size]
             worst_fitness = tuple([x for x in self.curr_population[-1].fitness])
         random.shuffle(self.curr_population)
@@ -186,7 +190,7 @@ class NSGA2(MOOEA):
             self.random_nondom_solutions.append(full_solution)
             self.worst_index = [i for i, x in enumerate(self.curr_population) if x.fitness == worst_fitness]  # np.where(np.array(self.curr_population, dtype=object) == worst)
 
-    def diversity_sort(self, population):
+    def sorting_mechanism(self, population):
         """
         NSGA2 specific operation.
         Sorts solutions based on the crowding distance to maximize diversity.
@@ -266,6 +270,173 @@ class SPEA2(MOOEA):
         self.nondom_pop = []
         self.nondom_archive = []
         self.iteration_stats = []
+        self.distance_matrix = []
+        self.worst_index = None
+    
+    def replace_worst_solution(self, gs):
+        """
+
+        @param gs: List of Global Solution(s).
+                Used to replace the worst solution(s) with.
+        Finds the worst solution based on fitness values and replaces with global solution.
+        There can be multiple "worst" solutions, in which case as many are replaces as there are global solutions.
+        """
+        if self.worst_index is None or self.worst_index == []:
+            pass
+    
+    def select_new_generation(self, i):
+        """
+        After the base-algorithm (e.g. GA) has created the offspring:
+        1. check for non-domination
+        2. sort based on strength values
+        3. select next generation based on sorted population
+        @param i: Which generation is the algorithm on.
+                If it is on the last generation, calculate which individual has the worst fitness.
+        @return: shuffled new population
+        """
+        total_population = [x for x in self.curr_population]
+        fitnesses = np.array([np.array(x.fitness) for x in total_population])
+        nondom_indeces = find_non_dominated(fitnesses)
+        self.nondom_pop = [total_population[i] for i in nondom_indeces]
+        self.nondom_archive.extend(self.nondom_pop)
+    
+    def run(self, fea_run=0):
+        """
+        Run the full algorithm for the set number of 'ea_runs' or until a convergence criterion is met.
+        @param fea_run: Which generation the FEA is on, if NSGA2 is being used as the base-algorithm.
+        """
+        if fea_run == 0:
+            self.curr_population, self.initial_solution = self.initialize_population(gs=self.global_solution,
+                                                                                 factor=self.factor)
+        i = 1
+        change_in_nondom_size = []
+        old_archive_length = 0
+        '''
+        Convergence criterion based on change in non-dominated solution set size
+        '''
+        while i != self.ea_runs: #and len(change_in_nondom_size) < 10:
+            children = self.ea.create_offspring(self.curr_population)
+            self.curr_population.extend(
+                [PopulationMember(c, self.calc_fitness(c, self.global_solution, self.factor)) for c in children])
+            self.select_new_generation(i)
+
+            fea_run = fea_run+1
+    
+    def sorting_mechanism(self, population):
+        """
+        Code based on Platypus implementation:
+        https://platypus.readthedocs.io/en/latest/_modules/platypus/algorithms.html
+        """
+        fitnesses = np.array([np.array(x.fitness) for x in population])
+
+        raw_strength = [0]*len(population)
+        final_strength = [0.0]*len(population)
+         
+        # compute dominance flags
+        keys = list(itertools.combinations(range(len(population)), 2))
+        flags = list(map(compare_solutions, [population[k[0]] for k in keys], [population[k[1]] for k in keys]))
+
+        self.distance_matrix = self.calculate_distance_matrix(fitnesses)
+
+        # count the number of individuals each solution dominates
+        for key, flag in zip(keys, flags):
+            if flag < 0:
+                raw_strength[key[0]] += 1
+            elif flag > 0:
+                raw_strength[key[1]] += 1
+
+        # the raw fitness is the sum of the dominance counts (strength) of all
+        # dominated solutions
+        for key, flag in zip(keys, flags):
+            if flag < 0:
+                final_strength[key[1]] += raw_strength[key[0]]
+            elif flag > 0:
+                final_strength[key[0]] += raw_strength[key[1]]
+
+         # add density to fitness
+        for i in range(len(population)):
+            final_strength[i] += 1.0 / (self.kth_distance(i, self.k) + 2.0)
+        
+        return [x for y, x in sorted(zip(final_strength, population))]
+
+
+    def calculate_distance_matrix(self, fitnesses, distance_fun=euclidean_distance):
+        """
+        Code from Platypus library!
+        Maintains the pairwise distances between solutions.  
+        It also provides convenient routines to lookup the distance between any two solutions, 
+        find the most crowded solution, and remove a solution.
+        """
+        distances = []
+        for i in range(len(fitnesses)):
+            distances_i = []
+            for j in range(len(fitnesses)):
+                if i != j:
+                    distances_i.append((j, distance_fun(fitnesses[i], fitnesses[j])))
+                      
+            distances.append(sorted(distances_i, key=lambda x : x[1]))
+        return distances
+    
+    def find_most_crowded(self):
+        """
+        Code from Platypus library!
+        Finds the most crowded solution.
+        
+        Returns the index of the most crowded solution, which is the solution
+        with the smallest distance to the nearest neighbor.  Any ties are
+        broken by looking at the next distant neighbor.
+        """
+        minimum_distance = np.inf
+        minimum_index = -1
+        
+        for i in range(len(self.distance_matrix)):
+            distances_i = self.distance_matrix[i]
+            
+            if distances_i[0][1] < minimum_distance:
+                minimum_distance = distances_i[0][1]
+                minimum_index = i
+            elif distances_i[0][1] == minimum_distance:
+                for j in range(len(distances_i)):
+                    dist1 = distances_i[j][1]
+                    dist2 = self.distance_matrix[minimum_index][j][1]
+                    
+                    if dist1 < dist2:
+                        minimum_index = i
+                        break
+                    if dist2 < dist1:
+                        break
+        
+        return minimum_index
+    
+    def remove_point(self, index):
+        """
+        Code from Platypus library!
+        Removes the distance entries for the given solution.
+        
+        Parameters
+        ----------
+        index : int
+            The index of the solution
+        """
+        del self.distance_matrix[index]
+        
+        for i in range(len(self.distances)):
+            self.distance_matrix[i] = [(x if x < index else x-1, y) for (x, y) in self.distance_matrix[i] if x != index]
+    
+    def kth_distance(self, i, k):
+        """
+        Code from Platypus library!
+        Returns the distance to the k-th nearest neighbor.
+        
+        Parameters
+        ----------
+        i : int
+            The index of the solution
+        k : int
+            Finds the k-th nearest neightbor distance
+        """
+        return self.distance_matrix[i][k][1]
+
 
 
 class MOEAD(MOOEA):
