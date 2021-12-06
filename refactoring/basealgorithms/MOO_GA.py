@@ -258,7 +258,7 @@ class NSGA2(MOOEA):
 class SPEA2(MOOEA):
     def __init__(self, evolutionary_algorithm, dimensions=100, population_size=200, ea_runs=100,
                  # data_distribution=False,
-                 combinatorial_values=[], factor=None, global_solution=None):
+                 combinatorial_values=[], factor=None, global_solution=None, archive_size=200):
         super().__init__(combinatorial_values, population_size, dimensions)
         self.dimensions = dimensions
         self.population_size = population_size
@@ -268,6 +268,7 @@ class SPEA2(MOOEA):
         self.global_solution = global_solution
         self.ea_runs = ea_runs
         self.nondom_pop = []
+        self.archive_size = archive_size
         self.nondom_archive = []
         self.iteration_stats = []
         self.distance_matrix = []
@@ -321,6 +322,22 @@ class SPEA2(MOOEA):
             self.select_new_generation(i)
 
             fea_run = fea_run+1
+    
+    def update_archive(self):
+        self.nondom_archive = None
+        # survivors = [s for s in solutions if s.fitness < 1.0]
+        
+        # if len(survivors) < size:
+        #     remaining = [s for s in solutions if s.fitness >= 1.0]
+        #     remaining = sorted(remaining, key=fitness_key)
+        #     survivors.extend(remaining[:(size-len(survivors))])
+        # else:
+        #     distance_matrix = self.calculate_distance_matrix(survivors)
+            
+        #     while len(survivors) > size:
+        #         most_crowded_idx = self.find_most_crowded(distance_matrix)
+        #         self.remove_point_from_dist_mtx(distance_matrix, most_crowded_idx)
+        #         del survivors[most_crowded]
     
     def sorting_mechanism(self, population):
         """
@@ -377,7 +394,7 @@ class SPEA2(MOOEA):
             distances.append(sorted(distances_i, key=lambda x : x[1]))
         return distances
     
-    def find_most_crowded(self):
+    def find_most_crowded(self, distance_matrix):
         """
         Code from Platypus library!
         Finds the most crowded solution.
@@ -389,7 +406,7 @@ class SPEA2(MOOEA):
         minimum_distance = np.inf
         minimum_index = -1
         
-        for i in range(len(self.distance_matrix)):
+        for i in range(len(distance_matrix)):
             distances_i = self.distance_matrix[i]
             
             if distances_i[0][1] < minimum_distance:
@@ -398,7 +415,7 @@ class SPEA2(MOOEA):
             elif distances_i[0][1] == minimum_distance:
                 for j in range(len(distances_i)):
                     dist1 = distances_i[j][1]
-                    dist2 = self.distance_matrix[minimum_index][j][1]
+                    dist2 = distance_matrix[minimum_index][j][1]
                     
                     if dist1 < dist2:
                         minimum_index = i
@@ -408,7 +425,7 @@ class SPEA2(MOOEA):
         
         return minimum_index
     
-    def remove_point(self, index):
+    def remove_point_from_dist_mtx(self, distance_matrix, index):
         """
         Code from Platypus library!
         Removes the distance entries for the given solution.
@@ -418,10 +435,10 @@ class SPEA2(MOOEA):
         index : int
             The index of the solution
         """
-        del self.distance_matrix[index]
+        del distance_matrix[index]
         
         for i in range(len(self.distances)):
-            self.distance_matrix[i] = [(x if x < index else x-1, y) for (x, y) in self.distance_matrix[i] if x != index]
+            distance_matrix[i] = [(x if x < index else x-1, y) for (x, y) in distance_matrix[i] if x != index]
     
     def kth_distance(self, i, k):
         """
