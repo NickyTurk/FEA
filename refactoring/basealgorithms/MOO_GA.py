@@ -262,7 +262,7 @@ class SPEA2(MOOEA):
         super().__init__(combinatorial_values, population_size, dimensions)
         self.dimensions = dimensions
         self.population_size = population_size
-        self.ea = evolutionary_algorithm(dimensions, population_size)
+        self.ea = evolutionary_algorithm(dimensions, population_size, tournament_size=2, offspring_size=population_size)
         self.curr_population, self.initial_solution = self.initialize_population(gs=global_solution, factor=factor)
         self.factor = factor
         self.global_solution = global_solution
@@ -285,27 +285,13 @@ class SPEA2(MOOEA):
         if self.worst_index is None or self.worst_index == []:
             pass
     
-    def select_new_generation(self, i):
-        """
-        After the base-algorithm (e.g. GA) has created the offspring:
-        1. check for non-domination
-        2. sort based on strength values
-        3. select next generation based on sorted population
-        @param i: Which generation is the algorithm on.
-                If it is on the last generation, calculate which individual has the worst fitness.
-        @return: shuffled new population
-        """
-        total_population = [x for x in self.curr_population]
-        fitnesses = np.array([np.array(x.fitness) for x in total_population])
-        nondom_indeces = find_non_dominated(fitnesses)
-        self.nondom_pop = [total_population[i] for i in nondom_indeces]
-        self.nondom_archive.extend(self.nondom_pop)
-    
     def run(self, fea_run=0):
         """
         Run the full algorithm for the set number of 'ea_runs' or until a convergence criterion is met.
         @param fea_run: Which generation the FEA is on, if NSGA2 is being used as the base-algorithm.
         """
+
+        #initialize population
         if fea_run == 0:
             self.curr_population, self.initial_solution = self.initialize_population(gs=self.global_solution,
                                                                                  factor=self.factor)
@@ -316,28 +302,31 @@ class SPEA2(MOOEA):
         Convergence criterion based on change in non-dominated solution set size
         '''
         while i != self.ea_runs: #and len(change_in_nondom_size) < 10:
-            children = self.ea.create_offspring(self.curr_population)
-            self.curr_population.extend(
+            #calculate strength value fitness for entire population
+            strength_pop = self.sorting_mechanism(self.curr_population)
+            #copy nondom solutions to archive
+            self.nondom_pop = [x for x in strength_pop if x.fitness < 1.0]
+            #update archive
+            self.update_archive(strength_pop)
+            #create new generation
+            children = self.ea.create_offspring(self.nondom_archive)
+            self.curr_population = []
+            self.curr_population.append(
                 [PopulationMember(c, self.calc_fitness(c, self.global_solution, self.factor)) for c in children])
-            self.select_new_generation(i)
-
-            fea_run = fea_run+1
+            i+=1
     
-    def update_archive(self):
-        self.nondom_archive = None
-        # survivors = [s for s in solutions if s.fitness < 1.0]
-        
-        # if len(survivors) < size:
-        #     remaining = [s for s in solutions if s.fitness >= 1.0]
-        #     remaining = sorted(remaining, key=fitness_key)
-        #     survivors.extend(remaining[:(size-len(survivors))])
-        # else:
-        #     distance_matrix = self.calculate_distance_matrix(survivors)
-            
-        #     while len(survivors) > size:
-        #         most_crowded_idx = self.find_most_crowded(distance_matrix)
-        #         self.remove_point_from_dist_mtx(distance_matrix, most_crowded_idx)
-        #         del survivors[most_crowded]
+    def update_archive(self, population):
+        self.nondom_archive = [x for x in self.nondom_pop]
+        if len(self.nondom_pop) < self.archive_size:
+            remaining = [x for x in population if x.fitness >= 1.0]
+            remaining = sorted(remaining, key='fitness')
+            self.nondom_archive.extend(remaining[:(self.archive_size-len(self.nondom_pop))])
+        else:
+            distance_matrix = self.calculate_distance_matrix([x.fitness for x in self.nondom_pop])                        
+            while len(self.nondom_archive) > self.archive_size:
+                most_crowded_idx = self.find_most_crowded(distance_matrix)
+                self.remove_point_from_dist_mtx(distance_matrix, most_crowded_idx)
+                del self.nondom_archive[most_crowded_idx]
     
     def sorting_mechanism(self, population):
         """
@@ -374,7 +363,7 @@ class SPEA2(MOOEA):
         for i in range(len(population)):
             final_strength[i] += 1.0 / (self.kth_distance(i, self.k) + 2.0)
         
-        return [x for y, x in sorted(zip(final_strength, population))]
+        return [PopulationMember(x.variables, fs) for x, fs in zip(population, final_strength)]
 
 
     def calculate_distance_matrix(self, fitnesses, distance_fun=euclidean_distance):
