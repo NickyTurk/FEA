@@ -256,7 +256,7 @@ class NSGA2(MOOEA):
 
 
 class SPEA2(MOOEA):
-    def __init__(self, evolutionary_algorithm, dimensions=100, population_size=200, ea_runs=100,
+    def __init__(self, evolutionary_algorithm=GA, dimensions=100, population_size=200, ea_runs=100,
                  # data_distribution=False,
                  combinatorial_values=[], factor=None, global_solution=None, archive_size=200):
         super().__init__(combinatorial_values, population_size, dimensions)
