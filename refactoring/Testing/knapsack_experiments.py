@@ -9,7 +9,7 @@ import time
 
 from refactoring.optimizationproblems.knapsack import *
 from refactoring.MOO.FEAMOO import FEAMOO
-from refactoring.basealgorithms.MOO_GA import NSGA2
+from refactoring.basealgorithms.MOO_GA import NSGA2, SPEA2
 from refactoring.FEA.factorarchitecture import FactorArchitecture
 from refactoring.utilities.util import *
 
@@ -22,7 +22,7 @@ population = 500
 
 FA = FactorArchitecture(nr_items)
 
-ga = NSGA2
+ga = SPEA2
 ks = Knapsack(number_of_items=nr_items, max_bag_weight=1600, max_nr_items=nr_items, max_bag_volume=2600,
               nr_objectives=3)
 
@@ -31,7 +31,7 @@ path = re.search(r'^(.*?\/FEA)', current_working_dir)
 path = '../..'
 
 
-@add_method(NSGA2)
+@add_method(SPEA2)
 def calc_fitness(variables, gs=None, factor=None):
     if gs is not None and factor is not None:
         full_solution = [x for x in gs.variables]
