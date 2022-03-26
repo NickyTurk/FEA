@@ -1,20 +1,18 @@
 import itertools
 
 from pymoo.factory import get_performance_indicator
-from pygmo.core import hypervolume
 from pymoo.algorithms.nsga2 import calc_crowding_distance
 import numpy as np
 import math
-from operator import attrgetter
+from operator import attrgetter, itemgetter
 
 
 class ParetoOptimization:
 
-    def __init__(self, obj_size=3, objectives=['jumps', 'strat', 'fertilizer_rate']):
+    def __init__(self, obj_size=3):
         """
         :param obj_size: The number of objectives in the problem definition.
         """
-        self.objectives = objectives
         self.n_obj = obj_size
         self.approximate_pareto_front = []
 
@@ -53,13 +51,14 @@ class ParetoOptimization:
         :param reference_point: Which reference point to use to calculate HV
         """
         # reference_points = self.calculate_ref_points(h, self.obj_size)
-        #hv = get_performance_indicator("hv", ref_point=ref_point)
+
         diversity = self.calculate_diversity(approx_pareto_set)
-        updated_pareto_set = [np.array(sol.objective_values) for sol in approx_pareto_set]
+
+        updated_pareto_set = [np.array(sol.fitness) for sol in approx_pareto_set]
 #        for sol in approx_pareto_set:
 #            updated_pareto_set.append(np.array([x.nitrogen for x in sol.variables]))
-        hv = hypervolume(np.array(updated_pareto_set))
-        return {'hypervolume': hv.compute(ref_point=np.array(reference_point)), 'diversity': diversity}
+        hv = get_performance_indicator("hv", ref_point=np.array(reference_point)) #hypervolume(np.array(updated_pareto_set))
+        return {'hypervolume': hv.calc(np.array(updated_pareto_set)), 'diversity': diversity}
 
     def calculate_diversity(self, approx_pareto_set):
         """
@@ -74,11 +73,11 @@ class ParetoOptimization:
         """
 
         spread_indicator = 0
-
-        for obj in self.objectives:
-            sorted_set = sorted(approx_pareto_set, key=attrgetter(obj))
-            last = np.array([c.nitrogen for c in sorted_set[-1].variables])
-            first = np.array([c.nitrogen for c in sorted_set[0].variables])
+        for i in range(self.n_obj):
+            to_sort = [x.fitness[i] for x in approx_pareto_set]
+            sorted_set = [x for _,x in sorted(zip(to_sort, approx_pareto_set))]
+            last = np.array([c for c in sorted_set[-1].variables])
+            first = np.array([c for c in sorted_set[0].variables])
             spread_indicator += np.square(np.linalg.norm(last - first))
         return np.sqrt(spread_indicator)
 

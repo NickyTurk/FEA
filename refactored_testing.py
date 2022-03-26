@@ -7,7 +7,7 @@ from refactoring.baseAlgorithms.pso import PSO
 # from stat_analysis import factor_graphing
 
 if __name__ == '__main__':
-    outputfile = open('./MeetRandom/trial.txt', 'a')
+    outputfile = open('results/MEET/MeetRandom/trial.txt', 'a')
     print("running")
 
     f = Function(17, shift_data_file="f17_op.txt")

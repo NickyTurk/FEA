@@ -1,4 +1,5 @@
 import gc
+from refactoring.utilities.util import PopulationMember
 
 from ..MOO.paretofront import ParetoOptimization
 from ..FEA.factorarchitecture import FactorArchitecture
@@ -9,12 +10,9 @@ import random
 
 
 class FEAMOO:
-    def __init__(self, problem, fea_iterations, alg_iterations, pop_size, fa, base_alg, dimensions,
-                 combinatorial_options=None, field=None):
-        if combinatorial_options is None:
-            combinatorial_options = []
-        self.field = field
-        self.function = problem
+    def __init__(self, fea_iterations, alg_iterations, pop_size, fa, base_alg, dimensions,
+                 combinatorial_options=[], ref_point = [1,1,1]):
+        self.combinatorial_options = combinatorial_options
         self.dim = dimensions
         self.nondom_archive = []
         self.population = []
@@ -25,24 +23,30 @@ class FEAMOO:
         self.pop_size = pop_size
         self.current_iteration = 0
         self.global_solutions = []
-        self.worst_fitness_ref = [1, 1, 1]
+        self.worst_fitness_ref = ref_point
         self.po = ParetoOptimization()
         # keep track to have a reference point for the HV indicator
-        self.subpopulations = self.initialize_moo_subpopulations(combinatorial_options)
-        self.iteration_stats = [{'iteration':0}]
+        self.subpopulations = self.initialize_moo_subpopulations()
+        self.iteration_stats = []
 
-    def initialize_moo_subpopulations(self, combinatorial_options):
-        random_global_solution = self.function(self.field.assign_nitrogen_distribution(), field=self.field)
+    def initialize_moo_subpopulations(self):
+        random_global_variables = random.choices(self.combinatorial_options, k=self.dim)
+        #print('global vars: ', random_global_variables)
+        objs = self.base_algorithm(dimensions=self.dim).calc_fitness(random_global_variables)
+        random_global_solution = PopulationMember(random_global_variables, objs)
         self.global_solutions.append(random_global_solution)
-        return [self.base_algorithm(ga_runs=self.base_alg_iterations, population_size=self.pop_size, factor=factor,
+        return [self.base_algorithm(ea_runs=self.base_alg_iterations, dimensions=len(factor), combinatorial_values=self.combinatorial_options, population_size=self.pop_size, factor=factor,
                     global_solution=random_global_solution) for factor in self.factor_architecture.factors]
 
     def update_archive(self):
-        nondom_indeces = find_non_dominated(np.array([np.array(x.objective_values) for x in self.nondom_archive]))
+        nondom_indeces = find_non_dominated(np.array([np.array(x.fitness) for x in self.nondom_archive]))
         nondom_archive = [self.nondom_archive[i] for i in nondom_indeces]
-        self.nondom_archive = list(set(nondom_archive))
-        del nondom_archive, nondom_indeces
-        gc.collect()
+        seen = set()
+        self.nondom_archive = []
+        for s in nondom_archive:
+            if s.fitness not in seen:
+                seen.add(s.fitness)
+                self.nondom_archive.append(s)
 
     def run(self):
         '''
@@ -53,14 +57,14 @@ class FEAMOO:
         Compete (based on non-domination of solution, i.e. overall fitness)
         -> or ignore compete and create set of solutions based on overlapping variables: improves diversity? Check this with diversity measure
         -> spread different non-domination solutions across different subpopulations, i.e., different subpopulations have different global solutions: this should also improve diversity along the PF?
-            :return:
+        @return: eval_dict {HV, diversity, ND_size, FEA_run}
         '''
         change_in_nondom_size = []
         old_archive_length = 0
         fea_run = 0
-        while len(change_in_nondom_size) < 4 and fea_run != self.fea_runs:
+        while fea_run != self.fea_runs:  # len(change_in_nondom_size) < 4 and
             for alg in self.subpopulations:
-                alg.run(field=self.field)
+                alg.run(fea_run=fea_run)
             self.compete()
             self.share_solution()
             self.update_archive()
@@ -68,14 +72,14 @@ class FEAMOO:
                 change_in_nondom_size.append(True)
             else:
                 change_in_nondom_size = []
+            # [print(x.fitness) for x in self.nondom_archive]
+            print(self.nondom_archive[-1].fitness)
             old_archive_length = len(self.nondom_archive)
             eval_dict = self.po.evaluate_solution(self.nondom_archive, self.worst_fitness_ref)
             eval_dict['FEA_run'] = fea_run
             eval_dict['ND_size'] = len(self.nondom_archive)
             self.iteration_stats.append(eval_dict)
             print(eval_dict)
-            del eval_dict
-            gc.collect()
             # [print(s.objective_values) for s in self.nondom_archive]
             # [print(i, ': ', s.objective_values) for i,s in enumerate(self.iteration_stats[fea_run+1]['global solutions'])]
             fea_run = fea_run+1
@@ -90,43 +94,49 @@ class FEAMOO:
         Set new global solution after all variables have been checked
         """
         new_solutions = []
+        seen_populations = set()
         for var_idx in range(self.dim):
             # randomly pick one of the global solutions to perform competition for this variable
             chosen_global_solution = random.choice(self.global_solutions)
-            sol = self.function([x for x in chosen_global_solution.variables], self.field)
-            if chosen_global_solution not in new_solutions:
-                new_solutions.append(chosen_global_solution)
+            vars = [x for x in chosen_global_solution.variables]
+            #sol = PopulationMember(vars, self.base_algorithm().calc_fitness(vars))
+            if not new_solutions:
+                new_solutions.append(vars)
             # for each population with said variable perform competition on this single randomly chosen global solution
             if len(self.factor_architecture.optimizers[var_idx]) > 1:
                 for pop_idx in self.factor_architecture.optimizers[var_idx]:
                     curr_pop = self.subpopulations[pop_idx]
+                    if pop_idx not in seen_populations:
+                        seen_populations.add(pop_idx)
+                        new_solutions.append([x for x in curr_pop.random_nondom_solutions[-1]])
                     pop_var_idx = np.where(np.array(curr_pop.factor) == var_idx)
                     # randomly pick one of the nondominated solutions from this population
                     if len(curr_pop.nondom_pop) != 0:
-                        sorted = curr_pop.diversity_sort(curr_pop.nondom_pop)
+                        sorted = curr_pop.sorting_mechanism(curr_pop.nondom_pop)
                         random_sol = sorted[0]
                     else:
                         random_sol = random.choice(curr_pop.gbests)
+                    # new_solutions.append([x for x in random_sol.variables])
                     var_candidate_value = random_sol.variables[pop_var_idx[0][0]]
-                    sol.variables[var_idx] = var_candidate_value
-                    sol.set_fitness()
-                    new_solutions.append(sol)
+                    vars[var_idx] = var_candidate_value
+                    if vars not in new_solutions:
+                        new_solutions.append(vars)
             elif len(self.factor_architecture.optimizers[var_idx]) == 1:
                 curr_pop = self.subpopulations[self.factor_architecture.optimizers[var_idx][0]]
                 pop_var_idx = np.where(np.array(curr_pop.factor) == var_idx)
                 if len(curr_pop.nondom_pop) != 0:
                     for solution in curr_pop.nondom_pop:
-                        sol.variables[var_idx] = solution.variables[pop_var_idx[0][0]]
-                        new_solutions.append(sol)
+                        var_candidate_value = solution.variables[pop_var_idx[0][0]]
+                        vars[var_idx] = var_candidate_value
+                        if vars not in new_solutions:
+                            new_solutions.append(vars)
                 # if sol < chosen_global_solution:
                 #     best_value_for_var = var_candidate_value
             # sol.variables[var_idx] = best_value_for_var
             # new_solutions.append(sol)
-        new_solutions = list(set(new_solutions))
-        nondom_indeces = find_non_dominated(np.array([np.array(x.objective_values) for x in new_solutions]))
+        new_solutions = [PopulationMember(vars, self.base_algorithm(dimensions=self.dim).calc_fitness(vars)) for vars in new_solutions]
+        nondom_indeces = find_non_dominated(np.array([np.array(x.fitness) for x in new_solutions]))
         self.global_solutions = [new_solutions[i] for i in nondom_indeces]
-        del new_solutions, nondom_indeces
-        gc.collect()
         self.nondom_archive.extend(self.global_solutions)
 
     def share_solution(self):
@@ -154,8 +164,6 @@ class FEAMOO:
                 raise IndexError
             # update fitnesses
             alg.global_solution = gs
-            alg.curr_population = [self.function([x for x in p.variables], self.field, gs, alg.factor) for p in alg.curr_population]
+            alg.curr_population = [PopulationMember(p.variables, self.base_algorithm().calc_fitness(p.variables, alg.global_solution, alg.factor)) for p in alg.curr_population]
             # set best solution and replace worst solution with global solution across FEA
-            alg.replace_worst_solution(gs)
-        del to_pick
-        gc.collect()
+            alg.replace_worst_solution(self.global_solutions)
