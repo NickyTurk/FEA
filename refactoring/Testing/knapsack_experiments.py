@@ -14,24 +14,26 @@ from refactoring.FEA.factorarchitecture import FactorArchitecture
 from refactoring.utilities.util import *
 
 nr_items = 1000
-sizes = [200]  #, 100, 200]c
-overlaps = [200]  #, 10, 20]
+sizes = [ 100, 200, 100]
+overlaps = [ 100, 160, 80]  # , 10, 20]
 fea_runs = [20]
 ga_run = 100
 population = 500
+ks_type = 'multi'
+nr_obj = 10
 
 FA = FactorArchitecture(nr_items)
 
-ga = SPEA2
-ks = Knapsack(number_of_items=nr_items, max_bag_weight=1600, max_nr_items=nr_items, max_bag_volume=2600,
-              nr_objectives=3)
+ga = NSGA2
+ks = Knapsack(number_of_items=nr_items, max_nr_items=nr_items, nr_objectives=nr_obj, nr_constraints=1,
+              knapsack_type=ks_type)
 
 current_working_dir = os.getcwd()
-path = re.search(r'^(.*?\/FEA)', current_working_dir)
+# path = re.search(r'^(.*?\/FEA)', current_working_dir)
 path = '../..'
 
 
-@add_method(SPEA2)
+@add_method(NSGA2)
 def calc_fitness(variables, gs=None, factor=None):
     if gs is not None and factor is not None:
         full_solution = [x for x in gs.variables]
@@ -39,28 +41,33 @@ def calc_fitness(variables, gs=None, factor=None):
             full_solution[i] = x
     else:
         full_solution = variables
-    ks.set_fitness(full_solution)
+    if ks_type == 'single':
+        ks.set_fitness_single_knapsack(full_solution)
+    elif ks_type == 'multi':
+        ks.set_fitness_multi_knapsack(full_solution)
     return ks.objective_values
 
 
-for i in range(9):
-    for s, o in zip(sizes, overlaps):
-        FA.linear_grouping(s, o)
-        # FA.factors = create_strip_groups(field)
-        FA.get_factor_topology_elements()
+for s, o in zip(sizes, overlaps):
+    if s == o:
+        name = 'CCNSGA2'
+    else:
+        name = 'FNSGA2'
+    FA.linear_grouping(s, o)
+    FA.get_factor_topology_elements()
+    for i in range(5):
+        print('##############################################\n', i)
         for fea_run in fea_runs:
-                start = time.time()
-                filename = path + '/results/Knapsack/FEA2/CCEA_knapsack_3_objectives_fea_runs_' + str(
-                    fea_run) + '_grouping_' + str(s) + '_' + str(o) + time.strftime('_%d%m%H%M%S') + '.pickle'
-                feamoo = FEAMOO(fea_run, ga_run, population, FA, ga, dimensions=nr_items,
-                                combinatorial_options=[0, 1], ref_point=ks.ref_point)
-                feamoo.run()
-                #nsga = NSGA2(dimensions=nr_items, population_size=population, ea_runs=ga_run, combinatorial_values=[0, 1],
-                #             ref_point=ks.ref_point)
-                #nsga.run()
-                end = time.time()
-                file = open(filename, "wb")
-                pickle.dump(feamoo, file)
-                elapsed = end - start
-                print(
-                    "FEA with ga runs %d and population %d %d took %s" % (fea_run, s, o, str(timedelta(seconds=elapsed))))
+            start = time.time()
+            filename = path + '/results/Knapsack/' + name + '/' + name + '_' + ks_type + '_knapsack_' + str(nr_obj) + \
+                       '_objectives_fea_runs_' + str(fea_run) + '_grouping_' + str(s) + '_' + \
+                       str(o) + time.strftime('_%d%m%H%M%S') + '.pickle'
+            feamoo = FEAMOO(fea_run, ga_run, population, FA, ga, dimensions=nr_items,
+                            combinatorial_options=[0, 1], ref_point=ks.ref_point)
+            feamoo.run()
+            end = time.time()
+            file = open(filename, "wb")
+            pickle.dump(feamoo, file)
+            elapsed = end - start
+            print(
+                "FEA with ga runs %d and population %d %d took %s" % (fea_run, s, o, str(timedelta(seconds=elapsed))))

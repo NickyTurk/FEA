@@ -1,21 +1,24 @@
-import pickle
+from refactoring.utilities.multifilereader import MultiFileReader
+import pickle, random
 import numpy as np
 from pymoo.util.nds.non_dominated_sorting import find_non_dominated
 from itertools import combinations
 
 nondom_solutions = dict()
 lengths = dict()
-comparing = ["CCEA", "NSGA", "FEA"]
+comparing = ['population_500', 'grouping_100_100', 'grouping_100_80', 'grouping_200_200', 'grouping_200_160']
 total_front = []
 
-experiment_filenames = ["../../results/Knapsack/FEA/CCEA_knapsack_3_objectives_fea_runs_20_grouping_100_100_2110105847.pickle", #../../results/Knapsack/FEA/CCEA_knapsack_3_objectives_fea_runs_40_grouping_100_100_0511010836.pickle",
-                        "../../results/Knapsack/FEA/FEA_knapsack_3_objectives_fea_runs_40_grouping_200_180_0411171257.pickle", #"../../results/Knapsack/FEA/FEA_knapsack_3_objectives_fea_runs_40_grouping_200_180_0411133938.pickle",
-                        "../../results/Knapsack/NSGA2/NSGA_knapsack_3_objectives_ga_runs_100_0411120529.pickle"]
+file_regex = r'_single_knapsack_3_objectives_'
+stored_files = MultiFileReader(file_regex)
+experiment_filenames = stored_files.path_to_files
 
 for compare in comparing:
     experiment = [x for x in experiment_filenames if compare+'_' in x]
     if experiment:
-        experiment = experiment[0]
+        rand_int = random.randint(0, len(experiment)-1)
+        print(rand_int)
+        experiment = experiment[rand_int]
     else:
         break
     feamoo = pickle.load(open(experiment, 'rb'))
@@ -23,7 +26,7 @@ for compare in comparing:
     total_front.extend(solutions)
     nondom_solutions[compare] = solutions
     lengths[compare] = len(solutions)
-    print(compare, ' len ', len(solutions))
+    print(compare, ' len of front', len(solutions))
 
 print('total front length ', len(total_front))
 #total_front = np.vstack((nondom_solutions['CCEA'], nondom_solutions['FEA'], nondom_solutions['NSGA']))
@@ -37,7 +40,7 @@ for i, compare in enumerate(comparing):
     ub += lengths[compare]
     if i != 0:
         lb += lengths[comparing[i-1]]
-    print('upper and lower: ', ub, lb)
+    #print('upper and lower: ', ub, lb)
     print(len([x for x in indeces if lb <= x < ub]) / len(indeces))
 
 pair_compare = [comb for comb in combinations(comparing, 2)]

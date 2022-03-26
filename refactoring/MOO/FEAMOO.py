@@ -31,7 +31,8 @@ class FEAMOO:
 
     def initialize_moo_subpopulations(self):
         random_global_variables = random.choices(self.combinatorial_options, k=self.dim)
-        objs = self.base_algorithm().calc_fitness(random_global_variables)
+        #print('global vars: ', random_global_variables)
+        objs = self.base_algorithm(dimensions=self.dim).calc_fitness(random_global_variables)
         random_global_solution = PopulationMember(random_global_variables, objs)
         self.global_solutions.append(random_global_solution)
         return [self.base_algorithm(ea_runs=self.base_alg_iterations, dimensions=len(factor), combinatorial_values=self.combinatorial_options, population_size=self.pop_size, factor=factor,
@@ -61,9 +62,9 @@ class FEAMOO:
         change_in_nondom_size = []
         old_archive_length = 0
         fea_run = 0
-        while len(change_in_nondom_size) < 4 and fea_run != self.fea_runs:
+        while fea_run != self.fea_runs:  # len(change_in_nondom_size) < 4 and
             for alg in self.subpopulations:
-                alg.run()
+                alg.run(fea_run=fea_run)
             self.compete()
             self.share_solution()
             self.update_archive()
@@ -115,6 +116,7 @@ class FEAMOO:
                         random_sol = sorted[0]
                     else:
                         random_sol = random.choice(curr_pop.gbests)
+                    # new_solutions.append([x for x in random_sol.variables])
                     var_candidate_value = random_sol.variables[pop_var_idx[0][0]]
                     vars[var_idx] = var_candidate_value
                     if vars not in new_solutions:
@@ -132,7 +134,7 @@ class FEAMOO:
                 #     best_value_for_var = var_candidate_value
             # sol.variables[var_idx] = best_value_for_var
             # new_solutions.append(sol)
-        new_solutions = [PopulationMember(vars, self.base_algorithm().calc_fitness(vars)) for vars in new_solutions]
+        new_solutions = [PopulationMember(vars, self.base_algorithm(dimensions=self.dim).calc_fitness(vars)) for vars in new_solutions]
         nondom_indeces = find_non_dominated(np.array([np.array(x.fitness) for x in new_solutions]))
         self.global_solutions = [new_solutions[i] for i in nondom_indeces]
         self.nondom_archive.extend(self.global_solutions)

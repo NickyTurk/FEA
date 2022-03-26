@@ -115,10 +115,10 @@ class GA:
     def crossover(self, first_solution, second_solution):
         """
         @param first_solution: The first parent selected.
-        @param second_solution: The second parent seleced.
+        @param second_solution: The second parent selected.
         Crossover is performed between these parents to create offspring.
         Type = single, multi or uniform.
-        Single = Single point crossover, a random index is selected and the parents are crossed based on this inex.
+        Single = Single point crossover, a random index is selected and the parents are crossed based on this index.
         Multi = Multi-point crossover, two indices are selected and the values between these indices are swapped between
                 the parents.
 

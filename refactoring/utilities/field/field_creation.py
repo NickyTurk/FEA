@@ -12,7 +12,8 @@ import pysal as ps
 from shapely.ops import cascaded_union, transform
 from shapely import wkb
 from copy import deepcopy
-import os, math, pandas, time, ogr, random, fiona, shortuuid, ast
+from osgeo import ogr
+import os, math, pandas, time, random, fiona, shortuuid, ast
 
 from ..filereaders import WKTFiles, ShapeFiles
 from ..util import *
@@ -35,6 +36,7 @@ class Field:
     def __init__(self, field_dict = None):
         # initialize values
         self.id = 0
+        self.conversion_measure = 6076.1154855643 * 60
 
         if field_dict:
             self.field_shape_file = field_dict["fld_shp_file"]
@@ -59,14 +61,14 @@ class Field:
             self.pro_file = None
             self.grid_file = None
             self.as_applied_file = None
-            self.buffer_ = -(50/364567.2)
+            self.buffer_ = -(120/self.conversion_measure)
             self.strip_trial = False
             self.binning_strategy = 'distr'
 
             self.num_yield_bins = 3
             self.num_pro_bins = 1
-            self.cell_width = 200/364567.2
-            self.cell_height = 300/364567.2
+            self.cell_width = 120/self.conversion_measure
+            self.cell_height = 240/self.conversion_measure
             self.nitrogen_list = [20,40,60,80,100,120]
 
         self.total_ylpro_bins = self.num_pro_bins * self.num_yield_bins
@@ -87,6 +89,7 @@ class Field:
         self.expected_nitrogen_strat, self.max_strat, self.min_strat = 0, 0, 0
         self.max_fertilizer_rate = 0
         self.max_jumps = 0
+        self.fixed_costs = 0  # fixed costs in dollars for field/farm
         self.latlong_crs = 'epsg:4326'
         self.field_crs = ''
         self.aa_crs = ''
@@ -523,12 +526,28 @@ class Field:
 
         return expected_bin_strat, max_strat, min_strat
 
+    def create_strip_groups(self):
+        cell_indeces = self.create_strip_trial()
+        factors = []
+        single_cells = []
+        sum = 0
+        for j, strip in enumerate(cell_indeces):
+            if len(strip.original_index) == 1:
+                single_cells.append(sum)
+            else:
+                factors.append([i + sum for i, og in enumerate(strip.original_index)])
+            sum = sum + len(strip.original_index)
+        if single_cells:
+            factors.append(single_cells)
+        return factors
+
 
 class GridCell:
     def __init__(self, coordinates, nitrogen=-1):
         self.is_sorted = False
         self.original_index = -1
         self.sorted_index = -1
+        self.conversion_measure = 6076.1154855643 * 60
 
         # coordinates and polygon definitions
         self.bottomleft_x = coordinates[0]
@@ -544,6 +563,7 @@ class GridCell:
              (coordinates[2] - 1.5 / 364567.2, coordinates[1] + 1.5 / 364567.2),
              (coordinates[2] - 1.5 / 364567.2, coordinates[3] - 1.5 / 364567.2),
              (coordinates[0] + 1.5 / 364567.2, coordinates[3] - 1.5 / 364567.2)])
+        self.gridcell_size = self.true_bounds.area*self.conversion_measure*self.conversion_measure
         self.folium_bounds = [[coordinates[1], coordinates[0]], [coordinates[3], coordinates[2]]]
 
         # values within cell

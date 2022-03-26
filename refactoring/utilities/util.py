@@ -1,6 +1,6 @@
 from collections import namedtuple
 from functools import wraps
-#import pyproj
+import math
 import string
 from functools import partial
 import numpy as np
@@ -8,10 +8,16 @@ from collections import namedtuple
 
 PopulationMember = namedtuple('PopulationMember', ['variables', 'fitness'])
 
-def compare_solutions(self, solution1, solution2, n_objs):
+
+def euclidean_distance(a, b):
+    return math.sqrt(sum((a - b) ** 2))
+
+
+def compare_solutions(solution1, solution2):
     dominate1 = False
     dominate2 = False
-    
+    n_objs = len(solution1.fitness)
+
     for i in range(n_objs):
         o1 = solution1.fitness[i]
         o2 = solution2.fitness[i]

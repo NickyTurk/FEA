@@ -6,7 +6,8 @@ from ..utilities.field.field_creation import Field, GridCell
 
 class Prescription:
 
-    def __init__(self, variables=None, field=None, factor=None, index=-1):
+    def __init__(self, variables=None, field=None, factor=None, index=-1, optimized=False, yield_predictor=None,
+                 fertilizer_cost=1, yield_price=5.40):
         if variables is not None and factor is None and field is None:
             self.variables = variables
         elif variables is not None and factor is not None and field is not None:
@@ -31,21 +32,32 @@ class Prescription:
         self.jumps = -1
         self.strat = -1
         self.fertilizer_rate = -1
-        self.objective_values = (self.jumps, self.strat, self.fertilizer_rate)
+        self.net_return = -1
+        self.yld = -1
         self.standard_nitrogen = 0
         self.size = len(self.variables)
         self.field = field
-        self.objectives = [self.maximize_stratification, self.minimize_jumps,
-                           self.minimize_overall_fertilizer_rate]
+        self.optimized = optimized
+        self.yield_predictor = yield_predictor
+        self.fertilizer_cost = fertilizer_cost  # cost in dollars for fertilizer based on application measure
+        self.yield_price = yield_price  # dollars made per unit, e.g. bushels per acre of winter wheat
+        if not self.optimized:
+            self.objective_values = (self.strat, self.jumps, self.fertilizer_rate)
+            self.objectives = [self.maximize_stratification, self.minimize_jumps,
+                               self.minimize_overall_fertilizer_rate]
+        else:
+            self.objective_values = (self.jumps, self.fertilizer_rate)
+            self.objectives = [self.minimize_jumps,
+                               self.minimize_overall_fertilizer_rate, self.optimize_yld]
         self.n_obj = len(self.objectives)
         self.factor = factor
-        self.ref_point = [1,1,1]
-        #self.set_fitness(factor=factor)
+        self.ref_point = [1, 1, 1]
+        self.gridcell_size = self.field.cell_list[0].gridcell_size / 43560
 
     def __eq__(self, other):
         self_vars = [x.nitrogen for x in self.variables]
         other_vars = [x.nitrogen for x in other.variables]
-        if all(x==y for x,y in zip(self_vars,other_vars)):
+        if all(x == y for x, y in zip(self_vars, other_vars)):
             return True
         else:
             return False
@@ -56,16 +68,10 @@ class Prescription:
 
     def __gt__(self, other):
         if all(x >= y for x, y in zip(self.objective_values, other.objective_values)) \
-                and any(x > y for x,y in zip(self.objective_values, other.objective_values)):
+                and any(x > y for x, y in zip(self.objective_values, other.objective_values)):
             return True
         else:
             return False
-
-    # def __gt__(self, other):
-    #     if all(x > y for x, y in zip(self.objective_values, other.objective_values)):
-    #         return True
-    #     else:
-    #         return False
 
     def __le__(self, other):
         if all(x <= y for x, y in zip(self.objective_values, other.objective_values)) \
@@ -98,15 +104,26 @@ class Prescription:
                 full_solution[i] = x
         else:
             full_solution = self.variables
-        self.overall_fitness, self.jumps, self.strat, self.fertilizer_rate \
-            = self.calculate_overall_fitness(full_solution)
-        self.objective_values = (self.jumps, self.strat, self.fertilizer_rate)
+        if not self.optimized:
+            self.overall_fitness, self.jumps, self.strat, self.fertilizer_rate \
+                = self.calculate_experimental_fitness(full_solution)
+            self.objective_values = (self.jumps, self.fertilizer_rate, self.strat)
+        else:
+            self.overall_fitness, self.jumps, self.fertilizer_rate, self.net_return = self.calculate_optimal_fitness(full_solution)
+            print(self.net_return)
+            self.objective_values = (self.jumps, self.fertilizer_rate, self.net_return)
 
     def set_field(self, field):
         self.field = field
         self.field.nitrogen_list.sort()
 
-    def calculate_overall_fitness(self, solution):
+    def calculate_optimal_fitness(self, solution):
+        jumps = self.minimize_jumps(solution)
+        rate = self.minimize_overall_fertilizer_rate(solution)
+        net_return = self.optimize_yld(solution)
+        return (jumps + rate + net_return) / 3, jumps, rate, net_return
+
+    def calculate_experimental_fitness(self, solution):
         jumps = self.minimize_jumps(solution)
         strat = self.maximize_stratification(solution)
         rate = self.minimize_overall_fertilizer_rate(solution)
@@ -151,3 +168,10 @@ class Prescription:
     def minimize_overall_fertilizer_rate(self, solution):
         total_fertilizer = sum([c.nitrogen for c in solution])
         return total_fertilizer / self.field.max_fertilizer_rate
+
+    def optimize_yld(self, solution):
+        predicted_yield = self.yield_predictor.calculate_yield(solution)
+        # P = base_price + ()
+        fertilizer_applied = sum([c.nitrogen*self.gridcell_size for c in solution])
+        net_return = predicted_yield * self.yield_price - fertilizer_applied * self.fertilizer_cost - self.field.fixed_costs
+        return -net_return

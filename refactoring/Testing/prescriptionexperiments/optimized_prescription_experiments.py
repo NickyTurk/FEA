@@ -1,17 +1,16 @@
-import csv
-import os, re
-import pickle
-from datetime import timedelta
-import time
-
+from sklearn.ensemble import RandomForestRegressor
+from refactoring.predictionalgorithms.yieldprediction import YieldPredictor
 from refactoring.optimizationproblems.prescription import Prescription
-from refactoring.MOO.FEAMOO import FEAMOO
-from refactoring.MOO.paretofront import *
-from refactoring.basealgorithms.MOO_GA import *
-from refactoring.basealgorithms.ga import *
-from refactoring.FEA.factorarchitecture import FactorArchitecture
-from refactoring.utilities.field.field_creation import Field
 from refactoring.utilities.util import *
+from refactoring.basealgorithms.MOO_GA import *
+import pandas as pd
+from datetime import timedelta
+import numpy as np
+import pickle, random, re, os, time
+
+fea_runs = 20
+ga_runs = [100]
+population_sizes = [500]
 
 field_names = ['Henrys', 'Sec35Mid', 'Sec35West']
 current_working_dir = os.getcwd()
@@ -21,49 +20,34 @@ path = path.group()
 field_1 = pickle.load(open(path + '/refactoring/utilities/saved_fields/Henrys.pickle', 'rb')) # /home/alinck/FEA
 field_2 = pickle.load(open(path + '/refactoring/utilities/saved_fields/sec35mid.pickle', 'rb'))
 field_3 = pickle.load(open(path + '/refactoring/utilities/saved_fields/sec35west.pickle', 'rb'))
-fields_to_test = [field_1, field_2, field_3]
-
-fea_runs = 20
-ga_runs = [100]
-population_sizes = [500]
-
-
-def create_strip_groups(field):
-    cell_indeces = field.create_strip_trial()
-    factors = []
-    single_cells = []
-    sum = 0
-    for j, strip in enumerate(cell_indeces):
-        if len(strip.original_index) == 1:
-            single_cells.append(sum)
-        else:
-            factors.append([i+sum for i, og in enumerate(strip.original_index)])
-        sum = sum + len(strip.original_index)
-    if single_cells:
-        factors.append(single_cells)
-    return factors
-
+fields_to_test = [field_2] #[field_1, field_2, field_3]
 
 for i, field in enumerate(fields_to_test):
+    agg_files = ["C:/Users/f24n127/Documents/Work/Ag/Data/broyles_sec35mid_2016_yl_aggreg_20181112.csv"]
+    df = pd.read_csv(agg_files[i])
+    y_labels = df['yl_2016']
+    data_to_use = ['x', 'y', 'n_lbs_ac', 'elev_m', 'slope_deg', 'ndvi_2012', 'ndvi_2014', 'ndvi_2015', 'yl14_nn_bu_ac',
+                   'n15_lbs_ac', 'n14_lbs_ac']
+    x_data = df[data_to_use]
+    rf = RandomForestRegressor()
+    rf.fit(x_data, y_labels)
+
     print(field_names[i], '-- NSGA')
-    # #FA = FactorArchitecture(len(field.cell_list))
-    # factors = create_strip_groups(field)
-    # print(factors)
-    # factor_size = np.mean([len(f) for f in factors])
-    # print('avg size of strips: ', np.round(factor_size))
-    # FA.linear_grouping(int(np.round(factor_size)), int(np.round(factor_size/2)))
-    # #FA.factors = create_strip_groups(field)
-    # FA.get_factor_topology_elements()
-    #nsga = NSGA2
+    field.fixed_costs = 1000
+    random_global_variables = random.choices([80, 100, 120, 140], k=len(field.cell_list))
+    pr = Prescription(variables=random_global_variables, field=field)
+    yp = YieldPredictor(prescription=pr, field=field, agg_data_file=agg_files[i], trained_model=rf, data_headers=data_to_use)
 
     @add_method(NSGA2)
     def calc_fitness(variables, gs=None, factor=None):
-        pres = Prescription(variables=variables, field=field, factor=factor)
+        pres = Prescription(variables=variables, field=field, factor=factor, optimized=True, yield_predictor=yp)
         if gs is not None:
-            global_solution = Prescription(variables = gs.variables, field = field)
+            global_solution = Prescription(variables=gs.variables, field=field)
             pres.set_fitness(global_solution=global_solution)
         else:
             pres.set_fitness()
+
+        print("objective values ", pres.objective_values)
         return pres.objective_values
 
     for j in range(5):
@@ -74,7 +58,7 @@ for i, field in enumerate(fields_to_test):
                 #feamoo = FEAMOO(fea_runs, ga_run, population, FA, nsga, dimensions=len(field.cell_list), combinatorial_options=field.nitrogen_list)
                 #feamoo.run()
                 nsga = NSGA2(population_size=population, ea_runs=ga_run, dimensions=len(field.cell_list),
-                             combinatorial_values=field.nitrogen_list, ref_point=[1,1,1])
+                             combinatorial_values=field.nitrogen_list, ref_point=[1, 1, 1])
                 nsga.run()
                 end = time.time()
                 file = open(filename, "wb")

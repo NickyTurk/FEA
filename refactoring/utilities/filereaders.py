@@ -3,7 +3,8 @@ Functionality to read and write WKT data.
  TODO: Needs to be made more generalizable.
 """
 
-import ogr, csv, os, re
+import csv, os, re
+from osgeo import ogr
 import osgeo, fiona
 from shapely.geometry import Polygon, shape
 
