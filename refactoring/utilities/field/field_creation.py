@@ -531,7 +531,7 @@ class Field:
 
         return expected_bin_strat, max_strat, min_strat
 
-    def create_strip_groups(self):
+    def create_strip_groups(self, overlap=False, overlap_ratio=0.1):
         cell_indeces = self.create_strip_trial()
         factors = []
         single_cells = []
@@ -544,6 +544,21 @@ class Field:
             sum = sum + len(strip.original_index)
         if single_cells:
             factors.append(single_cells)
+        if overlap:
+            new_factors = []
+            nr_of_cells = [np.ceil(len(f) * overlap_ratio) for f in factors]
+            for i, f in enumerate(factors):
+                if i != len(factors) -1:
+                    nf = []
+                    for j in range(1, nr_of_cells[i]+1):
+                        print(j)
+                        nf.append(f[-j])
+                    for j in range(nr_of_cells[i+1]):
+                        print(j)
+                        nf.append(f[j])
+                    new_factors.append(nf)
+            factors.extend(new_factors)
+        print(factors)
         return factors
 
 

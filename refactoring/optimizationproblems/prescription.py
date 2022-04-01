@@ -2,27 +2,28 @@ import random
 
 import numpy as np
 from ..utilities.field.field_creation import Field, GridCell
+from copy import deepcopy
 
 
 class Prescription:
 
     def __init__(self, variables=None, field=None, factor=None, index=-1, optimized=False, yield_predictor=None,
                  fertilizer_cost=1, yield_price=5.40):
-        if variables is not None and factor is None and field is None:
+        if variables and factor is None and field is None:
             self.variables = variables
-        elif variables is not None and factor is not None and field is not None:
+        elif variables and factor and field:
             field_cells = [field.cell_list[i] for i in factor]
             for i, c in enumerate(field_cells):
                 c.nitrogen = variables[i]
-            self.variables = field_cells
-        elif variables is not None and factor is None and field is not None:
+            self.variables = deepcopy(field_cells)
+        elif variables and factor is None and field:
             field_cells = [f for f in field.cell_list]
             for i, c in enumerate(field_cells):
                 c.nitrogen = variables[i]
-            self.variables = field_cells
-        elif field is not None and variables is None and factor is None:
+            self.variables = deepcopy(field_cells)
+        elif field and variables is None and factor is None:
             self.variables = field.assign_nitrogen_distribution()
-        elif factor is not None and field is not None and variables is None:
+        elif factor and field and variables is None:
             field_cells = field.assign_nitrogen_distribution()
             self.variables = [field_cells[i] for i in factor]
         else:
@@ -95,30 +96,32 @@ class Prescription:
                 f.append(self.objectives[j](x))
             return f
 
-    def set_fitness(self, solution=None, global_solution=None):
-        if solution is not None:
+    def set_fitness(self, solution=None, global_solution=None, cont_bool=False):
+        complete_solution = []
+        if solution:
             self.variables = solution
-        if global_solution is not None:
-            full_solution = [x for x in global_solution.variables]
+        if global_solution:
+            complete_solution = [x for x in self.field.cell_list]
+            for i, x in enumerate(global_solution):
+                complete_solution[i].nitrogen = x
             for i, x in zip(self.factor, self.variables):
-                full_solution[i] = x
+                complete_solution[i].nitrogen = x.nitrogen
         else:
-            full_solution = self.variables
+            complete_solution = self.variables
         if not self.optimized:
             self.overall_fitness, self.jumps, self.strat, self.fertilizer_rate \
-                = self.calculate_experimental_fitness(full_solution)
+                = self.calculate_experimental_fitness(complete_solution)
             self.objective_values = (self.jumps, self.fertilizer_rate, self.strat)
         else:
-            self.overall_fitness, self.jumps, self.fertilizer_rate, self.net_return = self.calculate_optimal_fitness(full_solution)
-            print(self.net_return)
+            self.overall_fitness, self.jumps, self.fertilizer_rate, self.net_return = self.calculate_optimal_fitness(complete_solution, cont_bool)
             self.objective_values = (self.jumps, self.fertilizer_rate, self.net_return)
 
     def set_field(self, field):
         self.field = field
         self.field.nitrogen_list.sort()
 
-    def calculate_optimal_fitness(self, solution):
-        jumps = self.minimize_jumps(solution)
+    def calculate_optimal_fitness(self, solution, cont_bool):
+        jumps = self.minimize_jumps(solution, continuous=cont_bool)
         rate = self.minimize_overall_fertilizer_rate(solution)
         net_return = self.optimize_yld(solution)
         return (jumps + rate + net_return) / 3, jumps, rate, net_return
@@ -129,19 +132,24 @@ class Prescription:
         rate = self.minimize_overall_fertilizer_rate(solution)
         return (jumps + strat + rate) / 3, jumps, strat, rate
 
-    def minimize_jumps(self, solution):
+    def minimize_jumps(self, solution, continuous=False):
         jump_diff = 0
-
         for i, c in enumerate(solution):
             # calculate jump between nitrogen values for consecutive cells
             if i + 1 != len(solution):
-                index_1 = self.field.n_dict[c.nitrogen]
-                index_2 = self.field.n_dict[solution[i + 1].nitrogen]
-                temp_jump = abs(index_1 - index_2)
-                if temp_jump > 1:
-                    jump_diff = jump_diff + temp_jump
-
-        return jump_diff / self.field.max_jumps
+                if not continuous:
+                    index_1 = self.field.n_dict[c.nitrogen]
+                    index_2 = self.field.n_dict[solution[i + 1].nitrogen]
+                    temp_jump = abs(index_1 - index_2)
+                    if temp_jump > 1:
+                        jump_diff = jump_diff + temp_jump
+                else:
+                    jump_diff += abs(c.nitrogen - solution[i + 1].nitrogen)
+        if continuous:
+            final_jumps = jump_diff
+        else:
+            final_jumps = jump_diff / self.field.max_jumps
+        return final_jumps
 
     def maximize_stratification(self, solution):
         stratification_diff = 0

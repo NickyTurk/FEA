@@ -23,7 +23,7 @@ import random
 
 
 class MOOEA:
-    def __init__(self, combinatorial_options, population_size, dimensions):
+    def __init__(self, population_size, dimensions, combinatorial_options=[], upper_value_limit = 200):
         """
         Superclass for all MOO EAs.
         @param combinatorial_options: List of values, E.g. [0,1]. Set of values to create solutions from when dealing
@@ -35,6 +35,7 @@ class MOOEA:
         Where 'gs'(=global solution) and 'factor' are only used when using the MOEA's as a base-algorithm for FEA.
         """
         self.combinatorial_values = combinatorial_options
+        self.upper_value_limit = upper_value_limit
         self.population_size = population_size
         self.dimensions = dimensions
 
@@ -56,7 +57,8 @@ class MOOEA:
                 new_solution = random.choices(self.combinatorial_values,
                                               k=self.dimensions)  # Prescription(field=field, index=i, gs=self.global_solution, factor=self.factor)
             else:
-                new_solution = [random.random() for x in range(self.dimensions)]
+                new_solution = [random.randrange(0, self.upper_value_limit) for x in range(self.dimensions)]
+                #new_solution = [random.random() for x in range(self.dimensions)]
             curr_population.append(
                 PopulationMember(new_solution, self.calc_fitness(variables=new_solution, gs=gs, factor=factor)))
             if i == 0:
@@ -82,7 +84,7 @@ class MOOEA:
 class NSGA2(MOOEA):
     def __init__(self, evolutionary_algorithm=GA, dimensions=100, population_size=500, ea_runs=100,
                  # data_distribution=False,
-                 combinatorial_values=[], factor=None, global_solution=None, ref_point=None):
+                 combinatorial_values=[], upper_value_limit=200, factor=None, global_solution=None, ref_point=None):
         """
 
         @param evolutionary_algorithm: The base algorithm to use. Currently only Genetic Algorithm (GA) is implemented.
@@ -99,10 +101,14 @@ class NSGA2(MOOEA):
         @param ref_point: List of worst potential fitness values. Has as many fitness values as there are objectives.
                 Used to calculate the Hypervolume indicator.
         """
-        super().__init__(combinatorial_values, population_size, dimensions)
+        super().__init__(population_size, dimensions, combinatorial_values, upper_value_limit)
         self.dimensions = dimensions
         self.population_size = population_size
-        self.ea = evolutionary_algorithm(dimensions=dimensions)
+        if self.combinatorial_values:
+            self.ea = evolutionary_algorithm(dimensions=dimensions)
+        else:
+            self.ea = evolutionary_algorithm(dimensions=dimensions, continuous_var_space=True,
+                                             upper_value_limit=self.upper_value_limit)
         self.curr_population = []
         self.initial_solution = []
         self.factor = factor
@@ -264,10 +270,15 @@ class SPEA2(MOOEA):
     def __init__(self, evolutionary_algorithm=GA, dimensions=100, population_size=200, ea_runs=100,
                  # data_distribution=False,
                  combinatorial_values=[], factor=None, global_solution=None, archive_size=200):
-        super().__init__(combinatorial_values, population_size, dimensions)
+        super().__init__(population_size, dimensions, combinatorial_values)
         self.dimensions = dimensions
         self.population_size = population_size
-        self.ea = evolutionary_algorithm(dimensions, population_size, tournament_size=2, offspring_size=population_size)
+        if self.combinatorial_values:
+            self.ea = evolutionary_algorithm(dimensions, population_size, tournament_size=2, offspring_size=population_size)
+        else:
+            self.ea = evolutionary_algorithm(dimensions, population_size, tournament_size=2,
+                                             offspring_size=population_size, continuous_var_space=True,
+                                             upper_value_limit=self.upper_value_limit)
         self.curr_population = []
         self.initial_solution = []
         self.factor = factor
@@ -485,7 +496,7 @@ class MOEAD(MOOEA):
     def __init__(self, evolutionary_algorithm, dimensions=100, population_size=200, ea_runs=100,
                  # data_distribution=False,
                  combinatorial_values=[], factor=None, global_solution=None):
-        super().__init__(combinatorial_values, population_size, dimensions)
+        super().__init__( population_size, dimensions, combinatorial_values)
         self.dimensions = dimensions
         self.population_size = population_size
         self.ea = evolutionary_algorithm(dimensions, population_size)
@@ -502,7 +513,7 @@ class HYPE(MOOEA):
     def __init__(self, evolutionary_algorithm, dimensions=100, population_size=200, ea_runs=100,
                  # data_distribution=False,
                  combinatorial_values=[], factor=None, global_solution=None):
-        super().__init__(combinatorial_values, population_size, dimensions)
+        super().__init__(population_size, dimensions, combinatorial_values)
         self.dimensions = dimensions
         self.population_size = population_size
         self.ea = evolutionary_algorithm(dimensions, population_size)

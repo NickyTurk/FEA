@@ -11,7 +11,8 @@ import random
 
 class GA:
     def __init__(self, dimensions=100, population_size=200, tournament_size=5, mutation_rate=0.2, crossover_rate=0.95,
-                 ga_runs=100, mutation_type="multi bitflip", crossover_type="single", offspring_size=100):
+                 ga_runs=100, mutation_type="multi bitflip", crossover_type="single", offspring_size=100,
+                 continuous_var_space=False, upper_value_limit=200):
         """
         @param dimensions: Integer. Number of variables in a single individual.
         @param population_size: Integer. Number of individuals to form the population in a single generation.
@@ -20,7 +21,7 @@ class GA:
         @param crossover_rate: Float between 0.0 and 1.0. Chance of performing crossover of the selected parent pair.
         @param ga_runs: Integer. How many generations to run the GA for.
         @param mutation_type: String 'swap', 'scramble', 'multi bitflip' or 'single bitflip'. Which type of mutation to perform.
-        @param crossover_type: String 'single', or 'multi'. Which type of crossover to perform.
+        @param crossover_type: String 'single', 'uniform', or 'multi'. Which type of crossover to perform.
         @param offspring_size: Integer. How many children do you wish to create each generation.
         """
         self.name = 'genetic algorithm'
@@ -33,6 +34,8 @@ class GA:
         self.ga_runs = ga_runs
         self.mutation_type = mutation_type
         self.crossover_type = crossover_type
+        self.continuous_bool = continuous_var_space
+        self.upper_value_limit = upper_value_limit
 
     def tournament_selection(self, population):
         """
@@ -69,47 +72,49 @@ class GA:
         @return: The mutated child or a copy of the original solution if mutation was not performed.
         """
         _solution = [x for x in original_solution]
-        rand = random.random()
-        if rand < self.mutation_rate:
-            if self.mutation_type == "swap":
-                numbers = list(range(0, self.dimensions))
-                index_1 = random.choice(numbers)
-                numbers.remove(index_1)
-                index_2 = random.choice(numbers)
-                _solution[index_1] = original_solution[index_2]
-                _solution[index_2] = original_solution[index_1]
+        if self.continuous_bool:
+            for i in range(len(_solution)):
+                if random.random() < self.mutation_rate:
+                    _solution[i] = random.uniform(0, self.upper_value_limit)
+        else:
+            if random.random() < self.mutation_rate:
+                if self.mutation_type == "swap":
+                    numbers = list(range(0, self.dimensions))
+                    index_1 = random.choice(numbers)
+                    numbers.remove(index_1)
+                    index_2 = random.choice(numbers)
+                    _solution[index_1] = original_solution[index_2]
+                    _solution[index_2] = original_solution[index_1]
 
-            elif self.mutation_type == "scramble":
-                index_1 = random.choice(list(range(0, self.dimensions)))
-                numbers = list(range(0, self.dimensions))  # numbers to choose next index from
-                numbers.remove(index_1)  # remove already chosen index from these numbers
-                index_2 = random.choice(numbers)
-                if index_1 > index_2:
-                    max_index = index_1
-                    min_index = index_2
-                else:
-                    max_index = index_2
-                    min_index = index_1
-                temp_list = original_solution[min_index:max_index]
-                np.random.shuffle(temp_list)
-                _solution[min_index:max_index] = temp_list
-            elif self.mutation_type == "single bitflip":
-                numbers = list(range(0, self.dimensions))
-                index_1 = random.choice(numbers)
-                temp = _solution[index_1]
-                if temp == 0:
-                    _solution[index_1] = 1
-                elif temp ==1:
-                    _solution[index_1] = 0
-            elif self.mutation_type == "multi bitflip":
-                for i, x in enumerate(_solution):
-                    rand = random.random()
-                    if rand < self.mutation_rate:
-                        if x == 0:
-                            _solution[i] = 1
-                        elif x == 1:
-                            _solution[i] = 0
-
+                elif self.mutation_type == "scramble":
+                    index_1 = random.choice(list(range(0, self.dimensions)))
+                    numbers = list(range(0, self.dimensions))  # numbers to choose next index from
+                    numbers.remove(index_1)  # remove already chosen index from these numbers
+                    index_2 = random.choice(numbers)
+                    if index_1 > index_2:
+                        max_index = index_1
+                        min_index = index_2
+                    else:
+                        max_index = index_2
+                        min_index = index_1
+                    temp_list = original_solution[min_index:max_index]
+                    np.random.shuffle(temp_list)
+                    _solution[min_index:max_index] = temp_list
+                elif self.mutation_type == "single bitflip":
+                    numbers = list(range(0, self.dimensions))
+                    index_1 = random.choice(numbers)
+                    temp = _solution[index_1]
+                    if temp == 0:
+                        _solution[index_1] = 1
+                    elif temp ==1:
+                        _solution[index_1] = 0
+                elif self.mutation_type == "multi bitflip":
+                    for i, x in enumerate(_solution):
+                        if random.random() < self.mutation_rate:
+                            if x == 0:
+                                _solution[i] = 1
+                            elif x == 1:
+                                _solution[i] = 0
         return _solution
 
     def crossover(self, first_solution, second_solution):
@@ -121,7 +126,9 @@ class GA:
         Single = Single point crossover, a random index is selected and the parents are crossed based on this index.
         Multi = Multi-point crossover, two indices are selected and the values between these indices are swapped between
                 the parents.
-
+        Uniform = For each variable, swap variable value between parents if crossover rate is met.
+        Blend boolean = Crossover for continuous variable space: take the average of the two parents' variable values.
+        This can be applied to any of the three above methods.
         @return: The crossed over children, or an empty array if crossover was not performed.
         """
         if random.random() < self.crossover_rate:
@@ -137,13 +144,32 @@ class GA:
                     max_index = index_2
                     min_index = index_1
                 max_index = max_index + 1
-                _first_solution[min_index:max_index] = second_solution[min_index:max_index]
-                _second_solution[min_index:max_index] = first_solution[min_index:max_index]
+                if self.continuous_bool:
+                    third_solution = [(x + y)/2 for (x, y) in zip(first_solution, second_solution)]
+                    _first_solution[min_index:max_index] = third_solution[min_index:max_index]
+                    _second_solution[0:min_index] = third_solution[0:min_index]
+                    _second_solution[max_index:-1] = third_solution[max_index:-1]
+                if not self.continuous_bool:
+                    _first_solution[min_index:max_index] = second_solution[min_index:max_index]
+                    _second_solution[min_index:max_index] = first_solution[min_index:max_index]
             elif self.crossover_type == 'single':
                 index_1 = random.randint(0, self.dimensions - 1)
-                _first_solution[0:index_1] = second_solution[0:index_1]
-                _second_solution[index_1:-1] = first_solution[index_1:-1]
-
+                if self.continuous_bool:
+                    third_solution = [(x + y)/2 for (x, y) in zip(first_solution, second_solution)]
+                    _first_solution[0:index_1] = third_solution[0:index_1]
+                    _second_solution[index_1:-1] = third_solution[index_1:-1]
+                if not self.continuous_bool:
+                    _first_solution[0:index_1] = second_solution[0:index_1]
+                    _second_solution[index_1:-1] = first_solution[index_1:-1]
+            elif self.crossover_type == 'uniform':
+                for i in range(len(first_solution)):
+                    if random.random() < self.crossover_rate:
+                        if self.continuous_bool:
+                            _first_solution[i] = (first_solution[i] + second_solution[i])/2
+                            _second_solution[i] = (first_solution[i] + second_solution[i])/2
+                        else:
+                            _first_solution[i] = second_solution[i]
+                            _second_solution[i] = first_solution[i]
             return [_first_solution, _second_solution]
         else:
             return []

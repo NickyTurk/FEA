@@ -1,18 +1,22 @@
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression, BayesianRidge
 from refactoring.predictionalgorithms.yieldprediction import YieldPredictor
 from refactoring.optimizationproblems.prescription import Prescription
+from refactoring.FEA.factorarchitecture import FactorArchitecture
 from refactoring.utilities.util import *
 from refactoring.basealgorithms.MOO_GA import *
+from refactoring.MOO.FEAMOO import FEAMOO
 import pandas as pd
 from datetime import timedelta
 import numpy as np
 import pickle, random, re, os, time
 
 fea_runs = 20
-ga_runs = [100]
-population_sizes = [500]
+ga_runs = [50]
+population_sizes = [200]
+upper_bound = 150
 
-field_names = ['Henrys', 'Sec35Mid', 'Sec35West']
+field_names = ['Sec35Mid', 'Sec35West'] #'Henrys',
 current_working_dir = os.getcwd()
 path = re.search(r'^(.*?\\FEA)',current_working_dir)
 path = path.group()
@@ -34,34 +38,38 @@ for i, field in enumerate(fields_to_test):
 
     print(field_names[i], '-- NSGA')
     field.fixed_costs = 1000
-    random_global_variables = random.choices([80, 100, 120, 140], k=len(field.cell_list))
+    #random_global_variables = random.choices([20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150], k=len(field.cell_list))
+    random_global_variables = [random.randrange(0, upper_bound) for x in range(len(field.cell_list))]
     pr = Prescription(variables=random_global_variables, field=field)
     yp = YieldPredictor(prescription=pr, field=field, agg_data_file=agg_files[i], trained_model=rf, data_headers=data_to_use)
+    FA = FactorArchitecture(len(field.cell_list))
+    FA.factors = field.create_strip_groups()
+    FA.get_factor_topology_elements()
+    nsga = NSGA2
 
     @add_method(NSGA2)
     def calc_fitness(variables, gs=None, factor=None):
         pres = Prescription(variables=variables, field=field, factor=factor, optimized=True, yield_predictor=yp)
-        if gs is not None:
-            global_solution = Prescription(variables=gs.variables, field=field)
-            pres.set_fitness(global_solution=global_solution)
+        if gs:
+            #global_solution = Prescription(variables=gs.variables, field=field)
+            pres.set_fitness(global_solution=gs.variables, cont_bool=True)
         else:
-            pres.set_fitness()
-
-        print("objective values ", pres.objective_values)
+            pres.set_fitness(cont_bool=True)
         return pres.objective_values
 
     for j in range(5):
         for population in population_sizes:
             for ga_run in ga_runs:
                 start = time.time()
-                filename = path + '/results/prescriptions/NSGA2_' + field_names[i] + '_strip_trial_3_objectives_ga_runs_' + str(ga_run) + '_population_' + str(population) + time.strftime('_%d%m%H%M%S') + '.pickle'
-                #feamoo = FEAMOO(fea_runs, ga_run, population, FA, nsga, dimensions=len(field.cell_list), combinatorial_options=field.nitrogen_list)
-                #feamoo.run()
-                nsga = NSGA2(population_size=population, ea_runs=ga_run, dimensions=len(field.cell_list),
-                             combinatorial_values=field.nitrogen_list, ref_point=[1, 1, 1])
-                nsga.run()
+                filename = path + '/results/prescriptions/optimized/FEAMOO_' + field_names[i] + '_strip_trial_3_objectives_ga_runs_' + str(ga_run) + '_population_' + str(population) + time.strftime('_%d%m%H%M%S') + '.pickle'
+                feamoo = FEAMOO(fea_runs, ga_run, population, FA, nsga, dimensions=len(field.cell_list),
+                                upper_value_limit=upper_bound, ref_point=[20000, 1, 1000]) #, combinatorial_options=field.nitrogen_list)
+                feamoo.run()
+                #nsga = NSGA2(population_size=population, ea_runs=ga_run, dimensions=len(field.cell_list),
+                #             upper_value_limit=150, ref_point=[1, 1, 1])
+                #nsga.run()
                 end = time.time()
                 file = open(filename, "wb")
-                pickle.dump(nsga, file)
+                pickle.dump(feamoo, file)
                 elapsed = end-start
                 print("NSGA with ga runs %d and population %d took %s"%(ga_run, population, str(timedelta(seconds=elapsed))))

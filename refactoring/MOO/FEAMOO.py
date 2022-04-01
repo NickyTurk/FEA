@@ -11,8 +11,9 @@ import random
 
 class FEAMOO:
     def __init__(self, fea_iterations, alg_iterations, pop_size, fa, base_alg, dimensions,
-                 combinatorial_options=[], ref_point = [1,1,1]):
+                 combinatorial_options=[], upper_value_limit=200, ref_point=[1, 1, 1]):
         self.combinatorial_options = combinatorial_options
+        self.upper_value_limit = upper_value_limit
         self.dim = dimensions
         self.nondom_archive = []
         self.population = []
@@ -30,13 +31,18 @@ class FEAMOO:
         self.iteration_stats = []
 
     def initialize_moo_subpopulations(self):
-        random_global_variables = random.choices(self.combinatorial_options, k=self.dim)
-        #print('global vars: ', random_global_variables)
+        if self.combinatorial_options:
+            random_global_variables = random.choices(self.combinatorial_options, k=self.dim)
+        else:
+            random_global_variables = [random.randrange(0, self.upper_value_limit) for x in range(self.dim)]
+        print('global vars: ', random_global_variables)
         objs = self.base_algorithm(dimensions=self.dim).calc_fitness(random_global_variables)
         random_global_solution = PopulationMember(random_global_variables, objs)
         self.global_solutions.append(random_global_solution)
-        return [self.base_algorithm(ea_runs=self.base_alg_iterations, dimensions=len(factor), combinatorial_values=self.combinatorial_options, population_size=self.pop_size, factor=factor,
-                    global_solution=random_global_solution) for factor in self.factor_architecture.factors]
+        return [self.base_algorithm(ea_runs=self.base_alg_iterations, dimensions=len(factor),
+                                    combinatorial_values=self.combinatorial_options, upper_value_limit=self.upper_value_limit,
+                                    population_size=self.pop_size, factor=factor,
+                                    global_solution=random_global_solution) for factor in self.factor_architecture.factors]
 
     def update_archive(self):
         nondom_indeces = find_non_dominated(np.array([np.array(x.fitness) for x in self.nondom_archive]))
@@ -65,6 +71,7 @@ class FEAMOO:
         while fea_run != self.fea_runs:  # len(change_in_nondom_size) < 4 and
             for alg in self.subpopulations:
                 alg.run(fea_run=fea_run)
+                print('subpopulation done')
             self.compete()
             self.share_solution()
             self.update_archive()
@@ -73,13 +80,13 @@ class FEAMOO:
             else:
                 change_in_nondom_size = []
             # [print(x.fitness) for x in self.nondom_archive]
-            print(self.nondom_archive[-1].fitness)
+            print("last nondom solution: ", self.nondom_archive[-1].fitness)
             old_archive_length = len(self.nondom_archive)
             eval_dict = self.po.evaluate_solution(self.nondom_archive, self.worst_fitness_ref)
             eval_dict['FEA_run'] = fea_run
             eval_dict['ND_size'] = len(self.nondom_archive)
             self.iteration_stats.append(eval_dict)
-            print(eval_dict)
+            print("eval dict", eval_dict)
             # [print(s.objective_values) for s in self.nondom_archive]
             # [print(i, ': ', s.objective_values) for i,s in enumerate(self.iteration_stats[fea_run+1]['global solutions'])]
             fea_run = fea_run+1
