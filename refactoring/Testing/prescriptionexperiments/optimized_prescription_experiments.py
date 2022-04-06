@@ -11,9 +11,9 @@ from datetime import timedelta
 import numpy as np
 import pickle, random, re, os, time
 
-fea_runs = 20
-ga_runs = [50]
-population_sizes = [200]
+fea_runs = 10
+ga_runs = [20]
+population_sizes = [50]
 upper_bound = 150
 
 field_names = ['Sec35Mid', 'Sec35West'] #'Henrys',
@@ -28,6 +28,7 @@ fields_to_test = [field_2] #[field_1, field_2, field_3]
 
 for i, field in enumerate(fields_to_test):
     agg_files = ["C:/Users/f24n127/Documents/Work/Ag/Data/broyles_sec35mid_2016_yl_aggreg_20181112.csv"]
+    reduced_agg_files = ["C:/Users/f24n127/Documents/Work/Ag/Data/reduced_broyles_sec35mid_agg.csv"]
     df = pd.read_csv(agg_files[i])
     y_labels = df['yl_2016']
     data_to_use = ['x', 'y', 'n_lbs_ac', 'elev_m', 'slope_deg', 'ndvi_2012', 'ndvi_2014', 'ndvi_2015', 'yl14_nn_bu_ac',
@@ -41,7 +42,7 @@ for i, field in enumerate(fields_to_test):
     #random_global_variables = random.choices([20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150], k=len(field.cell_list))
     random_global_variables = [random.randrange(0, upper_bound) for x in range(len(field.cell_list))]
     pr = Prescription(variables=random_global_variables, field=field)
-    yp = YieldPredictor(prescription=pr, field=field, agg_data_file=agg_files[i], trained_model=rf, data_headers=data_to_use)
+    yp = YieldPredictor(prescription=pr, field=field, agg_data_file=reduced_agg_files[i], trained_model=rf, data_headers=data_to_use)
     FA = FactorArchitecture(len(field.cell_list))
     FA.factors = field.create_strip_groups()
     FA.get_factor_topology_elements()

@@ -18,8 +18,9 @@ from pymoo.util.nds.fast_non_dominated_sort import fast_non_dominated_sort
 from platypus.tools import DistanceMatrix
 from platypus.indicators import Hypervolume
 
+from datetime import timedelta
 import numpy as np
-import random
+import random, time
 
 
 class MOOEA:
@@ -108,7 +109,7 @@ class NSGA2(MOOEA):
             self.ea = evolutionary_algorithm(dimensions=dimensions)
         else:
             self.ea = evolutionary_algorithm(dimensions=dimensions, continuous_var_space=True,
-                                             upper_value_limit=self.upper_value_limit)
+                                             upper_value_limit=self.upper_value_limit, offspring_size=population_size)
         self.curr_population = []
         self.initial_solution = []
         self.factor = factor
@@ -227,8 +228,12 @@ class NSGA2(MOOEA):
         '''
         while i != self.ea_runs:  # and len(change_in_nondom_size) < 10:
             children = self.ea.create_offspring(self.curr_population)
+            #start = time.time()
             self.curr_population.extend(
                 [PopulationMember(c, self.calc_fitness(c, self.global_solution, self.factor)) for c in children])
+            #end = time.time()
+            #elapsed = end - start
+            #print('calc fitnesses ', str(timedelta(seconds=elapsed)))
             self.select_new_generation(i)
             '''
             Only run this part of the algorithm in the single-population case.

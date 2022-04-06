@@ -16,7 +16,7 @@ class YieldPredictor:
         self.field = field
         self.gridcell_size = self.field.cell_list[0].gridcell_size/43560
         if prescription:
-            new_df = create_pd_dataframe(prescription, field, self.headers, self.dps, transform_to_latlon=True)
+            new_df = create_pd_dataframe(prescription, field, self.headers, self.dps)
             # self.data_headers.append('cell_index')
             self.nitrogen_dataframe = new_df.loc[:, data_headers]
         self.model = trained_model
