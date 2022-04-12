@@ -296,7 +296,7 @@ def generate_overlapping_diff_grouping(_function, d, epsilon,m=0):
     return factors, arbiters, optimizers, neighbors, separate_variables
 
 
-def generate_diff_grouping(_function, d, epsilon, m=0):
+def generate_diff_grouping(_function, d, epsilon, m=0, MOO = False, moo_idx = 0):
     """
 
     :param _function:
@@ -304,6 +304,7 @@ def generate_diff_grouping(_function, d, epsilon, m=0):
     :param epsilon:
     :return:
     """
+
     size = deepcopy(d)
     dimensions = np.arange(start=0, stop=d)
     curr_dim_idx = 0
@@ -323,7 +324,9 @@ def generate_diff_grouping(_function, d, epsilon, m=0):
         p1 = np.multiply(lbound, np.ones(d))
         p2 = np.multiply(lbound, np.ones(d))  # python does weird things if you set p2 = p1
         p2[curr_dim_idx] = ubound
-        if m == 0:
+        if MOO:
+            delta1 = evaluate_moo_solution(_function, p1, moo_idx) - evaluate_moo_solution(_function, p2, moo_idx) 
+        elif m == 0:
             delta1 = _function(p1) - _function(p2)
         else:
             delta1 = _function(p1, m_group = m) - _function(p2, m_group = m)
@@ -335,7 +338,9 @@ def generate_diff_grouping(_function, d, epsilon, m=0):
             p3[dimensions[j]] = 0  # grabs dimension to compare to, corresponds to python index
             p4[dimensions[j]] = 0
 
-            if m == 0:
+            if MOO:
+                delta2 = evaluate_moo_solution(_function, p3, moo_idx) - evaluate_moo_solution(_function, p4, moo_idx) 
+            elif m == 0:
                 delta2 = _function(p3) - _function(p4)
             else:
                 delta2 = _function(p3, m_group = m) - _function(p4, m_group = m)
@@ -369,6 +374,12 @@ def generate_diff_grouping(_function, d, epsilon, m=0):
     neighbors = determine_neighbors(factors)
 
     return factors, arbiters, optimizers, neighbors, separate_variables
+
+def evaluate_moo_solution(_function, solution, obj_idx):
+    fitnesses = _function.evaluate(solution)
+    return fitnesses[obj_idx]
+
+
 
 """
 FUZZY CLUSTERING GROUPING
