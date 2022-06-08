@@ -1,14 +1,12 @@
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import LinearRegression, BayesianRidge
 from refactoring.predictionalgorithms.yieldprediction import YieldPredictor
 from refactoring.optimizationproblems.prescription import Prescription
 from refactoring.FEA.factorarchitecture import FactorArchitecture
 from refactoring.utilities.util import *
-from refactoring.basealgorithms.MOO_GA import *
-from refactoring.MOO.FEAMOO import FEAMOO
+from refactoring.MOO.MOEA import *
+from refactoring.MOO.MOFEA import MOFEA
 import pandas as pd
 from datetime import timedelta
-import numpy as np
 import pickle, random, re, os, time
 
 fea_runs = 10
@@ -66,7 +64,7 @@ for i, field in enumerate(fields_to_test):
             for ga_run in ga_runs:
                 start = time.time()
                 filename = path + '/results/prescriptions/optimized/FEAMOO_' + field_names[i] + '_strip_trial_3_objectives_ga_runs_' + str(ga_run) + '_population_' + str(population) + time.strftime('_%d%m%H%M%S') + '.pickle'
-                feamoo = FEAMOO(fea_runs, ga_run, population, FA, nsga, dimensions=len(field.cell_list),
+                feamoo = MOFEA(fea_runs, ga_run, population, FA, nsga, dimensions=len(field.cell_list),
                                upper_value_limit=upper_bound, ref_point=[1, 1, 1]) #, combinatorial_options=field.nitrogen_list)
                 feamoo.run()
                 # nsga = NSGA2(population_size=population, ea_runs=ga_run, dimensions=len(field.cell_list),

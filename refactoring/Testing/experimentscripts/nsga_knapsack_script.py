@@ -8,9 +8,7 @@ from datetime import timedelta
 import time
 
 from refactoring.optimizationproblems.knapsack import *
-from refactoring.MOO.FEAMOO import FEAMOO
-from refactoring.basealgorithms.MOO_GA import NSGA2, SPEA2
-from refactoring.FEA.factorarchitecture import FactorArchitecture
+from refactoring.MOO.MOEA import NSGA2
 from refactoring.utilities.util import *
 
 nr_items = 1000
@@ -23,7 +21,7 @@ ga = NSGA2
 
 current_working_dir = os.getcwd()
 path = re.search(r'^(.*?\/FEA)', current_working_dir)
-path = '../..'
+path = '../../..'
 
 for type in ks_type:
     for obj in objectives:

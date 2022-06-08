@@ -5,11 +5,13 @@ Functionality to read and write WKT data.
 
 import csv, os, re
 import osgeo, fiona
+from fiona.crs import from_epsg
+
 try:
     import ogr
 except:
     from osgeo import ogr
-from shapely.geometry import Polygon, shape
+from shapely.geometry import Polygon, shape, mapping
 
 
 class ShapeFiles:
@@ -40,6 +42,23 @@ class ShapeFiles:
                 datapoints.append(datapoint)
         return datapoints
 
+    def write_field_to_shape_file(self, geometries, field_, shapefile_schema=dict, filename=''):
+        # schema of the shapefile: {'ID': 'int', 'AvgYield': 'float:9.6', 'AvgProtein': 'float:9.6',
+        #                                                         'Nitrogen': 'float:9.6'}
+        if filename != '':
+            filestring = filename
+        else:
+            filestring = self.filename
+        schema = {'geometry': 'Polygon', 'properties': shapefile_schema}
+        crs = from_epsg(4326)
+        with fiona.open(filestring + '.shp', 'w', driver='ESRI Shapefile', crs=crs, schema=schema) as output:
+            prop = {'ID': 0, 'AvgYield': 0, 'AvgProtein': 0, 'Nitrogen': 100}
+            # poly = field_.field_shape - MultiPolygon(field_.cell_polys) #field_.field_shape -
+            output.write({'geometry': mapping(field_.field_shape), 'properties': prop})
+            for geom in geometries:
+                prop = {'ID': geom.sorted_index, 'AvgYield': geom.yield_, 'AvgProtein': geom.pro_,
+                        'Nitrogen': geom.nitrogen}
+                output.write({'geometry': mapping(geom.true_bounds), 'properties': prop})
 
 
 class WKTFiles:

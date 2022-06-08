@@ -4,6 +4,8 @@ import numpy as np
 from pymoo.util.nds.non_dominated_sorting import find_non_dominated
 from itertools import combinations
 
+#TODO: make reusable and general
+
 nondom_solutions = dict()
 lengths = dict()
 comparing = ['population_500', 'grouping_100_100', 'grouping_100_80', 'grouping_200_200', 'grouping_200_160']

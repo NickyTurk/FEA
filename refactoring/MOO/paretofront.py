@@ -55,12 +55,13 @@ class ParetoOptimization:
         diversity = self.calculate_diversity(approx_pareto_set)
 
         updated_pareto_set = [np.array(sol.fitness) for sol in approx_pareto_set]
-#        for sol in approx_pareto_set:
-#            updated_pareto_set.append(np.array([x.nitrogen for x in sol.variables]))
-        hv = get_performance_indicator("hv", ref_point=np.array(reference_point)) #hypervolume(np.array(updated_pareto_set))
+        #        for sol in approx_pareto_set:
+        #            updated_pareto_set.append(np.array([x.nitrogen for x in sol.variables]))
+        hv = get_performance_indicator("hv",
+                                       ref_point=np.array(reference_point))  # hypervolume(np.array(updated_pareto_set))
         return {'hypervolume': hv.calc(np.array(updated_pareto_set)), 'diversity': diversity}
 
-    def calculate_diversity(self, approx_pareto_set):
+    def calculate_diversity(self, approx_pareto_set, minmax=None):
         """
         Spread/delta indicator:
         estimate the extent of the spread of the obtained Pareto front,
@@ -76,16 +77,18 @@ class ParetoOptimization:
         for i in range(self.n_obj):
             try:
                 to_sort = [x.objective_values[i] for x in approx_pareto_set]
-                sorted_set = [x for _,x in sorted(zip(to_sort, approx_pareto_set))]
-                last = np.array([c for c in sorted_set[-1].objective_values])
-                first = np.array([c for c in sorted_set[0].objective_values])
-                spread_indicator += np.square(np.linalg.norm(last - first))
             except:
                 to_sort = [x.fitness[i] for x in approx_pareto_set]
-                sorted_set = [x for _,x in sorted(zip(to_sort, approx_pareto_set))]
-                last = np.array([c for c in sorted_set[-1].fitness])
-                first = np.array([c for c in sorted_set[0].fitness])
-                spread_indicator += np.square(np.linalg.norm(last - first))
+            if minmax:
+                min_ = minmax[i][0]
+                max_ = minmax[i][1]
+            else:
+                min_ = 0
+                max_ = max(to_sort)
+            sorted_set = [(x - min_) / (max_ - min_) for _, x in sorted(zip(to_sort, approx_pareto_set))]
+            last = np.array([c for c in sorted_set[-1].fitness])
+            first = np.array([c for c in sorted_set[0].fitness])
+            spread_indicator += np.square(np.linalg.norm(last - first))
         return np.sqrt(spread_indicator)
 
     def calculate_ref_points(self, h: int):
@@ -106,7 +109,6 @@ class ParetoOptimization:
 
          use the solution with the worst found fitness values for each of the objectives: keep track of this while optimizing
          """
-        ref_value = 1 + 1/h
+        ref_value = 1 + 1 / h
         ref_points = np.full(self.n_obj, ref_value)
         return ref_points
-

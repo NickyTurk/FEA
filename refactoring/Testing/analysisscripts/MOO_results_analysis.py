@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 import numpy as np
 
+# TODO: Generalize
+
 experiment_filenames = []
 
 field_names = ['sec35middle']
@@ -15,7 +17,7 @@ for field_name in field_names:
     for method in methods:
         print(method)
         alg_stats[field_name][method] = dict()
-        experiment = [x for x in experiment_filenames if method+'_' in x and field_name in x.lower()]
+        experiment = [x for x in experiment_filenames if method + '_' in x and field_name in x.lower()]
         print(experiment)
         if experiment:
             experiment = experiment[0]
@@ -53,7 +55,7 @@ ccea = list(alg_stats['sec35middle']['CCEAMOO'][stat_name])
 nsga = list(alg_stats['sec35middle']['NSGA2'][stat_name])
 fea = list(alg_stats['sec35middle']['FEAMOO'][stat_name])
 
-axs[0].plot(alg_stats['sec35middle']['CCEAMOO']['iterations'], ccea, color='tab:blue',marker='.')
+axs[0].plot(alg_stats['sec35middle']['CCEAMOO']['iterations'], ccea, color='tab:blue', marker='.')
 axs[0].plot(alg_stats['sec35middle']['NSGA2']['iterations'], nsga, color='#2ca02c', marker="^")
 axs[0].plot(alg_stats['sec35middle']['FEAMOO']['iterations'], fea, color='tab:red', marker="*")
 axs[0].set_title("Sec35Mid")
@@ -113,5 +115,3 @@ plt.show()
 # plt.suptitle('Spread Indicator', size='18')
 # fig.tight_layout(pad=1)
 # plt.show()
-
-

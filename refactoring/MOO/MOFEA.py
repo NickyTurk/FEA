@@ -9,7 +9,7 @@ import numpy as np
 import random
 
 
-class FEAMOO:
+class MOFEA:
     def __init__(self, fea_iterations, alg_iterations, pop_size, fa, base_alg, dimensions,
                  combinatorial_options=[], upper_value_limit=200, ref_point=[1, 1, 1]):
         self.combinatorial_options = combinatorial_options
@@ -44,16 +44,6 @@ class FEAMOO:
                                     population_size=self.pop_size, factor=factor,
                                     global_solution=random_global_solution) for factor in self.factor_architecture.factors]
 
-    def update_archive(self):
-        nondom_indeces = find_non_dominated(np.array([np.array(x.fitness) for x in self.nondom_archive]))
-        nondom_archive = [self.nondom_archive[i] for i in nondom_indeces]
-        seen = set()
-        self.nondom_archive = []
-        for s in nondom_archive:
-            if s.fitness not in seen:
-                seen.add(s.fitness)
-                self.nondom_archive.append(s)
-
     def run(self):
         '''
         For each subpopulation:
@@ -73,7 +63,7 @@ class FEAMOO:
                 alg.run(fea_run=fea_run)
                 print('subpopulation done')
             self.compete()
-            self.update_archive()
+            self.nondom_archive = self.base_algorithm.update_archive(self.nondom_archive)
             self.share_solution()
             if len(self.nondom_archive) == old_archive_length:
                 change_in_nondom_size.append(True)

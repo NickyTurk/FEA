@@ -6,6 +6,8 @@ import numpy as np
 from itertools import combinations
 from scipy.stats import ttest_ind
 
+#TODO: make reusable and general
+
 file_regexes = [r'_multi_knapsack_5', r'_single_knapsack_5']
 file_regex = r'CCNSGA2_multi_knapsack_3_objectives_'
 po = ParetoOptimization()

@@ -1,16 +1,8 @@
-import csv
 import os, re
 import pickle
-from datetime import timedelta
-import time
 
 from refactoring.optimizationproblems.prescription import Prescription
-from refactoring.MOO.FEAMOO import FEAMOO
-from refactoring.MOO.paretofront import *
-from refactoring.basealgorithms.MOO_GA import *
-from refactoring.basealgorithms.ga import *
-from refactoring.FEA.factorarchitecture import FactorArchitecture
-from refactoring.utilities.field.field_creation import Field
+from refactoring.MOO.MOEA import *
 from refactoring.utilities.util import *
 
 field_names = ['Henrys', 'Sec35Mid', 'Sec35West']
@@ -71,7 +63,7 @@ for i, field in enumerate(fields_to_test):
             for ga_run in ga_runs:
                 start = time.time()
                 filename = path + '/results/prescriptions/NSGA2_' + field_names[i] + '_strip_trial_3_objectives_ga_runs_' + str(ga_run) + '_population_' + str(population) + time.strftime('_%d%m%H%M%S') + '.pickle'
-                #feamoo = FEAMOO(fea_runs, ga_run, population, FA, nsga, dimensions=len(field.cell_list), combinatorial_options=field.nitrogen_list)
+                #feamoo = MOFEA(fea_runs, ga_run, population, FA, nsga, dimensions=len(field.cell_list), combinatorial_options=field.nitrogen_list)
                 #feamoo.run()
                 nsga = NSGA2(population_size=population, ea_runs=ga_run, dimensions=len(field.cell_list),
                              combinatorial_values=field.nitrogen_list, ref_point=[1,1,1])

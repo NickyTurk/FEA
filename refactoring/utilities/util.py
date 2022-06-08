@@ -8,6 +8,14 @@ from collections import namedtuple
 
 PopulationMember = namedtuple('PopulationMember', ['variables', 'fitness'])
 
+def maxmin_indeces(idx1, idx2):
+    if idx1 > idx2:
+        max_index = idx1
+        min_index = idx2
+    else:
+        max_index = idx2
+        min_index = idx1
+    return min_index, max_index
 
 def euclidean_distance(a, b):
     return math.sqrt(sum((a - b) ** 2))

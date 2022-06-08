@@ -20,7 +20,7 @@ from copy import deepcopy
 from osgeo import ogr
 import os, math, pandas, time, random, fiona, shortuuid, ast
 
-from ..filereaders import WKTFiles, ShapeFiles
+from ..fileIO import WKTFiles, ShapeFiles
 from ..util import *
 
 

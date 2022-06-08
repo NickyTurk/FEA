@@ -5,6 +5,8 @@ import itertools, random
 from pymoo.util.nds.non_dominated_sorting import find_non_dominated
 from refactoring.MOO.paretofront import ParetoOptimization
 
+# TODO: generalize
+
 experiment_filenames = ["/media/amy/WD Drive/Prescriptions/optimal/rf/NSGA_Sec35Mid_strip_trial_3_objectives_ga_runs_500_population_500_1904081644.pickle",
 "/media/amy/WD Drive/Prescriptions/optimal/rf/NSGA_Sec35Mid_strip_trial_3_objectives_ga_runs_500_population_500_2104073638.pickle",
 "/media/amy/WD Drive/Prescriptions/optimal/rf/NSGA_Sec35Mid_strip_trial_3_objectives_ga_runs_500_population_500_2304064012.pickle",

@@ -2,14 +2,14 @@
 Running Knapsack experiments.
 """
 
-import os, re
+import os
 import pickle
 from datetime import timedelta
 import time
 
 from refactoring.optimizationproblems.knapsack import *
-from refactoring.MOO.FEAMOO import FEAMOO
-from refactoring.basealgorithms.MOO_GA import NSGA2, SPEA2
+from refactoring.MOO.MOFEA import MOFEA
+from refactoring.MOO.MOEA import NSGA2
 from refactoring.FEA.factorarchitecture import FactorArchitecture
 from refactoring.utilities.util import *
 
@@ -30,7 +30,7 @@ ks = Knapsack(number_of_items=nr_items, max_nr_items=nr_items, nr_objectives=nr_
 
 current_working_dir = os.getcwd()
 # path = re.search(r'^(.*?\/FEA)', current_working_dir)
-path = '../..'
+path = '../../..'
 
 
 @add_method(NSGA2)
@@ -62,8 +62,8 @@ for s, o in zip(sizes, overlaps):
             filename = path + '/results/Knapsack/' + name + '/' + name + '_' + ks_type + '_knapsack_' + str(nr_obj) + \
                        '_objectives_fea_runs_' + str(fea_run) + '_grouping_' + str(s) + '_' + \
                        str(o) + time.strftime('_%d%m%H%M%S') + '.pickle'
-            feamoo = FEAMOO(fea_run, ga_run, population, FA, ga, dimensions=nr_items,
-                            combinatorial_options=[0, 1], ref_point=ks.ref_point)
+            feamoo = MOFEA(fea_run, ga_run, population, FA, ga, dimensions=nr_items,
+                           combinatorial_options=[0, 1], ref_point=ks.ref_point)
             feamoo.run()
             end = time.time()
             file = open(filename, "wb")

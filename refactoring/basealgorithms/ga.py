@@ -7,12 +7,13 @@ Can be used a standalone algorithm using run(), or as the base-algorithm for MOO
 
 import numpy as np
 import random
+from refactoring.utilities.util import *
 
 
 class GA:
-    def __init__(self, dimensions=100, population_size=200, tournament_size=5, mutation_rate=0.2, crossover_rate=0.95,
+    def __init__(self, dimensions=100, population_size=200, tournament_size=5, mutation_rate=0.1, crossover_rate=0.95,
                  ga_runs=100, mutation_type="multi bitflip", crossover_type="single", offspring_size=100,
-                 continuous_var_space=False, upper_value_limit=200):
+                 continuous_var_space=False, value_range=[0, 1], combinatorial_options=[]):
         """
         @param dimensions: Integer. Number of variables in a single individual.
         @param population_size: Integer. Number of individuals to form the population in a single generation.
@@ -35,7 +36,20 @@ class GA:
         self.mutation_type = mutation_type
         self.crossover_type = crossover_type
         self.continuous_bool = continuous_var_space
-        self.upper_value_limit = upper_value_limit
+        self.value_range = value_range
+        self.combinatorial_values = combinatorial_options
+        self.population = []
+
+    def initialize_population(self):
+        for i in range(self.population_size):
+            if self.continuous_bool:
+                variables = [random.uniform(self.value_range[0], self.value_range[1]) for x in range(self.dimensions)]
+            else:
+                variables = random.choices(self.combinatorial_values, k=self.dimensions)
+            self.population.append(PopulationMember(variables, self.calc_fitness(variables)))
+
+    def calc_fitness(self, variables):
+        pass
 
     def tournament_selection(self, population):
         """
@@ -61,9 +75,10 @@ class GA:
             i += 1
         return chosen_solution, idx
 
-    def mutate(self, original_solution):
+    def mutate(self, original_solution, mutation_rate=None):
         """
         @param original_solution: The solution to be mutated.
+        @param mutation_rate: Ability to manually set mutation rate separate from GA object.
         Type = Swap, scramble or bitflip.
         Swap = Choose two indices and swap the values.
         Scramble = Choose two indices and randomly scramble all the values between these indices.
@@ -71,34 +86,48 @@ class GA:
         Multi Bitflip = For each variable decide whether the bit will be flipped using the mutation rate.
         @return: The mutated child or a copy of the original solution if mutation was not performed.
         """
+        if not mutation_rate:
+            mutation_rate = self.mutation_rate
+
         _solution = [x for x in original_solution]
         if self.continuous_bool:
             for i in range(len(_solution)):
-                if random.random() < self.mutation_rate:
-                    _solution[i] = random.uniform(0, self.upper_value_limit)
+                if random.random() < mutation_rate:
+                    _solution[i] = random.uniform(self.value_range[0], self.value_range[1])
         else:
-            if random.random() < self.mutation_rate:
+            if random.random() < mutation_rate:
                 if self.mutation_type == "swap":
                     numbers = list(range(0, self.dimensions))
                     index_1 = random.choice(numbers)
                     numbers.remove(index_1)
                     index_2 = random.choice(numbers)
+                    while original_solution[index_2] == _solution[index_1]:
+                        index_2 = random.choice(numbers)
                     _solution[index_1] = original_solution[index_2]
                     _solution[index_2] = original_solution[index_1]
 
                 elif self.mutation_type == "scramble":
-                    index_1 = random.choice(list(range(0, self.dimensions)))
+                    index_1 = random.choice(list(range(0, self.dimensions-1)))
                     numbers = list(range(0, self.dimensions))  # numbers to choose next index from
                     numbers.remove(index_1)  # remove already chosen index from these numbers
-                    index_2 = random.choice(numbers)
-                    if index_1 > index_2:
-                        max_index = index_1
-                        min_index = index_2
-                    else:
-                        max_index = index_2
-                        min_index = index_1
-                    temp_list = original_solution[min_index:max_index]
-                    np.random.shuffle(temp_list)
+                    while True:
+                        index_2 = random.choice(numbers)
+                        if abs(index_2-index_1) <= 2:
+                            index_2 = random.choice(numbers)
+                        else:
+                            min_index, max_index = maxmin_indeces(index_1, index_2)
+                            temp_list = original_solution[min_index:max_index]
+                            if len(set(temp_list)) == 1:
+                                continue
+                            else:
+                                break
+
+                    while True:
+                        np.random.shuffle(temp_list)
+                        if temp_list == _solution[min_index:max_index]:
+                            continue
+                        else:
+                            break
                     _solution[min_index:max_index] = temp_list
                 elif self.mutation_type == "single bitflip":
                     numbers = list(range(0, self.dimensions))
@@ -110,17 +139,18 @@ class GA:
                         _solution[index_1] = 0
                 elif self.mutation_type == "multi bitflip":
                     for i, x in enumerate(_solution):
-                        if random.random() < self.mutation_rate:
+                        if random.random() < mutation_rate:
                             if x == 0:
                                 _solution[i] = 1
                             elif x == 1:
                                 _solution[i] = 0
         return _solution
 
-    def crossover(self, first_solution, second_solution):
+    def crossover(self, first_solution, second_solution, crossover_rate=None):
         """
         @param first_solution: The first parent selected.
         @param second_solution: The second parent selected.
+        @param crossover_rate: Ability to manually set crossover rate separate from GA object.
         Crossover is performed between these parents to create offspring.
         Type = single, multi or uniform.
         Single = Single point crossover, a random index is selected and the parents are crossed based on this index.
@@ -131,42 +161,43 @@ class GA:
         This can be applied to any of the three above methods.
         @return: The crossed over children, or an empty array if crossover was not performed.
         """
-        if random.random() < self.crossover_rate:
+
+        if not crossover_rate:
+            crossover_rate = self.crossover_rate
+
+        if random.random() < crossover_rate:
             _first_solution = [x for x in first_solution]
             _second_solution = [x for x in second_solution]
             if self.crossover_type == 'multi':
-                index_1 = random.randint(0, self.dimensions - 1)
-                index_2 = random.randint(0, self.dimensions - 1)
-                if index_1 > index_2:
-                    max_index = index_1
-                    min_index = index_2
-                else:
-                    max_index = index_2
-                    min_index = index_1
-                max_index = max_index + 1
+                index_1 = random.randint(1, self.dimensions - 1)
+                index_2 = random.randint(1, self.dimensions - 1)
+                while abs(index_2 - index_1) <= 2:
+                    index_2 = random.randint(1, self.dimensions - 1)
+                min_index, max_index = maxmin_indeces(index_1, index_2)
                 if self.continuous_bool:
                     third_solution = [(x + y)/2 for (x, y) in zip(first_solution, second_solution)]
                     _first_solution[min_index:max_index] = third_solution[min_index:max_index]
                     _second_solution[0:min_index] = third_solution[0:min_index]
-                    _second_solution[max_index:-1] = third_solution[max_index:-1]
-                if not self.continuous_bool:
+                    _second_solution[max_index:] = third_solution[max_index:]
+                else:
                     _first_solution[min_index:max_index] = second_solution[min_index:max_index]
                     _second_solution[min_index:max_index] = first_solution[min_index:max_index]
             elif self.crossover_type == 'single':
-                index_1 = random.randint(0, self.dimensions - 1)
+                index_1 = random.randint(1, self.dimensions - 1)
                 if self.continuous_bool:
                     third_solution = [(x + y)/2 for (x, y) in zip(first_solution, second_solution)]
                     _first_solution[0:index_1] = third_solution[0:index_1]
-                    _second_solution[index_1:-1] = third_solution[index_1:-1]
-                if not self.continuous_bool:
+                    _second_solution[index_1:] = third_solution[index_1:]
+                else:
                     _first_solution[0:index_1] = second_solution[0:index_1]
-                    _second_solution[index_1:-1] = first_solution[index_1:-1]
+                    _second_solution[index_1:] = first_solution[index_1:]
             elif self.crossover_type == 'uniform':
                 for i in range(len(first_solution)):
-                    if random.random() < self.crossover_rate:
+                    if random.random() < crossover_rate:
                         if self.continuous_bool:
-                            _first_solution[i] = (first_solution[i] + second_solution[i])/2
-                            _second_solution[i] = (first_solution[i] + second_solution[i])/2
+                            third_solution = [(x + y) / 2 for (x, y) in zip(first_solution, second_solution)]
+                            _first_solution[i] = third_solution[i]
+                            _second_solution[i] = third_solution[i]
                         else:
                             _first_solution[i] = second_solution[i]
                             _second_solution[i] = first_solution[i]
@@ -174,9 +205,9 @@ class GA:
         else:
             return []
 
-    def create_offspring(self, curr_population):
+    def create_offspring(self, curr_population=None):
         """
-        @param curr_population:
+        @param curr_population: If population is being generated by MOEA, adjust this population
         @return: The children created from the current population.
         Performs the necessary steps to create the set number of offspring.
         1. Tournament selection to select parents
@@ -186,12 +217,13 @@ class GA:
         """
         j = 0
         children = []
-        population = [x for x in curr_population]
+        if curr_population:
+            self.population = [x for x in curr_population]
         while len(children) < self.offspring_size:
-            first_solution, idx1 = self.tournament_selection(population)
-            population.pop(idx1)
-            second_solution, idx2 = self.tournament_selection(population)
-            population.insert(idx1, first_solution)
+            first_solution, idx1 = self.tournament_selection(self.population)
+            self.population.pop(idx1)
+            second_solution, idx2 = self.tournament_selection(self.population)
+            self.population.insert(idx1, first_solution)
             first_solution = [x for x in first_solution.variables]
             second_solution = [x for x in second_solution.variables]
             crossed_over = self.crossover(first_solution, second_solution)
@@ -208,8 +240,26 @@ class GA:
             j += 1
         return children
 
-    def run(self):
+    def selection(self, total_population):
         """
-        run a basic GA
+        Select the new population from the total population
         """
-        pass
+        fitnesses = []
+        for sol in total_population:
+            fitnesses.append(sol.fitness)
+        new_population = [x for i, y, x in enumerate(sorted(zip(fitnesses, total_population))) if i < self.population_size]
+        return new_population
+
+    def run(self, generations):
+        """
+        run a basic GA for i generations
+        """
+        self.initialize_population()
+        i=0
+        while i < generations:
+            children = self.create_offspring()
+            offspring = []
+            for child in children:
+                offspring.append(PopulationMember(child, self.calc_fitness(child)))
+            total_population = self.population + offspring
+            self.selection(total_population)

@@ -1,8 +1,10 @@
 from refactoring.optimizationproblems.prescription import Prescription
-from refactoring.MOO.FEAMOO import FEAMOO
-from refactoring.basealgorithms.MOO_GA import NSGA2
+from refactoring.MOO.MOFEA import MOFEA
+from refactoring.MOO.MOEA import NSGA2
 from refactoring.FEA.factorarchitecture import FactorArchitecture
 from refactoring.utilities.field.field_creation import Field
+
+#TODO: Change into unit test
 
 field = Field()
 field.field_shape_file = "C:\\Users\\f24n127\\Documents\\raw-farm-data\\Broyles-35west-boundary\\sec35west_bbox.shp"
@@ -40,7 +42,7 @@ r.objective_values = [r.jumps, r.strat, r.fertilizer_rate]
 
 pop = [p, p2, q, r]
 
-feamoo = FEAMOO(Prescription, 3, 3, 100, FA, ga, 3, combinatorial_options=field.nitrogen_list, field=field)
+feamoo = MOFEA(Prescription, 3, 3, 100, FA, ga, 3, combinatorial_options=field.nitrogen_list, field=field)
 
 sols = feamoo.pf.evaluate_pareto_dominance(pop)
 [print(s.objective_values) for s in sols]
