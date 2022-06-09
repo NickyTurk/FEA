@@ -7,7 +7,7 @@ HypE class --
 MOEAD class --
 """
 
-from refactoring.MOO.paretofront import *
+from refactoring.MOO.paretofrontevaluation import *
 from refactoring.basealgorithms.ga import GA
 from refactoring.utilities.util import PopulationMember, compare_solutions, euclidean_distance
 
@@ -85,7 +85,7 @@ class MOEA:
 class NSGA2(MOEA):
     def __init__(self, evolutionary_algorithm=GA, dimensions=100, population_size=500, ea_runs=100,
                  # data_distribution=False,
-                 combinatorial_values=[], value_range=[0,1], factor=None, global_solution=None, ref_point=None):
+                 combinatorial_values=[], value_range=[0, 1], factor=None, global_solution=None, ref_point=None):
         """
 
         @param evolutionary_algorithm: The base algorithm to use. Currently only Genetic Algorithm (GA) is implemented.

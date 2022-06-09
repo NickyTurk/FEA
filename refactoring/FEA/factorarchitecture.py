@@ -42,8 +42,8 @@ class FactorArchitecture(object):
     optimizers =  [[0], [0, 1], [1, 2], [2, 3], [3]]
     """
 
-    def __init__(self, dim=0):
-        self.factors = []
+    def __init__(self, dim=0, factors=None):
+        self.factors = factors
         self.arbiters = []
         self.optimizers = []
         self.neighbors = []
@@ -282,7 +282,7 @@ class FactorArchitecture(object):
         """
         assignments = {}
         # Iteration is faster when it does not have to access the object each time
-        factors = self.factors
+        factors = [f for f in self.factors]
         for i, factor in enumerate(factors[:-1]):
             for j in factor:
                 if j not in self.factors[i + 1] and j not in assignments:
@@ -302,7 +302,7 @@ class FactorArchitecture(object):
         :return:
         """
         optimizers = []
-        factors = self.factors
+        factors = [f for f in self.factors]
         for v in range(self.dim):
             optimizer = []
             for i, factor in enumerate(factors):
@@ -318,7 +318,7 @@ class FactorArchitecture(object):
         :return:
         """
         neighbors = []
-        factors = self.factors
+        factors = [f for f in self.factors]
         for i, factor in enumerate(factors):
             neighbor = []
             for j, other_factor in enumerate(factors):
@@ -345,7 +345,8 @@ class MooFactorArchitecture:
         eps = 0.000000001
         for i in range(self.problem.n_obj):
             fa = FactorArchitecture(self.dim)
-            getattr(fa, self.decomp)(self.problem, eps, moo=True, n_obj=i)
+            if self.decomp == 'diff_grouping':
+                getattr(fa, self.decomp)(self.problem, eps, moo=True, n_obj=i)
             if save_files:
                 fa.save_architecture(
                     '../factor_architecture_files/n_obj_' + str(self.problem.n_obj) + '/MOO_' + fa.method + '_dim_' + str(self.dim) + '_obj_' + str(i))

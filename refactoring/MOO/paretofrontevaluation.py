@@ -11,52 +11,22 @@ class ParetoOptimization:
 
     def __init__(self, obj_size=3):
         """
-        :param obj_size: The number of objectives in the problem definition.
+        @param obj_size: The number of objectives in the problem definition.
         """
         self.n_obj = obj_size
         self.approximate_pareto_front = []
 
-    def evaluate_pareto_dominance(self, population, save=False):
-        """
-        check whether the solutions are non-dominated
-        """
-        pop = [x for x in population]
-        non_dominated_solutions = []
-        for comb in itertools.combinations(pop, 2):
-            a, b = comb
-            if a < b:
-                if b in non_dominated_solutions:
-                    non_dominated_solutions.remove(b)
-                if a not in non_dominated_solutions:
-                    non_dominated_solutions.append(a)
-            elif b < a:
-                if a in non_dominated_solutions:
-                    non_dominated_solutions.remove(a)
-                if b not in non_dominated_solutions:
-                    non_dominated_solutions.append(b)
-            # elif a == b:
-            #     if b in non_dominated_solutions:
-            #         non_dominated_solutions.append(a)
-            #     elif a in non_dominated_solutions:
-            #         non_dominated_solutions.append(b)
-            #     else:
-            #         non_dominated_solutions.append(a)
-            #         non_dominated_solutions.append(b)
-        self.approximate_pareto_front.extend([s.variables for s in non_dominated_solutions])
-        return non_dominated_solutions
-
     def evaluate_solution(self, approx_pareto_set, reference_point):
         """
-        :param approx_pareto_set: The discovered pareto set to calculate different evaluations for.
-        :param reference_point: Which reference point to use to calculate HV
+        @param approx_pareto_set: The discovered pareto set to calculate different evaluations for.
+                                -> format: List of PopulationMembers.
+        @param reference_point: Which reference point (representing the worst possible solution) to use to calculate HV.
         """
         # reference_points = self.calculate_ref_points(h, self.obj_size)
 
         diversity = self.calculate_diversity(approx_pareto_set)
 
         updated_pareto_set = [np.array(sol.fitness) for sol in approx_pareto_set]
-        #        for sol in approx_pareto_set:
-        #            updated_pareto_set.append(np.array([x.nitrogen for x in sol.variables]))
         hv = get_performance_indicator("hv",
                                        ref_point=np.array(reference_point))  # hypervolume(np.array(updated_pareto_set))
         return {'hypervolume': hv.calc(np.array(updated_pareto_set)), 'diversity': diversity}
@@ -67,10 +37,17 @@ class ParetoOptimization:
         estimate the extent of the spread of the obtained Pareto front,
         supposedly created by Deb? But I cant find a copy of his 2001 book
 
-        square root of the sum of the square of the difference between max and min solutions
-        (determined based on overall fitness) for each objective
+        Definition:
+        Square root of the sum of the square of the difference between max and min solutions
+        (determined based on overall fitness) for each objective.
         Alternate wording: the sum of the width for each objective.
         Adra and Fleming, 2000. Coello Coello, Dhaenens, and Jordan, 2010. Ischubishi and shibata, 2004, GECCO
+
+        @param approx_pareto_set: generated approximate pareto front to be evaluated.
+                                   -> format: List of PopulationMembers.
+        @param minmax: Dictionary of the minimum and maximum value of each objective to perform normalization.
+                       -> format: {i: [min, max]} where i is the objective index
+        @return float: spread indicator
         """
 
         spread_indicator = 0

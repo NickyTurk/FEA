@@ -13,11 +13,17 @@ class Knapsack:
                  nr_constraints=1, knapsack_type='multi'):
         """
         The Multi-Objective Knapsack base problem.
-        @param number_of_items:
-        @param max_bag_weight:
-        @param max_nr_items:
-        @param max_bag_volume:
-        @param nr_objectives:
+        @param number_of_items: Items in a single knapsack.
+        @param max_bag_weight: (constraint) Maximum weight allowed in a single knapsack.
+        @param max_nr_items: (constraint) Maximum number of items allowed in a single knapsack.
+        @param max_bag_volume: (constraint) Maximum volume allowed in a single knapsack.
+        @param nr_objectives: The number of objectives.
+                            Type Single: 3, 4, or 5 objectives.
+                            Type Multi: Any integer, defines how many knapsacks the problem tries to optimize.
+        @param nr_constraints: For type Multi: how many weight constraints should each knapsack be subject to?
+        @param knapsack_type: 'single' or 'multi'
+                            'single': knapsack with volume, weight, and balancing as separate objectives
+                            'multi': classic MO-knapsack with n knapsacks with their own profit objectives and m constraints
         """
         self.init_size = 5
         self.max_nr_items = max_nr_items
@@ -37,7 +43,9 @@ class Knapsack:
             self.initialize_constraints(nr_constraints)
 
     def initialize_single_knapsack(self):
-        # Create random items
+        """
+        Create random items to fill the knapsack.
+        """
         self.total_items = []
         for i in range(self.number_of_items):
             item = SingleKsItem(random.uniform(0.1, 5), random.uniform(0.1, 100), random.uniform(0.1, 10))
@@ -45,7 +53,7 @@ class Knapsack:
 
     def initialize_n_knapsacks(self):
         """
-        Initialize the values/profit for each knapsack
+        Initialize the values/profit for each knapsack.
         """
         self.total_items = dict()
         for j in range(self.nr_objectives):
@@ -56,7 +64,8 @@ class Knapsack:
 
     def initialize_constraints(self, nr_constraints):
         """
-        Initialize weights for each knapsack
+        Initialize weight constraints for each knapsack when optimizing the multi knapsack problem.
+        @param nr_constraints: How many weight constraints to create.
         """
         self.constraints = dict()
         for i in range(nr_constraints):
@@ -69,8 +78,9 @@ class Knapsack:
 
     def set_fitness_multi_knapsack(self, variables):
         """
-        fitness function that optimizes across different knapsacks with different capacities given item set.
-        Subject to x number of constraints on the weight of the items
+        Fitness function that optimizes across different knapsacks with different capacities given item set.
+        Subject to x number of constraints on the weight of the items.
+        @param variables: List of 0,1 values to determine whether an item is present in the knapsack or not.
         """
         objective_values = []
         for ks in self.total_items.values():
@@ -90,8 +100,7 @@ class Knapsack:
         Fitness function that looks at single knapsack with added volume objective.
         4th objective: balance weight
         5th objective: balance volume
-        @param variables:
-        @return:
+        @param variables: List of 0,1 values to determine whether an item is present in the knapsack or not.
         """
         # print('ks vars len for fitness eval: ', len(variables))
         # print('total item len: ', len(self.total_items))
@@ -105,8 +114,8 @@ class Knapsack:
 
     def eval_knapsack(self, individual):
         """
-
-        @param individual:
+        Evaluate single knapsack.
+        @param individual: List of items present in the knapsack (i.e. variable == 1)
         @return:
         """
         weight = 0.0
@@ -132,7 +141,7 @@ class Knapsack:
     def eval_knapsack_balanced_weight(self, individual):
         """
         Variant of the original weight-value knapsack problem with added third object being minimizing weight difference between items.
-        @param individual:
+        @param individual:  List of items present in the knapsack (i.e. variable == 1)
         @return:
         """
         balance = 0.0
@@ -143,7 +152,7 @@ class Knapsack:
     def eval_knapsack_balanced_volume(self, individual):
         """
         Variant of the original weight-value knapsack problem with added third object being minimizing weight difference between items.
-        @param individual:
+        @param individual:  List of items present in the knapsack (i.e. variable == 1)
         @return:
         """
         balance = 0.0

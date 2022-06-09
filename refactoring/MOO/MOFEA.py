@@ -1,7 +1,7 @@
 import gc
 from refactoring.utilities.util import PopulationMember
 
-from ..MOO.paretofront import ParetoOptimization
+from ..MOO.paretofrontevaluation import ParetoOptimization
 from ..FEA.factorarchitecture import FactorArchitecture
 from pymoo.util.nds.non_dominated_sorting import find_non_dominated
 
@@ -10,14 +10,14 @@ import random
 
 
 class MOFEA:
-    def __init__(self, fea_iterations, alg_iterations, pop_size, fa, base_alg, dimensions,
-                 combinatorial_options=[], upper_value_limit=200, ref_point=[1, 1, 1]):
+    def __init__(self, fea_iterations, alg_iterations, pop_size, dimensions, factor_architecture=None, base_alg=None,
+                 combinatorial_options=None, value_range=[0, 1], ref_point=[1, 1, 1]):
         self.combinatorial_options = combinatorial_options
-        self.upper_value_limit = upper_value_limit
+        self.value_range = value_range
         self.dim = dimensions
         self.nondom_archive = []
         self.population = []
-        self.factor_architecture = fa
+        self.factor_architecture = factor_architecture
         self.base_algorithm = base_alg
         self.fea_runs = fea_iterations
         self.base_alg_iterations = alg_iterations
@@ -27,20 +27,27 @@ class MOFEA:
         self.worst_fitness_ref = ref_point
         self.po = ParetoOptimization()
         # keep track to have a reference point for the HV indicator
-        self.subpopulations = self.initialize_moo_subpopulations()
+        self.subpopulations = None
         self.iteration_stats = []
 
-    def initialize_moo_subpopulations(self):
+    def initialize_moo_subpopulations(self, factors=None):
+        """
+        Initialize subpopulations based on factor architecture.
+        @param factors: Ability to send through factors if they were not available at initialization time.
+        """
+        if factors:
+            self.factor_architecture = FactorArchitecture(factors=factors)
+            self.factor_architecture.get_factor_topology_elements()
         if self.combinatorial_options:
             random_global_variables = random.choices(self.combinatorial_options, k=self.dim)
         else:
-            random_global_variables = [random.randrange(0, self.upper_value_limit) for x in range(self.dim)]
+            random_global_variables = [random.randrange(0, self.value_range) for x in range(self.dim)]
         print('global vars: ', random_global_variables)
         objs = self.base_algorithm(dimensions=self.dim).calc_fitness(random_global_variables)
         random_global_solution = PopulationMember(random_global_variables, objs)
         self.global_solutions.append(random_global_solution)
         return [self.base_algorithm(ea_runs=self.base_alg_iterations, dimensions=len(factor),
-                                    combinatorial_values=self.combinatorial_options, upper_value_limit=self.upper_value_limit,
+                                    combinatorial_values=self.combinatorial_options, value_range=self.value_range,
                                     population_size=self.pop_size, factor=factor,
                                     global_solution=random_global_solution) for factor in self.factor_architecture.factors]
 
@@ -55,6 +62,7 @@ class MOFEA:
         -> spread different non-domination solutions across different subpopulations, i.e., different subpopulations have different global solutions: this should also improve diversity along the PF?
         @return: eval_dict {HV, diversity, ND_size, FEA_run}
         '''
+        self.subpopulations = self.initialize_moo_subpopulations()
         change_in_nondom_size = []
         old_archive_length = 0
         fea_run = 0

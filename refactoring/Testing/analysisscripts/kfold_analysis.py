@@ -1,6 +1,6 @@
 from refactoring.utilities.multifilereader import MultiFileReader
 import pickle, re
-from refactoring.MOO.paretofront import ParetoOptimization
+from refactoring.MOO.paretofrontevaluation import ParetoOptimization
 from refactoring.utilities.util import PopulationMember
 import numpy as np
 from itertools import combinations

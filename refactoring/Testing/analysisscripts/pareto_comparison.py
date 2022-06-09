@@ -3,7 +3,7 @@ import numpy as np
 import itertools, random
 #from pygmo.core import hypervolume
 from pymoo.util.nds.non_dominated_sorting import find_non_dominated
-from refactoring.MOO.paretofront import ParetoOptimization
+from refactoring.MOO.paretofrontevaluation import ParetoOptimization
 
 # TODO: generalize
 

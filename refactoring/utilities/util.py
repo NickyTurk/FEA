@@ -8,6 +8,7 @@ from collections import namedtuple
 
 PopulationMember = namedtuple('PopulationMember', ['variables', 'fitness'])
 
+
 def maxmin_indeces(idx1, idx2):
     if idx1 > idx2:
         max_index = idx1
@@ -16,6 +17,7 @@ def maxmin_indeces(idx1, idx2):
         max_index = idx2
         min_index = idx1
     return min_index, max_index
+
 
 def euclidean_distance(a, b):
     return math.sqrt(sum((a - b) ** 2))
@@ -48,6 +50,7 @@ def compare_solutions(solution1, solution2):
     else:
         return 1
 
+
 def add_method(cls):
     def decorator(func):
         @wraps(func) 
@@ -57,6 +60,7 @@ def add_method(cls):
         # Note we are not binding func, but wrapper which accepts self but does exactly the same as func
         return func # returning func means func can still be used normally
     return decorator
+
 
 def memo(f):
     cache = {}
@@ -81,9 +85,11 @@ def memo(f):
 #     xp, yp = pyproj.transform(inProj, outProj, x, y)
 #     return xp, yp
 
+
 def is_hex(s):
     hex_digits = set(string.hexdigits)
     return all(c in hex_digits for c in s)
+
 
 def calculate_statistics(run, curr_population):
     """
