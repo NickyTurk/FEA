@@ -13,7 +13,7 @@ from refactoring.utilities.util import *
 class GA:
     def __init__(self, dimensions=100, population_size=200, tournament_size=5, mutation_rate=0.1, crossover_rate=0.95,
                  ga_runs=100, mutation_type="multi bitflip", crossover_type="single", offspring_size=100,
-                 continuous_var_space=False, value_range=[0, 1], combinatorial_options=[]):
+                 continuous_var_space=False, value_range=[0, 1], combinatorial_options=[], eta=20):
         """
         @param dimensions: Integer. Number of variables in a single individual.
         @param population_size: Integer. Number of individuals to form the population in a single generation.
@@ -39,6 +39,7 @@ class GA:
         self.value_range = value_range
         self.combinatorial_values = combinatorial_options
         self.population = []
+        self.eta = eta
 
     def initialize_population(self):
         for i in range(self.population_size):
@@ -74,8 +75,34 @@ class GA:
                 idx = rand
             i += 1
         return chosen_solution, idx
+    
+    def dominance_based_tournament(self, individuals, k):
+        def tourn(ind1, ind2):
+            if ind1.fitness.dominates(ind2.fitness):
+                return ind1
+            elif ind2.fitness.dominates(ind1.fitness):
+                return ind2
 
-    def mutate(self, original_solution, mutation_rate=None):
+            if ind1.fitness.crowding_dist < ind2.fitness.crowding_dist:
+                return ind2
+            elif ind1.fitness.crowding_dist > ind2.fitness.crowding_dist:
+                return ind1
+
+            if random.random() <= 0.5:
+                return ind1
+            return ind2
+
+        individuals_1 = random.sample(individuals, len(individuals))
+        individuals_2 = random.sample(individuals, len(individuals))
+
+        chosen = []
+        for i in range(0, k, 4):
+            chosen.append(tourn(individuals_1[i],   individuals_1[i+1]))
+            chosen.append(tourn(individuals_1[i+2], individuals_1[i+3]))
+            chosen.append(tourn(individuals_2[i],   individuals_2[i+1]))
+            chosen.append(tourn(individuals_2[i+2], individuals_2[i+3]))
+
+    def mutate(self, original_solution, mutation_rate=None, eta=20, lbound=None, ubound=None):
         """
         @param original_solution: The solution to be mutated.
         @param mutation_rate: Ability to manually set mutation rate separate from GA object.
@@ -86,14 +113,38 @@ class GA:
         Multi Bitflip = For each variable decide whether the bit will be flipped using the mutation rate.
         @return: The mutated child or a copy of the original solution if mutation was not performed.
         """
+        if not lbound:
+            lbound = self.value_range[0]
+        if not ubound:
+            ubound = self.value_range[1]
         if not mutation_rate:
             mutation_rate = self.mutation_rate
 
         _solution = [x for x in original_solution]
         if self.continuous_bool:
-            for i in range(len(_solution)):
-                if random.random() < mutation_rate:
-                    _solution[i] = random.uniform(self.value_range[0], self.value_range[1])
+            if self.mutation_type == "polynomial":
+                for i, x in enumerate(_solution):
+                    if random.random() < mutation_rate:
+                        delta_1 = (x - lbound) / (ubound - lbound)
+                        delta_2 = (ubound - x) / (ubound - lbound)
+                        rand = random.random()
+                        mut_pow = 1.0 / (eta + 1.)
+
+                        if rand < 0.5:
+                            xy = 1.0 - delta_1
+                            val = 2.0 * rand + (1.0 - 2.0 * rand) * xy ** (eta + 1)
+                            delta_q = val ** mut_pow - 1.0
+                        else:
+                            xy = 1.0 - delta_2
+                            val = 2.0 * (1.0 - rand) + 2.0 * (rand - 0.5) * xy ** (eta + 1)
+                            delta_q = 1.0 - val ** mut_pow
+
+                        x = x + delta_q * (ubound - lbound)
+                        x = min(max(x, lbound), ubound)
+            else:
+                for i in range(len(_solution)):
+                    if random.random() < mutation_rate:
+                        _solution[i] = random.uniform(self.value_range[0], self.value_range[1])
         else:
             if random.random() < mutation_rate:
                 if self.mutation_type == "swap":
@@ -146,7 +197,7 @@ class GA:
                                 _solution[i] = 0
         return _solution
 
-    def crossover(self, first_solution, second_solution, crossover_rate=None):
+    def crossover(self, first_solution, second_solution, crossover_rate=None, eta=20):
         """
         @param first_solution: The first parent selected.
         @param second_solution: The second parent selected.
@@ -201,6 +252,16 @@ class GA:
                         else:
                             _first_solution[i] = second_solution[i]
                             _second_solution[i] = first_solution[i]
+            elif self.crossover_type == 'simulated binary':
+                for i, (x1, x2) in enumerate(zip(first_solution, second_solution)):
+                    rand = random.random()
+                    if rand <= 0.5:
+                        beta = 2. * rand
+                    else:
+                        beta = 1. / (2. * (1. - rand))
+                    beta **= 1. / (eta + 1.)
+                    _first_solution[i] = 0.5 * (((1 + beta) * x1) + ((1 - beta) * x2))
+                    _second_solution[i] = 0.5 * (((1 - beta) * x1) + ((1 + beta) * x2))
             return [_first_solution, _second_solution]
         else:
             return []

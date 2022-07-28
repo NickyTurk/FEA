@@ -62,9 +62,9 @@ class ParetoOptimization:
             else:
                 min_ = 0
                 max_ = max(to_sort)
-            sorted_set = [(x - min_) / (max_ - min_) for _, x in sorted(zip(to_sort, approx_pareto_set))]
-            last = np.array([c for c in sorted_set[-1].fitness])
-            first = np.array([c for c in sorted_set[0].fitness])
+            sorted_set = [(x - min_) / (max_ - min_) for x in sorted(to_sort)]
+            last = np.array(sorted_set[-1])
+            first = np.array(sorted_set[0])
             spread_indicator += np.square(np.linalg.norm(last - first))
         return np.sqrt(spread_indicator)
 

@@ -255,7 +255,6 @@ class NSGA2(MOEA):
             I.e. when NSGA2 is NOT used as the base-algorithm for FEA.
             '''
             if self.factor is None and i != 1:
-                print("generation running: ", i)
                 self.nondom_archive = self.update_archive()
                 if len(self.nondom_archive) == old_archive_length and len(self.nondom_archive) >= 10:
                     change_in_nondom_size.append(True)
@@ -307,7 +306,6 @@ class SPEA2(MOEA):
         Run the full algorithm for the set number of 'ea_runs' or until a convergence criterion is met.
         @param fea_run: Which generation the FEA is on, if NSGA2 is being used as the base-algorithm.
         """
-        print('entered running: ', fea_run)
         # initialize population
         if fea_run == 0:
             print('INITIALIZE SUBPOP')
