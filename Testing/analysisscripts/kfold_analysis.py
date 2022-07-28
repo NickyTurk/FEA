@@ -1,7 +1,7 @@
-from refactoring.utilities.multifilereader import MultiFileReader
+from utilities.multifilereader import MultiFileReader
 import pickle, re
-from refactoring.MOO.paretofrontevaluation import ParetoOptimization
-from refactoring.utilities.util import PopulationMember
+from MOO.paretofrontevaluation import ParetoOptimization
+from utilities.util import PopulationMember
 import numpy as np
 from itertools import combinations
 from scipy.stats import ttest_ind

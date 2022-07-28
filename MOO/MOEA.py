@@ -7,9 +7,9 @@ HypE class --
 MOEAD class --
 """
 
-from refactoring.MOO.paretofrontevaluation import *
-from refactoring.basealgorithms.ga import GA
-from refactoring.utilities.util import PopulationMember, compare_solutions, euclidean_distance
+from MOO.paretofrontevaluation import *
+from basealgorithms.ga import GA
+from utilities.util import PopulationMember, compare_solutions, euclidean_distance
 
 from pymoo.algorithms.nsga2 import calc_crowding_distance
 from pymoo.util.nds.non_dominated_sorting import find_non_dominated

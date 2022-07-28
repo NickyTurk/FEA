@@ -7,7 +7,7 @@ Can be used a standalone algorithm using run(), or as the base-algorithm for MOO
 
 import numpy as np
 import random
-from refactoring.utilities.util import *
+from utilities.util import *
 
 
 class GA:

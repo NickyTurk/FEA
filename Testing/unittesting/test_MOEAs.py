@@ -1,7 +1,7 @@
 import unittest
 
-from refactoring.MOO.MOEA import *
-from refactoring.utilities.util import add_method
+from MOO.MOEA import *
+from utilities.util import add_method
 
 
 class TestGeneral(unittest.TestCase):

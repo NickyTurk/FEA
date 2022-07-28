@@ -1,4 +1,4 @@
-from refactoring.utilities.multifilereader import MultiFileReader
+from utilities.multifilereader import MultiFileReader
 import pickle, random
 import numpy as np
 from pymoo.util.nds.non_dominated_sorting import find_non_dominated

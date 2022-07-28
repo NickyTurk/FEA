@@ -1,5 +1,5 @@
-from refactoring.optimizationproblems.moo_functions import MOOFunctions
-from refactoring.FEA.factorarchitecture import MooFactorArchitecture
+from optimizationproblems.moo_functions import MOOFunctions
+from FEA.factorarchitecture import MooFactorArchitecture
 
 import unittest
 

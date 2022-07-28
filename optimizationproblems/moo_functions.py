@@ -3,7 +3,7 @@ import numpy as np
 import autograd.numpy as anp
 import math
 
-from refactoring.optimizationproblems.prescription import Prescription
+from optimizationproblems.prescription import Prescription
 
 
 class MOOFunctions:

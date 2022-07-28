@@ -6,7 +6,7 @@ try:
 except:
     import pickle
 import os
-from refactoring.utilities.clustering import FuzzyKmeans
+from utilities.clustering import FuzzyKmeans
 
 
 def rotate(xs, n):
@@ -66,7 +66,7 @@ class FactorArchitecture(object):
         pickle.dump(self.__dict__, file)
 
     def load_architecture(self, path_to_load="", method="", dim=0):
-        from refactoring.utilities.exceptions import PickleException
+        from utilities.exceptions import PickleException
         if path_to_load == "" and (method == "" or dim == 0):
             raise PickleException()
         elif path_to_load != "" and os.path.isdir(path_to_load):
@@ -80,7 +80,7 @@ class FactorArchitecture(object):
             self.__dict__.update(pickle_object)
 
     def load_csv_architecture(self, file, dim, method=""):
-        from refactoring.utilities.multifilereader import MultiFileReader
+        from utilities.multifilereader import MultiFileReader
 
         csv = MultiFileReader(file)
         self.factors, f = csv.import_factors(dim)

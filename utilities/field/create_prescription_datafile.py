@@ -2,7 +2,7 @@ import csv
 from operator import attrgetter
 from pyproj import Transformer
 from pymoo.util.nds.non_dominated_sorting import find_non_dominated
-from refactoring.optimizationproblems.prescription import Prescription
+from optimizationproblems.prescription import Prescription
 
 try:
     import _pickle as pickle

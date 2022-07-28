@@ -1,9 +1,9 @@
 import unittest
-from refactoring.MOO.MOFEA import MOFEA
-from refactoring.MOO.MOEA import NSGA2
-from refactoring.FEA.factorarchitecture import *
-from refactoring.optimizationproblems.knapsack import *
-from refactoring.utilities.util import add_method
+from MOO.MOFEA import MOFEA
+from MOO.MOEA import NSGA2
+from FEA.factorarchitecture import *
+from optimizationproblems.knapsack import *
+from utilities.util import add_method
 
 
 class TestMOFEA(unittest.TestCase):

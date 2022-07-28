@@ -1,10 +1,10 @@
 from sklearn.ensemble import RandomForestRegressor
-from refactoring.predictionalgorithms.yieldprediction import YieldPredictor
-from refactoring.optimizationproblems.prescription import Prescription
-from refactoring.FEA.factorarchitecture import FactorArchitecture
-from refactoring.utilities.util import *
-from refactoring.MOO.MOEA import *
-from refactoring.MOO.MOFEA import MOFEA
+from predictionalgorithms.yieldprediction import YieldPredictor
+from optimizationproblems.prescription import Prescription
+from FEA.factorarchitecture import FactorArchitecture
+from utilities.util import *
+from MOO.MOEA import *
+from MOO.MOFEA import MOFEA
 import pandas as pd
 from datetime import timedelta
 import pickle, random, re, os, time
@@ -35,8 +35,8 @@ for i, field in enumerate(fields_to_test):
     #['x', 'y', 'n_lbs_ac', 'elev_m', 'slope_deg', 'ndvi15', 'ndvi16', 'ndvi17', 'yl16_nn_bu_ac','n16_lbs_ac']
     #['x', 'y', 'n_lbs_ac', 'elev_m', 'slope_deg', 'ndvi_2012', 'ndvi_2014', 'ndvi_2015', 'yl14_nn_bu_ac', 'n15_lbs_ac', 'n14_lbs_ac']
     x_data = df[data_to_use]
-    rf = RandomForestRegressor()
-    rf.fit(x_data, y_labels)
+    #rf = RandomForestRegressor()
+    #rf.fit(x_data, y_labels)
 
     print(field_names[i], '-- FEA')
     field.fixed_costs = 1000

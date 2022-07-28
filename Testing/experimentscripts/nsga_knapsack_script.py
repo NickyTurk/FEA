@@ -7,9 +7,9 @@ import pickle
 from datetime import timedelta
 import time
 
-from refactoring.optimizationproblems.knapsack import *
-from refactoring.MOO.MOEA import NSGA2
-from refactoring.utilities.util import *
+from optimizationproblems.knapsack import *
+from MOO.MOEA import NSGA2
+from utilities.util import *
 
 nr_items = 1000
 ga_run = 100

@@ -170,7 +170,7 @@ class PSO(object):
 
 
 if __name__ == '__main__':
-    from refactoring.optimizationproblems.continuous_functions import Function
+    from optimizationproblems.continuous_functions import Function
 
     f = Function(function_number=1, shift_data_file="f01_o.txt")
     pso = PSO(generations=1000, population_size=500, function=f, dim=50)

@@ -4,10 +4,10 @@ from datetime import timedelta
 import time
 from functools import partial
 
-from refactoring.optimizationproblems.knapsack import *
-from refactoring.MOO.MOEA import NSGA2
-from refactoring.basealgorithms.ga import GA
-from refactoring.utilities.util import *
+from optimizationproblems.knapsack import *
+from MOO.MOEA import NSGA2
+from basealgorithms.ga import GA
+from utilities.util import *
 
 
 # benchmarks.dtlz1  # individual, number of objectives 'obj'

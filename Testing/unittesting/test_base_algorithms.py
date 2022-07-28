@@ -1,8 +1,8 @@
 import random
 import unittest
-from refactoring.basealgorithms.ga import *
-from refactoring.basealgorithms.pso import *
-from refactoring.utilities.util import add_method
+from basealgorithms.ga import *
+from basealgorithms.pso import *
+from utilities.util import add_method
 
 
 class TestGAContinuous(unittest.TestCase):

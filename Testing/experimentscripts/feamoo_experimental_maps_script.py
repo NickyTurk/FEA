@@ -1,9 +1,9 @@
 import os, re
 import pickle
 
-from refactoring.optimizationproblems.prescription import Prescription
-from refactoring.MOO.MOEA import *
-from refactoring.utilities.util import *
+from optimizationproblems.prescription import Prescription
+from MOO.MOEA import *
+from utilities.util import *
 
 field_names = ['Henrys', 'Sec35Mid', 'Sec35West']
 current_working_dir = os.getcwd()

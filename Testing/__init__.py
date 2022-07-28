@@ -2,8 +2,8 @@
 # from pstats import Stats
 
 # from sklearn.metrics import adjusted_rand_score
-# from refactoring.utilities.util import PopulationMember
-# from refactoring.MOO.paretofront import ParetoOptimization
+# from utilities.util import PopulationMember
+# from MOO.paretofront import ParetoOptimization
 # import numpy as np
 # from pymoo.util.nds.non_dominated_sorting import find_non_dominated
 # import matplotlib.pyplot as plt

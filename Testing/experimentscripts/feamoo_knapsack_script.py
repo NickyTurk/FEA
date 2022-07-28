@@ -7,11 +7,11 @@ import pickle
 from datetime import timedelta
 import time
 
-from refactoring.optimizationproblems.knapsack import *
-from refactoring.MOO.MOFEA import MOFEA
-from refactoring.MOO.MOEA import NSGA2
-from refactoring.FEA.factorarchitecture import FactorArchitecture
-from refactoring.utilities.util import *
+from optimizationproblems.knapsack import *
+from MOO.MOFEA import MOFEA
+from MOO.MOEA import NSGA2
+from FEA.factorarchitecture import FactorArchitecture
+from utilities.util import *
 
 nr_items = 1000
 sizes = [ 100, 200, 100]

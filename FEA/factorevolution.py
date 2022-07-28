@@ -87,9 +87,9 @@ class FEA:
 
 
 if __name__ == '__main__':
-    from refactoring.basealgorithms.pso import PSO
-    from refactoring.optimizationproblems.continuous_functions import Function
-    from refactoring.FEA.factorarchitecture import FactorArchitecture
+    from basealgorithms.pso import PSO
+    from optimizationproblems.continuous_functions import Function
+    from FEA.factorarchitecture import FactorArchitecture
 
     fa = FactorArchitecture()
     fa.load_csv_architecture(file="../../results/factors/F1_m4_diff_grouping.csv", dim=50)

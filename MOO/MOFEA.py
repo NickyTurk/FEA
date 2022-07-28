@@ -1,5 +1,5 @@
 import gc
-from refactoring.utilities.util import PopulationMember
+from utilities.util import PopulationMember
 
 from ..MOO.paretofrontevaluation import ParetoOptimization
 from ..FEA.factorarchitecture import FactorArchitecture

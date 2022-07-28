@@ -1,4 +1,4 @@
-from refactoring.utilities.field.field_creation import Field
+from utilities.field.field_creation import Field
 
 import pickle
 

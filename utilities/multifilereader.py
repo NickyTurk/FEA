@@ -1,5 +1,5 @@
 import os.path
-from refactoring.setup import ROOT_DIR
+from setup import ROOT_DIR
 
 import pandas as pd
 import numpy as np

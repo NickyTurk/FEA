@@ -4,8 +4,8 @@ from fiona.crs import from_epsg
 from shapely.geometry import Polygon, shape, mapping, MultiPolygon
 import numpy as np
 
-from refactoring.utilities import fileIO
-from refactoring.utilities.util import PopulationMember
+from utilities import fileIO
+from utilities.util import PopulationMember
 
 file_ccea = "/media/amy/WD Drive/Prescriptions/optimal/CCEAMOO_Sec35Mid_strip_trial_3_objectives_ga_runs_20_population_50_0804190813.pickle" 
 file_nsga = "/media/amy/WD Drive/Prescriptions/optimal/NSGA_Sec35Mid_strip_trial_3_objectives_ga_runs_100_population_25_1104102923.pickle"
