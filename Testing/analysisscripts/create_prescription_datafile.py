@@ -1,6 +1,7 @@
 import csv
 from operator import attrgetter
 from pyproj import Transformer
+from predictionalgorithms.yieldprediction import create_indexed_dataframe
 from pymoo.util.nds.non_dominated_sorting import find_non_dominated
 from optimizationproblems.prescription import Prescription
 
@@ -11,55 +12,6 @@ except:
 import re
 import pandas as pd
 import numpy as np
-
-
-def create_pd_dataframe(prescription, field, headers, dps, nitrogen_header='n_lbs_ac', transform_to_latlon=False,
-                        transform_from_latlon=False):
-    """
-    prescription = Prescription class object
-    field = Field class object, can be read in from existing field pickle files
-    headers = original dataframe headers
-    dps = datapoints read in from file
-    """
-    vars = []
-    if isinstance(prescription, Prescription):
-        vars = prescription.variables
-    else:
-        vars = prescription
-    all_points_df = pd.DataFrame()
-    project_from_latlong = Transformer.from_crs(field.latlong_crs, 'epsg:32612')
-    project_to_latlong = Transformer.from_crs( 'epsg:32612', field.latlong_crs)# 'epsg:32612')
-    x_int = headers['x']
-    y_int = headers['y']
-    n_int = headers[nitrogen_header]
-    if transform_to_latlon:
-        xy = np.array(
-            [np.array(project_to_latlong.transform(x, y)) for x, y in zip(dps[:,x_int], dps[:,y_int])])
-        dps[:, x_int] = xy[:, 0]
-        dps[:, y_int] = xy[:, 1]
-    for i, gridcell in enumerate(vars):
-        # Get cell location information
-        bl_x, bl_y = gridcell.bottomleft_x, gridcell.bottomleft_y
-        ur_x, ur_y = gridcell.upperright_x, gridcell.upperright_y
-        # Get all points in the cell
-        points_in_cell = dps[(dps[:, y_int] >= bl_x) &
-                             (dps[:, y_int] <= ur_x) &
-                             (dps[:, x_int] <= ur_y) &
-                             (dps[:, x_int] >= bl_y)]
-        # Set nitrogen value for points
-        if len(points_in_cell) > 0:
-            cell_df = pd.DataFrame(points_in_cell)
-            cell_df.loc[:, n_int] = gridcell.nitrogen
-            cell_df.loc[:, 'cell_index'] = i
-            all_points_df = pd.concat([cell_df, all_points_df])
-    if transform_from_latlon:
-        xy = np.array(
-            [np.array(project_from_latlong.transform(x, y)) for x, y in zip(all_points_df[x_int], all_points_df[y_int])])
-        all_points_df.loc[:, x_int] = xy[:, 0]
-        all_points_df.loc[:, y_int] = xy[:, 1]
-    headers['cell_index'] = -1
-    all_points_df.columns = headers
-    return all_points_df
 
 
 experiment_filenames = [
@@ -113,7 +65,7 @@ if __name__ == '__main__':
             find_center_obj.append(np.array(prescription.objective_values))
             #        print(prescription.objective_values)
             #        print([x.nitrogen for x in prescription.variables])
-            all_points_df = create_pd_dataframe(prescription, field, headers, dps)
+            all_points_df = create_indexed_dataframe(prescription, field, headers, dps)
             all_points_df.to_csv(filename_to_write)
         find_center_obj = np.array(find_center_obj)
         length = find_center_obj.shape[0]
@@ -126,5 +78,5 @@ if __name__ == '__main__':
         idx = np.argmin(dist)
         prescription = nondom_archive[idx]
         filename_to_write = '../../MOO_final_prescriptions/' + name + '_combined_prescription_center_objective_runs.csv'
-        all_points_df = create_pd_dataframe(prescription, field, headers, dps)
+        all_points_df = create_indexed_dataframe(prescription, field, headers, dps)
         all_points_df.to_csv(filename_to_write)

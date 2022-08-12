@@ -1,9 +1,9 @@
 import sys
-from ..PredictorStrategy.RFStrategy import RFStrategy
-from ..PredictorStrategy.GAMStrategy import GAMStrategy
-from ..PredictorStrategy.SpatialCNNStrategy import SpatialCNNStrategy
-from ..PredictorStrategy.MLRegressionStrategy import MLRegressionStrategy
-from ..PredictorStrategy.BayesRegressionStrategy import BayesRegressionStrategy
+from predictionalgorithms.CNN_yieldpredictor.PredictorStrategy.RFStrategy import RFStrategy
+from predictionalgorithms.CNN_yieldpredictor.PredictorStrategy.GAMStrategy import GAMStrategy
+from predictionalgorithms.CNN_yieldpredictor.PredictorStrategy.SpatialCNNStrategy import SpatialCNNStrategy
+from predictionalgorithms.CNN_yieldpredictor.PredictorStrategy.MLRegressionStrategy import MLRegressionStrategy
+from predictionalgorithms.CNN_yieldpredictor.PredictorStrategy.BayesRegressionStrategy import BayesRegressionStrategy
 
 
 class PredictorModel:

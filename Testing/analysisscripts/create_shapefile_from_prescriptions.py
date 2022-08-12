@@ -9,7 +9,7 @@ from utilities.util import PopulationMember
 
 file_ccea = "/media/amy/WD Drive/Prescriptions/optimal/CCEAMOO_Sec35Mid_strip_trial_3_objectives_ga_runs_20_population_50_0804190813.pickle" 
 file_nsga = "/media/amy/WD Drive/Prescriptions/optimal/NSGA_Sec35Mid_strip_trial_3_objectives_ga_runs_100_population_25_1104102923.pickle"
-fieldfile = "/home/amy/projects/FEA/refactoring/utilities/saved_fields/sec35mid.pickle"
+fieldfile = "/home/amy/projects/FEA/utilities/saved_fields/sec35mid.pickle"
 
 field = pickle.load(open(fieldfile, 'rb'))
 ccea = pickle.load(open(file_ccea, 'rb'))

@@ -1,13 +1,13 @@
 import os
 import sys
 import torch
-from ..Predictor import utils, DataLoader
+from predictionalgorithms.CNN_yieldpredictor.Predictor import utils, DataLoader
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
-from ..Predictor.DataLoader import loadData
+from predictionalgorithms.CNN_yieldpredictor.Predictor.DataLoader import loadData
 from scipy.interpolate import splrep, splev
-from ..PredictorStrategy.PredictorModel import PredictorModel
+from predictionalgorithms.CNN_yieldpredictor.PredictorStrategy.PredictorModel import PredictorModel
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -61,6 +61,7 @@ class YieldMapPredictor:
         self.model = None
         self.cellids = None
         self.coords = None
+        self.simple_coords = []
         self.data = None
         self.nbands = None
         self.mask_field = None
@@ -70,6 +71,8 @@ class YieldMapPredictor:
         self.mins = None
         self.maxY = None
         self.minY = None
+        self.patches =  None
+        self.centers = None
 
         # Initialize data loader object
         self.dataLoader = DataLoader.DataLoader(filename=filename, field=field, training_years=training_years,
@@ -97,7 +100,7 @@ class YieldMapPredictor:
     def load_pred_data(self, objective, modifyNRate=None, clearBorder=True):
         """Load and prepare the data that will be used for prediction"""
         # Load the entire yield map and the features of the selected year
-        self.data, self.cellids, self.coords = self.dataLoader.load_raster(objective=objective)
+        self.data, self.cellids, self.coords, self.simple_coords = self.dataLoader.load_raster(objective=objective)
         self.nbands = self.data.shape[2]  # Stores the number of features in the dataset.
         self.prev_n = self.data[:, :, 0].copy()  # Save for plotting later in case new prescription maps are used.
 
@@ -129,12 +132,11 @@ class YieldMapPredictor:
                 ymin = y - int((self.windowSize - 1) / 2)
                 ymax = y + int((self.windowSize - 1) / 2) + 1
 
+                if self.coords[x, y] is None:
+                    continue
+
                 # Extract patch
                 patch = self.data[xmin:xmax, ymin:ymax, :]
-
-                # Avoid wasting time including patches that are full of zeros
-                if np.sum(self.mask_field[xmin:xmax, ymin:ymax]) == 0:
-                    continue
 
                 # Add patch to batch and save position
                 # print("Saving block at position X: " + str(x) + ", Y: " + str(y))

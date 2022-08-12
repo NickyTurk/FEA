@@ -2,7 +2,7 @@
 Contains different algorithm implementations of single population multi-objective optimization algorithms.
 MOOEA class -- Superclass for all Multi-objective Evolutionary Algorithms.
 NSGA2 class -- Inherits from MOOEA. Non-Dominated Sorting Genetic Algorithm II (Deb, et al.)
-SPEA2 class -- Strength Pareto Evolutionary Algorithm
+SPEA2 class -- Strength Pareto Evolutionary Algorithm 2
 HypE class --
 MOEAD class --
 """
@@ -158,6 +158,11 @@ class NSGA2(MOEA):
                                                              fitness=sol.fitness)
 
     def update_archive(self, nd_archive=None):
+        """
+        Function to update the existing archive object, or a chosen archive
+        @param nd_archive: The archive to be updated, if None, this is the algorithm's current generation archive
+        @return: updated non-dominated archive as list of PopulationMembers
+        """
         if not nd_archive:
             nd_archive = self.nondom_archive
         nondom_indeces = find_non_dominated(np.array([np.array(x.fitness) for x in nd_archive]))
@@ -304,7 +309,7 @@ class SPEA2(MOEA):
     def run(self, fea_run=0):
         """
         Run the full algorithm for the set number of 'ea_runs' or until a convergence criterion is met.
-        @param fea_run: Which generation the FEA is on, if NSGA2 is being used as the base-algorithm.
+        @param fea_run: Which generation the FEA is on.
         """
         # initialize population
         if fea_run == 0:
@@ -381,6 +386,7 @@ class SPEA2(MOEA):
         Code based on Platypus implementation:
         https://platypus.readthedocs.io/en/latest/_modules/platypus/algorithms.html
         calculates pareto strength value and returns new list of population members with variables and strengths.
+        K = sqrt(pop size + archive size)
         Original population is not altered.
         """
         fitnesses = np.array([np.array(x.fitness) for x in population])
@@ -491,6 +497,7 @@ class SPEA2(MOEA):
             The index of the solution
         k : int
             Finds the k-th nearest neightbor distance
+            K = sqrt(pop size + archive size)
         """
         return self.distance_matrix[i][k][1]
 

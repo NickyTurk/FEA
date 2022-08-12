@@ -2,7 +2,7 @@ import random
 #-o uid=$(id -u), gid=$(id -g)
 
 import numpy as np
-from ..utilities.field.field_creation import Field, GridCell
+from utilities.field.field_creation import Field, GridCell
 from copy import deepcopy
 
 
@@ -13,20 +13,21 @@ class Prescription:
         if variables and factor is None and field is None:
             self.variables = variables
         elif variables and factor and field:
-            field_cells = [field.cell_list[i] for i in factor]
-            for i, c in enumerate(field_cells):
+            self.field_cells = [field.cell_list[i] for i in factor]
+            for i, c in enumerate(self.field_cells):
                 c.nitrogen = variables[i]
-            self.variables = deepcopy(field_cells)
+            self.variables = [variables[i] for i in factor]
         elif variables and factor is None and field:
-            field_cells = [f for f in field.cell_list]
-            for i, c in enumerate(field_cells):
+            self.field_cells = [f for f in field.cell_list]
+            for i, c in enumerate(self.field_cells):
                 c.nitrogen = variables[i]
-            self.variables = deepcopy(field_cells)
+            self.variables = variables
         elif field and variables is None and factor is None:
             self.variables = field.assign_nitrogen_distribution()
         elif factor and field and variables is None:
-            field_cells = field.assign_nitrogen_distribution()
-            self.variables = [field_cells[i] for i in factor]
+            self.field_cells = field.assign_nitrogen_distribution()
+            self.variables = [self.field_cells[i].nitrogen for i in factor]
+            self.field_cells = [self.field_cells[i] for i in factor]
         else:
             self.variables = []
         self.index = index
@@ -179,7 +180,7 @@ class Prescription:
         return total_fertilizer / self.field.max_fertilizer_rate
 
     def optimize_yld(self, solution):
-        predicted_yield = self.yield_predictor.calculate_yield(solution)
+        predicted_yield = self.yield_predictor.calculate_yield(solution, cnn=self.yield_predictor.cnn_bool)
         # P = base_price + ()
         fertilizer_applied = sum([c.nitrogen*self.gridcell_size for c in solution])
         net_return = predicted_yield * self.yield_price - fertilizer_applied * self.fertilizer_cost - self.field.fixed_costs

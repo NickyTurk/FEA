@@ -42,6 +42,7 @@ class Field:
         # initialize values
         self.id = 0
         self.conversion_measure = 6076.1154855643 * 60
+        self.field_name = ''
 
         if field_dict:
             self.field_shape_file = field_dict["fld_shp_file"]
@@ -59,6 +60,7 @@ class Field:
             self.cell_height = field_dict["cell_height"]/ 364567.2
             self.nitrogen_list = ast.literal_eval(field_dict["nitrogen_values"])
             self.run_ga = field_dict["run_ga"]
+            self.base_rate = 120
         
         else:
             self.field_shape_file = None
@@ -75,6 +77,7 @@ class Field:
             self.cell_width = 120/self.conversion_measure
             self.cell_height = 240/self.conversion_measure
             self.nitrogen_list = [40,60,80,100,120,150]
+            self.base_rate = 120
 
         self.total_ylpro_bins = self.num_pro_bins * self.num_yield_bins
 

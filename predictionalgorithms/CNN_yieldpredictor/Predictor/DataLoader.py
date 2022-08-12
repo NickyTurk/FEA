@@ -160,6 +160,7 @@ def loadData(path=None, obj='yld', year=2018, field='', cov=None, mode='AggRADAR
     target = np.ones((rows.shape[0], cols.shape[0],)) * -2
     cellids = np.empty((rows.shape[0], cols.shape[0]), dtype=object)
     XYcoords = np.empty((rows.shape[0], cols.shape[0]), dtype=object)
+    simple_coords = []
     for d in df.iterrows():
         if not read_column:
             if d[1]['year'] == year and str(d[1]['field']) == field:
@@ -176,6 +177,8 @@ def loadData(path=None, obj='yld', year=2018, field='', cov=None, mode='AggRADAR
                     target[xcord, ycord, ] = d[1][obj]
                 cellids[xcord, ycord] = d[1]['cell_id']
                 XYcoords[xcord, ycord] = [d[1]['x'], d[1]['y']]
+                if [d[1]['x'], d[1]['y']] not in simple_coords:
+                    simple_coords.append([d[1]['x'], d[1]['y']])
                 if not test:
                     d2 = d[1].drop(['x', 'y', 'year', 'field', 'cell_id', obj])
                 else:
@@ -190,6 +193,8 @@ def loadData(path=None, obj='yld', year=2018, field='', cov=None, mode='AggRADAR
                     d[1][f] = -1
             cellids[xcord, ycord] = d[1]['cell_id']
             XYcoords[xcord, ycord] = [d[1]['x'], d[1]['y']]
+            if [d[1]['x'], d[1]['y']] not in simple_coords:
+                simple_coords.append([d[1]['x'], d[1]['y']])
             d2 = d[1].drop(['x', 'y', 'field', 'cell_id'])
             data[xcord, ycord, :] = d2.iloc[:]
 
@@ -225,11 +230,11 @@ def loadData(path=None, obj='yld', year=2018, field='', cov=None, mode='AggRADAR
 
     if not read_column:
         if not test:
-            return target.astype('float32'), data, cellids, XYcoords
+            return target.astype('float32'), data, cellids, XYcoords, simple_coords
         else:
-            return data, cellids, XYcoords
+            return data, cellids, XYcoords, simple_coords
     else:
-        return data, cellids, XYcoords
+        return data, cellids, XYcoords, simple_coords
 
 
 def inpainting(M):

@@ -20,9 +20,9 @@ path = re.search(r'^(.*?[\\/]FEA)',current_working_dir)
 path = path.group()
 print('path: ', path)
 
-field_1 = pickle.load(open(path + '/refactoring/utilities/saved_fields/Henrys.pickle', 'rb')) # /home/alinck/FEA
-field_2 = pickle.load(open(path + '/refactoring/utilities/saved_fields/sec35mid.pickle', 'rb'))
-field_3 = pickle.load(open(path + '/refactoring/utilities/saved_fields/sec35west.pickle', 'rb'))
+field_1 = pickle.load(open(path + '/utilities/saved_fields/Henrys.pickle', 'rb')) # /home/alinck/FEA
+field_2 = pickle.load(open(path + '/utilities/saved_fields/sec35mid.pickle', 'rb'))
+field_3 = pickle.load(open(path + '/utilities/saved_fields/sec35west.pickle', 'rb'))
 fields_to_test = [field_2] #[field_1, field_2, field_3]
 print(field_2.nitrogen_list)
 

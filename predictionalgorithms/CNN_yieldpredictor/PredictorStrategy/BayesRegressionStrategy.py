@@ -1,9 +1,9 @@
-from ..Predictor import utils
+from predictionalgorithms.CNN_yieldpredictor.Predictor import utils
 import random
 import pickle
 import numpy as np
 from sklearn.linear_model import BayesianRidge
-from ..PredictorStrategy.PredictorInterface import PredictorInterface
+from predictionalgorithms.CNN_yieldpredictor.PredictorStrategy.PredictorInterface import PredictorInterface
 
 
 class BayesRegressionStrategy(PredictorInterface):

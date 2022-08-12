@@ -3,10 +3,13 @@ from pyproj import Transformer
 import pickle, re, os, random
 import numpy as np
 
+'''
+Cell ID for 2D patches and points -> enables direct mapping to reduce calculation cost
+For extract 2D patches as well: uses double for loop with a kind of step size to determine how many points to skip, step could be increased
+'''
 
 def reduce_dataframe(field, data_to_use, agg_file, transform_to_latlon=False, transform_from_latlon=False):
     df = pd.read_csv(agg_file)
-    points_df = pd.DataFrame()
     project_from_latlong = Transformer.from_crs(field.latlong_crs, 'epsg:32612')
     project_to_latlong = Transformer.from_crs( 'epsg:32612', field.latlong_crs)# 'epsg:32612')
     x_int = 0
@@ -54,6 +57,6 @@ if __name__ == '__main__':
     data_to_use = ['x', 'y', 'n_lbs_ac', 'elev_m', 'slope_deg', 'ndvi15', 'ndvi16', 'ndvi17', 'yl16_nn_bu_ac',
      'n16_lbs_ac', 'yl18_bu_ac']
     agg_file = "/home/amy/Documents/Work/OFPE/Data/Henrys/wood_henrys_yl18_aggreg_20181203.csv"
-    field = pickle.load(open('/home/amy/projects/FEA/refactoring/utilities/saved_fields/Henrys.pickle', 'rb'))
+    field = pickle.load(open('/home/amy/projects/FEA/utilities/saved_fields/Henrys.pickle', 'rb'))
     reduced = reduce_dataframe(field, data_to_use, agg_file, transform_to_latlon=True)
     reduced.to_csv("/home/amy/Documents/Work/OFPE/Data/Henrys/reduced_henrys_agg.csv")

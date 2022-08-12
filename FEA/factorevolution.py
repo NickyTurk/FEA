@@ -1,3 +1,7 @@
+"""
+Single objective classic Factor Evolutionary Algorithm
+"""
+
 import numpy as np
 
 

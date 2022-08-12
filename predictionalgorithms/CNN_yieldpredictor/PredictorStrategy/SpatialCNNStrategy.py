@@ -1,13 +1,13 @@
 import os
 import sys
-from ..Predictor import utils
+from predictionalgorithms.CNN_yieldpredictor.Predictor import utils
 import torch
 import pickle
 import random
 from tqdm import trange
-from ..PredictorStrategy.networks import *
-from ..PredictorStrategy.modelObject import *
-from ..PredictorStrategy.PredictorInterface import PredictorInterface
+from predictionalgorithms.CNN_yieldpredictor.PredictorStrategy.networks import *
+from predictionalgorithms.CNN_yieldpredictor.PredictorStrategy.modelObject import *
+from predictionalgorithms.CNN_yieldpredictor.PredictorStrategy.PredictorInterface import PredictorInterface
 
 np.random.seed(seed=7)  # Initialize seed to get reproducible results
 random.seed(7)
@@ -120,7 +120,7 @@ class SpatialCNNStrategy(PredictorInterface):
                 print("Base model training complete!")
             # Copy weights
             print("Copying weights...")
-            self.model[1].network.load_state_dict(torch.load(filepathbase))
+            self.model[1].network.load_state_dict(torch.load(filepathbase, map_location=torch.device('cpu')))
             for target_param, param in zip(self.model[0].network.named_parameters(),
                                            self.model[1].network.named_parameters()):
                 target_param[1].data.copy_(param[1].data)
@@ -387,9 +387,9 @@ class SpatialCNNStrategy(PredictorInterface):
 
     def loadModelStrategy(self, path):
         if self.method == "Hyper3DNetQD":
-            self.model[0].network.load_state_dict(torch.load(path))
+            self.model[0].network.load_state_dict(torch.load(path, map_location=torch.device('cpu')))
             pathbase = path.replace('QD', '')
             if os.path.exists(pathbase):
-                self.model[1].network.load_state_dict(torch.load(pathbase))
+                self.model[1].network.load_state_dict(torch.load(pathbase, map_location=torch.device('cpu')))
         else:
-            self.model.network.load_state_dict(torch.load(path))
+            self.model.network.load_state_dict(torch.load(path, map_location=torch.device('cpu')))

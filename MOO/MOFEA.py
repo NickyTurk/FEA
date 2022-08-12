@@ -1,8 +1,8 @@
 import gc
 from utilities.util import PopulationMember
 
-from ..MOO.paretofrontevaluation import ParetoOptimization
-from ..FEA.factorarchitecture import FactorArchitecture
+from MOO.paretofrontevaluation import ParetoOptimization
+from FEA.factorarchitecture import FactorArchitecture
 from pymoo.util.nds.non_dominated_sorting import find_non_dominated
 
 import numpy as np
