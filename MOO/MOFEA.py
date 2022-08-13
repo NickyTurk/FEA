@@ -41,7 +41,7 @@ class MOFEA:
         if self.combinatorial_options:
             random_global_variables = random.choices(self.combinatorial_options, k=self.dim)
         else:
-            random_global_variables = [random.randrange(0, self.value_range) for x in range(self.dim)]
+            random_global_variables = [random.randrange(self.value_range[0], self.value_range[1]) for x in range(self.dim)]
         print('global vars: ', random_global_variables)
         objs = self.base_algorithm(dimensions=self.dim).calc_fitness(random_global_variables)
         random_global_solution = PopulationMember(random_global_variables, objs)

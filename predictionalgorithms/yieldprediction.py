@@ -6,6 +6,8 @@ import pandas as pd
 import numpy as np
 import pickle, random, copy
 
+from utilities.field.field_creation import GridCell
+
 
 class YieldPredictor:
     def __init__(self, field, agg_data_file, trained_model, data_headers, nitrogen_header='n_lbs_ac', prescription=None, cnn_bool=False):
@@ -34,9 +36,15 @@ class YieldPredictor:
         """
         vars = []
         if isinstance(prescription, Prescription):
-            vars = prescription.variables
+            if isinstance(prescription.variables[0], GridCell):
+                vars = [x.nitrogen for x in prescription.variables]
+            else:
+                vars = prescription.variables
         else:
-            vars = prescription
+            if isinstance(prescription[0], GridCell):
+                vars = [x.nitrogen for x in prescription]
+            else:
+                vars = prescription
         if not cnn:
             for i, cell_N in enumerate(vars):
                 full_dataframe.loc[full_dataframe['cell_index'] == i][self.nitrogen_header] = cell_N
@@ -60,7 +68,6 @@ class YieldPredictor:
         """
         if cnn:
             self.adjust_nitrogen_data(prescription=prescription, cnn=True)
-            print("FINISHED ADJUST NITROGEN")
             #print(self.model.patches)
             stats_path = '/home/amy/projects/OFPETool-master/static/uploads/Model-Hyper3DNet-sec35middle--Objective-yld/' + self.field.field_name + '_statistics.npy'
             [maxs, mins, maxY, minY] = np.load(stats_path, allow_pickle=True)

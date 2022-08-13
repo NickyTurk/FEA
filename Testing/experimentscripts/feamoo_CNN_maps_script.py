@@ -79,6 +79,21 @@ for i, field in enumerate(fields_to_test):
             pres.set_fitness(cont_bool=True)
         return pres.objective_values
     
+    for j in range(5):
+        for population in population_sizes:
+            for ga_run in ga_runs:
+                start = time.time()
+                filename = path_ + '/results/prescriptions/CNN_optimized/FEAMOO_' + field_names[i] + '_strip_trial_3_objectives_ga_runs_' + str(ga_run) + '_population_' + str(population) + time.strftime('_%d%m%H%M%S') + '.pickle'
+                feamoo = MOFEA(fea_runs, ga_run, population, factor_architecture=FA, base_alg=nsga, dimensions=len(field.cell_list),
+                               value_range=[0,upper_bound], ref_point=[1, 1, 1]) #, combinatorial_options=field.nitrogen_list)
+                feamoo.run()
+                # nsga = NSGA2(population_size=population, ea_runs=ga_run, dimensions=len(field.cell_list),
+                #              upper_value_limit=150, ref_point=[1, 1, 1])
+                # nsga.run()
+                end = time.time()
+                pickle.dump(nsga, open(filename, "wb"))
+                elapsed = end-start
+                print("NSGA with ga runs %d and population %d took %s"%(ga_run, population, str(timedelta(seconds=elapsed))))
 
 
 

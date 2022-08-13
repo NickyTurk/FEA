@@ -13,21 +13,20 @@ class Prescription:
         if variables and factor is None and field is None:
             self.variables = variables
         elif variables and factor and field:
-            self.field_cells = [field.cell_list[i] for i in factor]
-            for i, c in enumerate(self.field_cells):
+            field_cells = [field.cell_list[i] for i in factor]
+            for i, c in enumerate(field_cells):
                 c.nitrogen = variables[i]
-            self.variables = [variables[i] for i in factor]
+            self.variables = deepcopy(field_cells)
         elif variables and factor is None and field:
-            self.field_cells = [f for f in field.cell_list]
-            for i, c in enumerate(self.field_cells):
+            field_cells = [f for f in field.cell_list]
+            for i, c in enumerate(field_cells):
                 c.nitrogen = variables[i]
-            self.variables = variables
+            self.variables = deepcopy(field_cells)
         elif field and variables is None and factor is None:
             self.variables = field.assign_nitrogen_distribution()
         elif factor and field and variables is None:
-            self.field_cells = field.assign_nitrogen_distribution()
-            self.variables = [self.field_cells[i].nitrogen for i in factor]
-            self.field_cells = [self.field_cells[i] for i in factor]
+            field_cells = field.assign_nitrogen_distribution()
+            self.variables = [field_cells[i] for i in factor]
         else:
             self.variables = []
         self.index = index
