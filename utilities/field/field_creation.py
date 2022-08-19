@@ -50,14 +50,14 @@ class Field:
             self.pro_file = field_dict["pro_file"]
             self.grid_file = field_dict["grid_file"]
             self.as_applied_file = field_dict["applied_file"]
-            self.buffer_ = -(field_dict["buffer"]/ 364567.2)
+            self.buffer_ = -(field_dict["buffer"]/ self.conversion_measure)
             self.strip_trial = field_dict["strip_bool"]
             self.binning_strategy = field_dict["bin_strategy"]
 
             self.num_yield_bins = field_dict["yld_bins"]
             self.num_pro_bins = field_dict["pro_bins"]
-            self.cell_width = field_dict["cell_width"]/ 364567.2
-            self.cell_height = field_dict["cell_height"]/ 364567.2
+            self.cell_width = field_dict["cell_width"]/ self.conversion_measure
+            self.cell_height = field_dict["cell_height"]/ self.conversion_measure
             self.nitrogen_list = ast.literal_eval(field_dict["nitrogen_values"])
             self.run_ga = field_dict["run_ga"]
             self.base_rate = 120
@@ -75,8 +75,8 @@ class Field:
             self.num_yield_bins = 3
             self.num_pro_bins = 1
             self.cell_width = 120/self.conversion_measure
-            self.cell_height = 240/self.conversion_measure
-            self.nitrogen_list = [40,60,80,100,120,150]
+            self.cell_height = 650/self.conversion_measure
+            self.nitrogen_list = [40, 60, 80, 100, 120, 150]
             self.base_rate = 120
 
         self.total_ylpro_bins = self.num_pro_bins * self.num_yield_bins
@@ -631,11 +631,13 @@ class DataPoint:
     def __init__(self, filename):
         self.filename = filename
         self.datapoints = []
+        self.id = -1
+        self.gridcell = -1
 
     def create_dataframe(self, datatype=''):
         """
         Create a dataframe containing yield or protein values and their coordinates in the form:
-        [ [X1, Y1, value1], [X2, Y2, value2], ..., [Xn, Yn, valuen] ]
+        [ [X1, Y1, idx, value1], [X2, Y2, idx, value2], ..., [Xn, Yn, idx, valuen] ]
         for all n datapoints in the file with numeric values.
         """
 
@@ -647,11 +649,18 @@ class DataPoint:
                 datapoint = []
                 if is_hex(row['geometry']):
                     wkt_point = wkb.loads(row['geometry'], hex=True)  # ogr.CreateGeometryFromWkb(bts)
-                else:
+                elif "," in row['geometry']:
+                    point = ''.join(re.findall("[0-9.,-]", row['geometry']))
+                    wkt_point = "POINT("+re.sub(",", " ", point)+")"
+                elif "point" in row['geometry'].lower:
                     wkt_point = row['geometry']
+                elif row['lon']:
+                    wkt_point = "POINT(" + str(row['lon']) + " " + str(row['lat']) + ")"
                 point = ogr.CreateGeometryFromWkt(str(wkt_point))
                 datapoint.append(point.GetX())
                 datapoint.append(point.GetY())
+                datapoint.append(i)
+
                 if row[datatype] != 'NONE' and not math.isnan(row[datatype]):
                     datapoint.append(row[datatype])
                     datapoints.append(datapoint)
@@ -664,6 +673,8 @@ class DataPoint:
                                          (self.datapoints[:, 0] <= gridcell.upperright_x) &
                                          (self.datapoints[:, 1] <= gridcell.upperright_y) &
                                          (self.datapoints[:, 1] >= gridcell.bottomleft_y)]
+        # for pt in points_in_cell:
+        #     pt.gridcell = gridcell.original_index
         return points_in_cell
         # if not math.isnan(yieldInSquare[:, 2].mean()) and len(yieldInSquare) != 0:
         #     gridcell.yield_ = yieldInSquare[:, 2].mean()

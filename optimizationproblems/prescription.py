@@ -8,7 +8,7 @@ from copy import deepcopy
 
 class Prescription:
 
-    def __init__(self, variables=None, field=None, factor=None, index=-1, optimized=False, yield_predictor=None,
+    def __init__(self, variables=None, field=None, factor=None, index=-1, optimized=False, organic=False, yield_predictor=None,
                  fertilizer_cost=1, yield_price=5.40):
         if variables and factor is None and field is None:
             self.variables = variables
@@ -40,6 +40,7 @@ class Prescription:
         self.size = len(self.variables)
         self.field = field
         self.optimized = optimized
+        self.organic = organic
         self.yield_predictor = yield_predictor
         self.fertilizer_cost = fertilizer_cost  # cost in dollars for fertilizer based on application measure
         self.yield_price = yield_price  # dollars made per unit, e.g. bushels per acre of winter wheat
