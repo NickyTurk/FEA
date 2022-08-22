@@ -163,7 +163,7 @@ class NSGA2(MOEA):
         @param nd_archive: The archive to be updated, if None, this is the algorithm's current generation archive
         @return: updated non-dominated archive as list of PopulationMembers
         """
-        if not nd_archive:
+        if nd_archive is None:
             nd_archive = self.nondom_archive
         nondom_indeces = find_non_dominated(np.array([np.array(x.fitness) for x in nd_archive]))
         old_nondom_archive = [nd_archive[i] for i in nondom_indeces]

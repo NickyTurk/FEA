@@ -18,11 +18,9 @@ def reduce_dataframe(field, data_to_use, agg_file, transform_to_latlon=False, tr
     x_int = 0
     y_int = 1
     dps = df[data_to_use]
-    print(len(dps))
-    dps.dropna(axis=0, inplace=True)
-    print(len(dps))
+    dps = dps.dropna(axis=0)
     new_df = pd.DataFrame()
-
+    print(dps)
     if transform_to_latlon:
         xy = np.array(
             [np.array(project_to_latlong.transform(x, y)) for x, y in zip(np.array(dps['x']), np.array(dps['y']))])
@@ -81,9 +79,9 @@ if __name__ == '__main__':
     path = re.search(r'^(.*?\\FEA)', current_working_dir)
     path = path.group()
 
-    data_to_use = ['lon', 'lat', 'yld', 'prev_yld', 'aa_sr', 'prev_aa_sr', 'elev', 'slope', 'ndvi_py_s', 'ndvi_2py_s', 'ndvi_cy_s', 'ndwi_py_s', 'bm_wd', 'carboncontent10cm', 'phw10cm', 'watercontent10cm', 'sandcontent10cm', 'claycontent10cm']
+    data_to_use = ['x', 'y', 'yld', 'prev_yld', 'aa_sr', 'prev_aa_sr', 'elev', 'slope', 'ndvi_py_s', 'ndvi_2py_s', 'ndvi_cy_s', 'ndwi_py_s', 'bm_wd', 'carboncontent10cm', 'phw10cm', 'watercontent10cm', 'sandcontent10cm', 'claycontent10cm']
 
-    agg_file = "C:/Users/f24n127/OneDrive - Montana State University/Documents/raw-farm-data/millview/mv20.5.csv"
+    agg_file = "C:/Users/amypeerlinck/Documents/work/OFPE/Data/millview/mv20.7.csv"
     field = pickle.load(open(path+'/utilities/saved_fields/millview.pickle', 'rb'))
-    reduced = reduce_dataframe(field, data_to_use, agg_file, transform_to_latlon=False, spatial_sampling=True)
-    reduced.to_csv("C:/Users/f24n127/OneDrive - Montana State University/Documents/raw-farm-data/millview/reduced_millview20_spatial.csv")
+    reduced = reduce_dataframe(field, data_to_use, agg_file, transform_to_latlon=True, spatial_sampling=True)
+    reduced.to_csv("C:/Users/amypeerlinck/Documents/work/OFPE/Data/millview/reduced_millview20_spatial.csv")
