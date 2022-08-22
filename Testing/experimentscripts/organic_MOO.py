@@ -46,7 +46,7 @@ population_sizes = [25]
 upper_bound = 225
 
 current_working_dir = os.getcwd()
-path = re.search(r'^(.*?[\\/]FEA)',current_working_dir)
+path = re.search(r'^(.*?[\\/]FEA)', current_working_dir)
 path = path.group()
 
 field = pickle.load(open(path + '/utilities/saved_fields/millview.pickle', 'rb'))
