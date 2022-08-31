@@ -8,7 +8,7 @@ from copy import deepcopy
 
 class Prescription:
 
-    def __init__(self, variables=None, field=None, factor=None, index=-1, optimized=False, yield_predictor=None,
+    def __init__(self, variables=None, field=None, factor=None, index=-1, normalize_objectives=False, optimized=False, organic=False, yield_predictor=None,
                  fertilizer_cost=1, yield_price=5.40):
         if variables and factor is None and field is None:
             self.variables = variables
@@ -36,10 +36,13 @@ class Prescription:
         self.fertilizer_rate = -1
         self.net_return = -1
         self.yld = -1
+        self.weeds_rate = -1
         self.standard_nitrogen = 0
         self.size = len(self.variables)
         self.field = field
         self.optimized = optimized
+        self.organic = organic
+        self.normalize = normalize_objectives
         self.yield_predictor = yield_predictor
         self.fertilizer_cost = fertilizer_cost  # cost in dollars for fertilizer based on application measure
         self.yield_price = yield_price  # dollars made per unit, e.g. bushels per acre of winter wheat
@@ -109,21 +112,31 @@ class Prescription:
                 complete_solution[i].nitrogen = x.nitrogen
         else:
             complete_solution = self.variables
-        if not self.optimized:
+        if self.optimized:
+            self.overall_fitness, self.jumps, self.fertilizer_rate, self.net_return = self.calculate_optimal_fitness(complete_solution, cont_bool)
+            self.objective_values = (self.jumps, self.fertilizer_rate, self.net_return)
+        if self.organic:
+            self.overall_fitness, self.weeds_rate, self.net_return = self.calculate_organic_fitness(complete_solution)
+            self.objective_values = (self.weeds_rate, self.net_return)
+        else:
             self.overall_fitness, self.jumps, self.strat, self.fertilizer_rate \
                 = self.calculate_experimental_fitness(complete_solution)
             self.objective_values = (self.jumps, self.fertilizer_rate, self.strat)
-        else:
-            self.overall_fitness, self.jumps, self.fertilizer_rate, self.net_return = self.calculate_optimal_fitness(complete_solution, cont_bool)
-            self.objective_values = (self.jumps, self.fertilizer_rate, self.net_return)
 
     def set_field(self, field):
         self.field = field
         self.field.nitrogen_list.sort()
 
+    def calculate_organic_fitness(self, solution):
+        self.yield_predictor.adjust_nitrogen_data(solution, cnn=self.yield_predictor.cnn_bool)
+        net_return = self.optimize_yld(solution)
+        weeds = self.minimize_weeds()
+        return (weeds + net_return) / 2, weeds, net_return
+
     def calculate_optimal_fitness(self, solution, cont_bool):
         jumps = self.minimize_jumps(solution, continuous=cont_bool)
         rate = self.minimize_overall_fertilizer_rate(solution)
+        self.yield_predictor.adjust_nitrogen_data(solution, cnn=self.yield_predictor.cnn_bool)
         net_return = self.optimize_yld(solution)
         return (jumps + rate + net_return) / 3, jumps, rate, net_return
 
@@ -179,8 +192,18 @@ class Prescription:
         return total_fertilizer / self.field.max_fertilizer_rate
 
     def optimize_yld(self, solution):
-        predicted_yield = self.yield_predictor.calculate_yield(solution, cnn=self.yield_predictor.cnn_bool)
+        predicted_yield = self.yield_predictor.calculate_yield(cnn=self.yield_predictor.cnn_bool)
         # P = base_price + ()
         fertilizer_applied = sum([c.nitrogen*self.gridcell_size for c in solution])
         net_return = predicted_yield * self.yield_price - fertilizer_applied * self.fertilizer_cost - self.field.fixed_costs
         return -net_return
+
+    def minimize_weeds(self):
+        from sklearn.preprocessing import MinMaxScaler
+
+        weeds_predictions = self.yield_predictor.calculate_weeds(cnn=self.yield_predictor.cnn_bool)
+        scaler = MinMaxScaler()
+        scaler.fit(weeds_predictions.reshape(-1, 1))
+        avg_weeds = np.mean(scaler.transform(weeds_predictions.reshape(-1, 1)))
+        return avg_weeds
+

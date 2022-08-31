@@ -84,6 +84,7 @@ class MOFEA:
             eval_dict['FEA_run'] = fea_run
             eval_dict['ND_size'] = len(self.nondom_archive)
             self.iteration_stats.append(eval_dict)
+            print('fitnesses: ', [x.fitness for x in self.nondom_archive])
             print("eval dict", eval_dict)
             # [print(s.objective_values) for s in self.nondom_archive]
             # [print(i, ': ', s.objective_values) for i,s in enumerate(self.iteration_stats[fea_run+1]['global solutions'])]
