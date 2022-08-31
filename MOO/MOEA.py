@@ -503,24 +503,61 @@ class SPEA2(MOEA):
 
 
 class MOEAD(MOEA):
-    """
+    from pymoo.decomposition.tchebicheff import Tchebicheff
+    from pymoo.decomposition.pbi import PBI
 
     """
+    Qingfu Zhang and Hui Li. 
+    A multi-objective evolutionary algorithm based on decomposition. 
+    IEEE Transactions on Evolutionary Computation, 2007.
 
-    def __init__(self, evolutionary_algorithm, dimensions=100, population_size=200, ea_runs=100,
-                 # data_distribution=False,
+    
+    """
+
+    def __init__(self, evolutionary_algorithm, dimensions=100, population_size=200, ea_runs=100, problem_decomposition=None,
                  combinatorial_values=[], factor=None, global_solution=None):
         super().__init__( population_size, dimensions, combinatorial_values)
         self.dimensions = dimensions
         self.population_size = population_size
         self.ea = evolutionary_algorithm(dimensions, population_size)
         self.curr_population, self.initial_solution = self.initialize_population(gs=global_solution, factor=factor)
+        self.problem_decomposition = problem_decomposition
         self.factor = factor
         self.global_solution = global_solution
         self.ea_runs = ea_runs
         self.nondom_pop = []
         self.nondom_archive = []
         self.iteration_stats = []
+
+    def run(self, fea_run=0):
+        """
+        for each population member:
+            Get parents from neighborhood selection
+            Perform offspring generation
+            Recalculate fitness and set temp "ideal point"
+            Perform replacement of neighboring solutions if decomposed fitness is better
+            Decomposition here is using scalar weights, the weights are used to calculate the decomposed fitness;
+            the weights are selected based on the chosen neighbors
+            (neighborhood includes itself so this replacement will also replace the "self" if its better)
+        """
+        parents = self.neighborhood_selection()
+        decomposed_fitness = self.problem_decomposition.do()
+
+        pass
+
+    def replace_worst_solution(self, gs):
+        pass
+
+    def update_archive(self):
+        pass
+
+    def sorting_mechanism(self, population):
+        pass
+
+    def neighborhood_selection(self):
+        pass
+
+    
 
 
 class HYPE(MOEA):
