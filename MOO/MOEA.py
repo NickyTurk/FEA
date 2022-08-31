@@ -511,23 +511,26 @@ class MOEAD(MOEA):
     A multi-objective evolutionary algorithm based on decomposition. 
     IEEE Transactions on Evolutionary Computation, 2007.
 
-    
+    Based on PYMOO implementation, and uses their decomposition methods: PBI, Tchebicheff, weighted_sum
+    https://github.com/anyoptimization/pymoo/blob/db63995689e446c343ca0ccb05cac8c682fcb98d/pymoo/algorithms/moo/moead.py#L174
     """
 
     def __init__(self, evolutionary_algorithm, dimensions=100, population_size=200, ea_runs=100, problem_decomposition=None,
-                 combinatorial_values=[], factor=None, global_solution=None):
+                 combinatorial_values=[], value_range=[0, 1], factor=None, global_solution=None):
         super().__init__( population_size, dimensions, combinatorial_values)
         self.dimensions = dimensions
         self.population_size = population_size
         self.ea = evolutionary_algorithm(dimensions, population_size)
         self.curr_population, self.initial_solution = self.initialize_population(gs=global_solution, factor=factor)
         self.problem_decomposition = problem_decomposition
+        self.neighbors = []
         self.factor = factor
         self.global_solution = global_solution
         self.ea_runs = ea_runs
         self.nondom_pop = []
         self.nondom_archive = []
         self.iteration_stats = []
+        self.weight_vector = []
 
     def run(self, fea_run=0):
         """
@@ -540,10 +543,12 @@ class MOEAD(MOEA):
             the weights are selected based on the chosen neighbors
             (neighborhood includes itself so this replacement will also replace the "self" if its better)
         """
-        parents = self.neighborhood_selection()
-        decomposed_fitness = self.problem_decomposition.do()
+        self.neighbors = [] # INITIALIZE
+        self.weight_vector = [] # INITIALIZE
+        for N in self.curr_population:
+            parents = self.neighborhood_selection()
+            decomposed_fitness = self.problem_decomposition.do(self.curr_population[N].fitness, weights=self.weight_vector[N, :], ideal_point=self.ideal)
 
-        pass
 
     def replace_worst_solution(self, gs):
         pass
@@ -554,8 +559,18 @@ class MOEAD(MOEA):
     def sorting_mechanism(self, population):
         pass
 
-    def neighborhood_selection(self):
-        pass
+    def neighborhood_selection(self, n_select, n_parents):
+        P = np.full((n_select, n_parents), -1)
+
+        prob = np.random.uniform(low=0, high=1, size=n_select)
+
+        for k in range(n_select):
+            if np.random.random() < prob[k]:
+                P[k] = np.random.choice(self.neighbors[k], n_parents, replace=False)
+            else:
+                P[k] = np.random.permutation(len(self.curr_population))[:n_parents]
+
+        return P
 
     
 
