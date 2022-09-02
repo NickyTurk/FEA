@@ -15,6 +15,10 @@ from pymoo.algorithms.nsga2 import calc_crowding_distance
 from pymoo.util.nds.non_dominated_sorting import find_non_dominated
 from pymoo.util.nds.fast_non_dominated_sort import fast_non_dominated_sort
 
+from platypus.tools import DistanceMatrix
+from platypus.indicators import Hypervolume
+
+from datetime import timedelta
 import numpy as np
 import random
 
@@ -504,25 +508,101 @@ class SPEA2(MOEA):
 
 
 class MOEAD(MOEA):
+    from pymoo.decomposition.tchebicheff import Tchebicheff
+    from pymoo.decomposition.pbi import PBI
+
     """
-    Scalar decomposition of the objectives into single objective problems which are solved separately by subpopulations and recombined
-    (Zhang and Li, 2007)
+    Qingfu Zhang and Hui Li. 
+    A multi-objective evolutionary algorithm based on decomposition. 
+    IEEE Transactions on Evolutionary Computation, 2007.
+
+    Based on PYMOO implementation, and uses their decomposition methods: PBI, Tchebicheff, weighted_sum
+    https://github.com/anyoptimization/pymoo/blob/db63995689e446c343ca0ccb05cac8c682fcb98d/pymoo/algorithms/moo/moead.py#L174
     """
 
-    def __init__(self, evolutionary_algorithm, dimensions=100, n_obj=3, population_size=200, ea_runs=100,
-                 combinatorial_values=[], factor=None, global_solution=None):
-        super().__init__(population_size, dimensions, combinatorial_values)
+    def __init__(self, evolutionary_algorithm, prob_neighbor_mating=0.9, dimensions=100, population_size=200, ea_runs=100, problem_decomposition=None,
+                 combinatorial_values=[], value_range=[0, 1], factor=None, global_solution=None):
+        super().__init__( population_size, dimensions, combinatorial_values)
         self.dimensions = dimensions
         self.population_size = population_size
         self.ea = evolutionary_algorithm(dimensions, population_size)
         self.curr_population, self.initial_solution = self.initialize_population(gs=global_solution, factor=factor)
+        self.problem_decomposition = problem_decomposition
+        self.prob_neighbor_mating = prob_neighbor_mating
+        self.neighbors = np.argsort(cdist(self.ref_dirs, self.ref_dirs), axis=1, kind='quicksort')[:, :self.n_neighbors]
         self.factor = factor
         self.global_solution = global_solution
         self.ea_runs = ea_runs
-        self.n_obj = n_obj
+        self.n_obj = 3
         self.nondom_pop = []
         self.nondom_archive = []
         self.iteration_stats = []
+        self.weight_vector = []
+        self.ideal_point_fitness = np.min(np.array([np.array(x.fitness) for x in self.curr_population]), axis=0)
+
+    def run(self, fea_run=0):
+        """
+        for each population member:
+            Get parents from neighborhood selection
+            Perform offspring generation
+            Recalculate fitness and set temp "ideal point"
+            Perform replacement of neighboring solutions if decomposed fitness is better
+            Decomposition here is using scalar weights, the weights are used to calculate the decomposed fitness;
+            the weights are selected based on the chosen neighbors
+            (neighborhood includes itself so this replacement will also replace the "self" if its better)
+        """
+
+        #initialize algorithm
+        self.weight_vector = [] # INITIALIZE
+        self.ideal_point = []
+        for N in np.random.permutation(len(self.curr_population)):
+            # select parenst according to algorithm method
+            parents = self.neighborhood_selection(n_select=1, n_parents=2, neighbors=self.neighbors[N])
+
+            # create offspring using regular EA methods
+            child = self.ea.mutate(self.ea.crossover(parents[0], parents[1])[0], lbound=self.value_range[0], ubound=self.value_range[1])
+            offspring = PopulationMember(child, self.calc_fitness(child))
+
+            # update ideal point
+            self.ideal_point_fitness = np.min(np.vstack([self.ideal_point_fitness, offspring.fitness]), axis=0)
+
+            # update neighborhood
+            neighborhood_to_check = self.neighbors[N]
+            decomposed_og_fitness = self.problem_decomposition.do(self.curr_population[N].fitness, weights=self.weight_vector[N, :], ideal_point=self.ideal)
+            decomposed_offspring_fitness = self.problem_decomposition.do(offspring.fitness, weights=self.weight_vector[N, :], ideal_point=self.ideal)
+            I = np.where(decomposed_offspring_fitness < decomposed_og_fitness)[0]
+            self.curr_population[neighborhood_to_check[I]] = offspring
+            self.update_archive()
+
+    def replace_worst_solution(self, gs):
+        pass
+
+    def update_archive(self):
+        pass
+
+    def sorting_mechanism(self, population):
+        """
+        Sorts solutions based on fitness.
+        @param population: List of individuals to be sorted.
+        @return: List of sorted individuals.
+        """
+        fitnesses = np.array([np.array(x.fitness) for x in population])
+        return [x for y, x in sorted(zip(fitnesses, population))]
+
+    def neighborhood_selection(self, n_select, n_parents, neighbors):
+        P = np.full((n_select, n_parents), -1)
+
+        prob = np.random.uniform(low=0.0, high=1.0, size=n_select)
+
+        for k in range(n_select):
+            if np.random.random() < prob[k]:
+                P[k] = np.random.choice(neighbors[k], n_parents, replace=False)
+            else:
+                P[k] = np.random.permutation(len(self.curr_population))[:n_parents]
+
+        return P
+
+
 
 
 class HYPE(MOEA):
