@@ -6,6 +6,7 @@ SPEA2 class -- Strength Pareto Evolutionary Algorithm 2
 HypE class --
 MOEAD class --
 """
+from scipy.spatial.distance import cdist
 
 from MOO.paretofrontevaluation import *
 from basealgorithms.ga import GA
@@ -15,10 +16,6 @@ from pymoo.algorithms.nsga2 import calc_crowding_distance
 from pymoo.util.nds.non_dominated_sorting import find_non_dominated
 from pymoo.util.nds.fast_non_dominated_sort import fast_non_dominated_sort
 
-from platypus.tools import DistanceMatrix
-from platypus.indicators import Hypervolume
-
-from datetime import timedelta
 import numpy as np
 import random
 
