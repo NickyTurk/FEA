@@ -16,16 +16,8 @@
 
 import pymoo
 from pymoo.factory import get_problem, get_reference_directions, get_visualization
-from pymoo.util.plotting import plot
-from topology import *
+from FEA.factorarchitecture import *
 from benchmarks import *
-    
-
-def test_moo(problem):
-    for i in range(0, problem.n_obj):
-        print('objective index: ', i)
-        #generate_diff_grouping(eggholder, 50, 0.00000000001)
-        generate_diff_grouping(problem, problem.n_var, 0.0000000001, MOO=True, moo_idx=i)
 
 
 class TestProblem(pymoo.model.problem.Problem):
@@ -51,13 +43,12 @@ class TestProblem(pymoo.model.problem.Problem):
 if __name__ == "__main__":
     dtlz = get_problem("dtlz1", n_var=20, n_obj=6)
     objs = [
-    lambda x: eggholder(x),
-    lambda x: rosenbrock(x)
+    lambda x: elliptic__(x),
+    lambda x: rosenbrock__(x)
     ]
     functional_problem = pymoo.model.problem.FunctionalProblem(50,
                                        objs,
                                        xl=np.array([-100,-100]),
                                        xu=np.array([100,100]))
-    test_moo(dtlz)
     
     

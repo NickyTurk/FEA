@@ -3,8 +3,6 @@ import numpy as np
 import autograd.numpy as anp
 import math
 
-from optimizationproblems.prescription import Prescription
-
 
 class MOOFunctions:
     def __init__(self, n_dimensions, n_objectives, h, lbound=-100, ubound=100, name='dtlz1'):
@@ -34,7 +32,6 @@ class MOOFunctions:
         return anp.sum(anp.square(X_M - 0.5), axis=1)
 
     def dtlz1(self):
-        print('entered')
         self.problem = get_problem('dtlz1', n_var=self.dim, n_obj=self.n_obj)
         self.reference_directions = get_reference_directions("das-dennis", self.n_obj, n_partitions=12)
         self.pareto_front = self.problem._calc_pareto_front(self.reference_directions)

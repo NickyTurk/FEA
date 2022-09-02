@@ -93,6 +93,10 @@ class FactorArchitecture(object):
         if offset == width:
             print("WARNING - offset and width are equal; the factors will not overlap.")
         self.factors = list(zip(*[range(i, self.dim, offset) for i in range(0, width)]))
+        if self.factors[-1][-1] != self.dim-1:
+            step_back = width - offset
+            new_group = tuple(range(self.factors[-1][-step_back], self.dim, 1))
+            self.factors.append(new_group)
 
     def ring_grouping(self, width=2):
         self.method = "ring"

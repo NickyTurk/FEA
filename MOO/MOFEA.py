@@ -25,7 +25,7 @@ class MOFEA:
         self.current_iteration = 0
         self.global_solutions = []
         self.worst_fitness_ref = ref_point
-        self.po = ParetoOptimization()
+        self.po = ParetoOptimization(obj_size=len(ref_point))
         # keep track to have a reference point for the HV indicator
         self.subpopulations = None
         self.iteration_stats = []
@@ -42,7 +42,6 @@ class MOFEA:
             random_global_variables = random.choices(self.combinatorial_options, k=self.dim)
         else:
             random_global_variables = [random.randrange(self.value_range[0], self.value_range[1]) for x in range(self.dim)]
-        print('global vars: ', random_global_variables)
         objs = self.base_algorithm(dimensions=self.dim).calc_fitness(random_global_variables)
         random_global_solution = PopulationMember(random_global_variables, objs)
         self.global_solutions.append(random_global_solution)
@@ -67,18 +66,16 @@ class MOFEA:
         old_archive_length = 0
         fea_run = 0
         while fea_run != self.fea_runs:  # len(change_in_nondom_size) < 4 and
-            for alg in self.subpopulations:
+            for s, alg in enumerate(self.subpopulations):
+                print('Subpopulation: ', s)
                 alg.run(fea_run=fea_run)
-                print('subpopulation done')
             self.compete()
-            self.nondom_archive = self.base_algorithm.update_archive(self.nondom_archive)
             self.share_solution()
             if len(self.nondom_archive) == old_archive_length:
                 change_in_nondom_size.append(True)
             else:
                 change_in_nondom_size = []
-            # [print(x.fitness) for x in self.nondom_archive]
-            print("last nondom solution: ", self.nondom_archive[-1].fitness)
+            # print("last nondom solution: ", self.nondom_archive[-1].fitness)
             old_archive_length = len(self.nondom_archive)
             eval_dict = self.po.evaluate_solution(self.nondom_archive, self.worst_fitness_ref)
             eval_dict['FEA_run'] = fea_run
@@ -105,7 +102,6 @@ class MOFEA:
             # randomly pick one of the global solutions to perform competition for this variable
             chosen_global_solution = random.choice(self.global_solutions)
             vars = [x for x in chosen_global_solution.variables]
-            #sol = PopulationMember(vars, self.base_algorithm().calc_fitness(vars))
             if not new_solutions:
                 new_solutions.append(vars)
             # for each population with said variable perform competition on this single randomly chosen global solution
@@ -136,14 +132,15 @@ class MOFEA:
                         vars[var_idx] = var_candidate_value
                         if vars not in new_solutions:
                             new_solutions.append(vars)
-                # if sol < chosen_global_solution:
-                #     best_value_for_var = var_candidate_value
-            # sol.variables[var_idx] = best_value_for_var
-            # new_solutions.append(sol)
+        # Recalculate fitnesses for new solutions
         new_solutions = [PopulationMember(vars, self.base_algorithm(dimensions=self.dim).calc_fitness(vars)) for vars in new_solutions]
+        # Reassert non-dominance
         nondom_indeces = find_non_dominated(np.array([np.array(x.fitness) for x in new_solutions]))
+        # Assign current iteration of global solutions based on non-dominance
         self.global_solutions = [new_solutions[i] for i in nondom_indeces]
+        # Extend non-dom archive with found non-dom solutions
         self.nondom_archive.extend(self.global_solutions)
+        self.nondom_archive = self.update_archive()
 
     def share_solution(self):
         """
@@ -173,3 +170,21 @@ class MOFEA:
             alg.curr_population = [PopulationMember(p.variables, self.base_algorithm().calc_fitness(p.variables, alg.global_solution, alg.factor)) for p in alg.curr_population]
             # set best solution and replace worst solution with global solution across FEA
             alg.replace_worst_solution(self.global_solutions)
+
+    def update_archive(self, nd_archive=None):
+        """
+        Function to update the existing archive object, or a chosen archive
+        @param nd_archive: The archive to be updated, if None, this is the algorithm's current generation archive
+        @return: updated non-dominated archive as list of PopulationMembers
+        """
+        if nd_archive is None:
+            nd_archive = self.nondom_archive
+        nondom_indeces = find_non_dominated(np.array([np.array(x.fitness) for x in nd_archive]))
+        old_nondom_archive = [nd_archive[i] for i in nondom_indeces]
+        seen = set()
+        nondom_archive = []
+        for s in old_nondom_archive:
+            if s.fitness not in seen:
+                seen.add(s.fitness)
+                nondom_archive.append(s)
+        return nondom_archive

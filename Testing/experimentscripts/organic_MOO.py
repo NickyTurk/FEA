@@ -40,8 +40,8 @@ import pickle, random, re, os, time
 # suppressing chain warnings, should fix this
 pd.options.mode.chained_assignment = None
 
-fea_runs = 5
-ga_runs = [5]
+fea_runs = 10
+ga_runs = [20]
 population_sizes = [25]
 upper_bound = 225
 

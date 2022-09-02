@@ -41,3 +41,7 @@ class TestMOFEA(unittest.TestCase):
     #         self.assertIsInstance(pop, NSGA2)
     #         self.assertEqual(len(pop.curr_population), len(self.factors[i]))
     #     self.assertEqual(len(subpopulations), len(self.factors))
+
+
+if __name__ == '__main__':
+    unittest.main()

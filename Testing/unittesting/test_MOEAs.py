@@ -1,5 +1,8 @@
 import unittest
 
+from pymoo.decomposition.tchebicheff import Tchebicheff
+from pymoo.factory import get_reference_directions
+from scipy.spatial.distance import cdist
 from MOO.MOEA import *
 from utilities.util import add_method
 
@@ -86,6 +89,24 @@ class TestSPEA2(unittest.TestCase):
     def setUp(self) -> None:
         dim = 10
         n_obj = 3
+
+
+class TestMOEAD(unittest.TestCase):
+    def setUp(self) -> None:
+        self.dim = 10
+        self.n_obj = 3
+        self.decomposition = Tchebicheff()
+        self.n_neighbors = 15
+
+    def test_reference_weights(self):
+        ideal = np.array([0.1, 0.1, 0.1])
+        ref_dirs = get_reference_directions("das-dennis", self.n_obj, n_partitions=12)
+        print(ref_dirs)
+        neighbors = np.argsort(cdist(ref_dirs, ref_dirs), axis=1, kind='quicksort')[:, :self.n_neighbors]
+        print(neighbors)
+        p = self.decomposition.do(np.array([0.2, 0.4, 0.6]), weights=ref_dirs[2, :], ideal_point=ideal)
+        print(p)
+        self.assertEqual(ref_dirs.shape[1], self.n_obj)
 
 
 if __name__ == '__main__':

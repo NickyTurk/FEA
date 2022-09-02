@@ -15,16 +15,12 @@ from pymoo.algorithms.nsga2 import calc_crowding_distance
 from pymoo.util.nds.non_dominated_sorting import find_non_dominated
 from pymoo.util.nds.fast_non_dominated_sort import fast_non_dominated_sort
 
-from platypus.tools import DistanceMatrix
-from platypus.indicators import Hypervolume
-
-from datetime import timedelta
 import numpy as np
-import random, time
+import random
 
 
 class MOEA:
-    def __init__(self, population_size, dimensions, combinatorial_options=[], value_range=[0, 1]):
+    def __init__(self, population_size=100, dimensions=10, combinatorial_options=[], value_range=[0, 1]):
         """
         Superclass for all MOO EAs.
         @param combinatorial_options: List of values, E.g. [0,1]. Set of values to create solutions from when dealing
@@ -122,16 +118,46 @@ class NSGA2(MOEA):
         self.worst_index = None
         self.random_nondom_solutions = []
 
-    def sorting_mechanism(self, population):
+    def run(self, fea_run=0):
         """
-        NSGA2 specific operation.
-        Sorts solutions based on the crowding distance to maximize diversity.
-        @param population: List of individuals to be sorted.
-        @return: List of sorted individuals.
+        Run the full algorithm for the set number of 'ea_runs' or until a convergence criterion is met.
+        @param fea_run: Which generation the FEA is on, if NSGA2 is being used as the base-algorithm.
         """
-        fitnesses = np.array([np.array(x.fitness) for x in population])
-        distances = calc_crowding_distance(fitnesses)
-        return [x for y, x in sorted(zip(distances, population))]
+        if fea_run == 0:
+            self.curr_population, self.initial_solution = self.initialize_population(gs=self.global_solution,
+                                                                                     factor=self.factor)
+        i = 1
+        change_in_nondom_size = []
+        old_archive_length = 0
+        '''
+        Convergence criterion based on change in non-dominated solution set size
+        '''
+        while i != self.ea_runs:  # and len(change_in_nondom_size) < 10:
+            children = self.ea.create_offspring(self.curr_population)
+            self.curr_population.extend(
+                [PopulationMember(c, self.calc_fitness(c, self.global_solution, self.factor)) for c in children])
+            self.select_new_generation(i)
+            '''
+            Only run this part of the algorithm in the single-population case.
+            I.e. when NSGA2 is NOT used as the base-algorithm for FEA.
+            '''
+            if self.factor is None and i != 1:
+                self.nondom_archive = self.update_archive()
+                if len(self.nondom_archive) == old_archive_length and len(self.nondom_archive) >= 10:
+                    change_in_nondom_size.append(True)
+                else:
+                    change_in_nondom_size = []
+                old_archive_length = len(self.nondom_archive)
+
+                '''
+                Calculate generation statistics.
+                '''
+                po = ParetoOptimization()
+                eval_dict = po.evaluate_solution(self.nondom_archive, self.worst_fitness_ref)
+                eval_dict['GA_run'] = i
+                eval_dict['ND_size'] = len(self.nondom_archive)
+                self.iteration_stats.append(eval_dict)
+            i += 1
 
     def replace_worst_solution(self, gs):
         """
@@ -174,6 +200,17 @@ class NSGA2(MOEA):
                 seen.add(s.fitness)
                 nondom_archive.append(s)
         return nondom_archive
+
+    def sorting_mechanism(self, population):
+        """
+        NSGA2 specific operation.
+        Sorts solutions based on the crowding distance to maximize diversity.
+        @param population: List of individuals to be sorted.
+        @return: List of sorted individuals.
+        """
+        fitnesses = np.array([np.array(x.fitness) for x in population])
+        distances = calc_crowding_distance(fitnesses)
+        return [x for y, x in sorted(zip(distances, population))]
 
     def select_new_generation(self, generation_idx=0):
         """
@@ -236,47 +273,6 @@ class NSGA2(MOEA):
             self.worst_index = [i for i, x in enumerate(self.curr_population) if
                                 x.fitness == worst_fitness]  # np.where(np.array(self.curr_population, dtype=object) == worst)
 
-    def run(self, fea_run=0):
-        """
-        Run the full algorithm for the set number of 'ea_runs' or until a convergence criterion is met.
-        @param fea_run: Which generation the FEA is on, if NSGA2 is being used as the base-algorithm.
-        """
-        if fea_run == 0:
-            self.curr_population, self.initial_solution = self.initialize_population(gs=self.global_solution,
-                                                                                     factor=self.factor)
-        i = 1
-        change_in_nondom_size = []
-        old_archive_length = 0
-        '''
-        Convergence criterion based on change in non-dominated solution set size
-        '''
-        while i != self.ea_runs:  # and len(change_in_nondom_size) < 10:
-            children = self.ea.create_offspring(self.curr_population)
-            self.curr_population.extend(
-                [PopulationMember(c, self.calc_fitness(c, self.global_solution, self.factor)) for c in children])
-            self.select_new_generation(i)
-            '''
-            Only run this part of the algorithm in the single-population case.
-            I.e. when NSGA2 is NOT used as the base-algorithm for FEA.
-            '''
-            if self.factor is None and i != 1:
-                self.nondom_archive = self.update_archive()
-                if len(self.nondom_archive) == old_archive_length and len(self.nondom_archive) >= 10:
-                    change_in_nondom_size.append(True)
-                else:
-                    change_in_nondom_size = []
-                old_archive_length = len(self.nondom_archive)
-
-                '''
-                Calculate generation statistics.
-                '''
-                po = ParetoOptimization()
-                eval_dict = po.evaluate_solution(self.nondom_archive, self.worst_fitness_ref)
-                eval_dict['GA_run'] = i
-                eval_dict['ND_size'] = len(self.nondom_archive)
-                self.iteration_stats.append(eval_dict)
-            i += 1
-
 
 class SPEA2(MOEA):
     def __init__(self, evolutionary_algorithm=GA, dimensions=100, population_size=200, ea_runs=100,
@@ -286,10 +282,12 @@ class SPEA2(MOEA):
         self.dimensions = dimensions
         self.population_size = population_size
         if self.combinatorial_values:
-            self.ea = evolutionary_algorithm(dimensions, population_size, tournament_size=2, offspring_size=population_size)
+            self.ea = evolutionary_algorithm(dimensions, population_size, tournament_size=2, offspring_size=population_size,
+                                             mutation_type='multi bitflip', crossover_type='uniform')
         else:
             self.ea = evolutionary_algorithm(dimensions, population_size, tournament_size=2,
                                              offspring_size=population_size, continuous_var_space=True,
+                                             mutation_type='scramble', crossover_type='multi',
                                              value_range=self.value_range)
         self.curr_population = []
         self.initial_solution = []
@@ -300,6 +298,7 @@ class SPEA2(MOEA):
         self.nondom_pop = []
         self.archive_size = archive_size
         self.nondom_archive = []
+        self.strength_pop = []
         self.iteration_stats = []
         self.distance_matrix = []
         self.final_strengths = []
@@ -313,7 +312,6 @@ class SPEA2(MOEA):
         """
         # initialize population
         if fea_run == 0:
-            print('INITIALIZE SUBPOP')
             self.curr_population, self.initial_solution = self.initialize_population(gs=self.global_solution,
                                                                                      factor=self.factor)
         i = 1
@@ -322,15 +320,15 @@ class SPEA2(MOEA):
         '''
         Convergence criterion based on change in non-dominated solution set size
         '''
-        while i != self.ea_runs:  # and len(change_in_nondom_size) < 10:
+        while i <= self.ea_runs:  # and len(change_in_nondom_size) < 10:
             # calculate strength value fitness for entire population
-            strength_pop = self.sorting_mechanism(self.curr_population)
-            # find non-dominated population
-            self.nondom_pop = [y for x, y in zip(strength_pop, self.curr_population) if x.fitness < 1.0]
-            # set non-dominated archive
-            self.nondom_archive = [x for x in strength_pop if x.fitness < 1.0]
+            self.strength_pop = self.sorting_mechanism(self.curr_population)
+            # set non-dominated population keeping the original FITNESS score
+            self.nondom_pop = [y for x, y in zip(self.strength_pop, self.curr_population) if x.fitness < 1.0]
+            # set non-dominated archive with STRENGTH values for offspring generation
+            self.nondom_archive = [x for x in self.strength_pop if x.fitness < 1.0]
             # update archive to have exact length set by algorithm parameter
-            self.update_archive(strength_pop)
+            self.nondom_archive = self.update_archive()
 
             # find worst index
             if self.factor is not None:
@@ -343,8 +341,8 @@ class SPEA2(MOEA):
             if i == self.ea_runs - 1 and self.factor is not None:
                 choice = random.choice(self.nondom_archive)
                 full_solution = [x for x in self.global_solution.variables]
-                for i, x in zip(self.factor, choice.variables):
-                    full_solution[i] = x
+                for j, x in zip(self.factor, choice.variables):
+                    full_solution[j] = x
                 self.random_nondom_solutions.append(full_solution)
 
             i += 1
@@ -364,22 +362,28 @@ class SPEA2(MOEA):
             self.curr_population[self.worst_index] = PopulationMember(
                     variables=[sol.variables[j] for j in self.factor], fitness=sol.fitness)
 
-    def update_archive(self, population):
+    def update_archive(self, nd_archive=None, strength_pop=None):
         '''
         Archive update function
         If length is shorter, archive is filled.
         If it is longer, archive is truncated.
         '''
-        if len(self.nondom_pop) < self.archive_size:
-            remaining = [x for x in population if x.fitness >= 1.0]
+        if nd_archive is None:
+            # No archive being sent though, so update own archive
+            nd_archive = self.nondom_archive
+        if strength_pop is None:
+            strength_pop = self.strength_pop
+        if len(nd_archive) < self.archive_size:
+            remaining = [x for x in strength_pop if x.fitness >= 1.0]
             remaining = sorted(remaining, key=attrgetter('fitness'))
-            self.nondom_archive.extend(remaining[:(self.archive_size - len(self.nondom_pop))])
-        elif len(self.nondom_pop) > self.archive_size:
+            nd_archive.extend(remaining[:(self.archive_size - len(nd_archive))])
+        elif len(nd_archive) > self.archive_size:
             distance_matrix = self.calculate_distance_matrix(np.array([np.array(x.fitness) for x in self.nondom_pop]))
-            while len(self.nondom_archive) > self.archive_size:
+            while len(nd_archive) > self.archive_size:
                 most_crowded_idx = self.find_most_crowded(distance_matrix)
                 self.remove_point_from_dist_mtx(distance_matrix, most_crowded_idx)
-                del self.nondom_archive[most_crowded_idx]
+                del nd_archive[most_crowded_idx]
+        return nd_archive
 
     def sorting_mechanism(self, population):
         """
@@ -420,8 +424,7 @@ class SPEA2(MOEA):
             final_strength[i] += 1.0 / (self.kth_distance(i, 1) + 2.0)  # 1 stands for k=1, to find kth nearest neighbor
 
         self.final_strengths = final_strength
-
-        return [PopulationMember(x.variables, fs) for x, fs in zip(population, final_strength)]
+        return [PopulationMember(x.variables, fs) for fs, x in sorted(zip(final_strength, population))]
 
     def calculate_distance_matrix(self, fitnesses, distance_fun=euclidean_distance):
         """
@@ -430,14 +433,12 @@ class SPEA2(MOEA):
         It also provides convenient routines to lookup the distance between any two solutions, 
         find the most crowded solution, and remove a solution.
         """
-        #print(fitnesses)
         distances = []
         for i in range(len(fitnesses)):
-            distances_i = []
-            for j in range(len(fitnesses)):
-                if i != j:
-                    distances_i.append((j, distance_fun(fitnesses[i], fitnesses[j])))
-
+            distances_i = [(j, distance_fun(fitnesses[i], fitnesses[j])) for j in range(len(fitnesses)) if i != j]
+            # for j in range(len(fitnesses)):
+            #     if i != j:
+            #         distances_i.append((j, distance_fun(fitnesses[i], fitnesses[j])))
             distances.append(sorted(distances_i, key=lambda x: x[1]))
         return distances
 
@@ -504,13 +505,13 @@ class SPEA2(MOEA):
 
 class MOEAD(MOEA):
     """
-
+    Scalar decomposition of the objectives into single objective problems which are solved separately by subpopulations and recombined
+    (Zhang and Li, 2007)
     """
 
-    def __init__(self, evolutionary_algorithm, dimensions=100, population_size=200, ea_runs=100,
-                 # data_distribution=False,
+    def __init__(self, evolutionary_algorithm, dimensions=100, n_obj=3, population_size=200, ea_runs=100,
                  combinatorial_values=[], factor=None, global_solution=None):
-        super().__init__( population_size, dimensions, combinatorial_values)
+        super().__init__(population_size, dimensions, combinatorial_values)
         self.dimensions = dimensions
         self.population_size = population_size
         self.ea = evolutionary_algorithm(dimensions, population_size)
@@ -518,6 +519,7 @@ class MOEAD(MOEA):
         self.factor = factor
         self.global_solution = global_solution
         self.ea_runs = ea_runs
+        self.n_obj = n_obj
         self.nondom_pop = []
         self.nondom_archive = []
         self.iteration_stats = []

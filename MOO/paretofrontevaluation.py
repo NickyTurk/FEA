@@ -54,7 +54,7 @@ class ParetoOptimization:
         for i in range(self.n_obj):
             try:
                 to_sort = [x.objective_values[i] for x in approx_pareto_set]
-            except:
+            except AttributeError:
                 to_sort = [x.fitness[i] for x in approx_pareto_set]
             if minmax:
                 min_ = minmax[i][0]

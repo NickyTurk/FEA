@@ -12,7 +12,7 @@ from utilities.util import *
 
 class GA:
     def __init__(self, dimensions=100, population_size=200, tournament_size=5, mutation_rate=0.1, crossover_rate=0.95,
-                 ga_runs=100, mutation_type="multi bitflip", crossover_type="single", offspring_size=100,
+                 ga_runs=100, mutation_type="scramble", crossover_type="multi", offspring_size=100,
                  continuous_var_space=False, value_range=[0, 1], combinatorial_options=[], eta=20):
         """
         @param dimensions: Integer. Number of variables in a single individual.
