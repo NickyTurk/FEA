@@ -13,7 +13,7 @@ class TestGeneral(unittest.TestCase):
         population_size = 10
         dimensions = 10
         upper_value_limit = 50
-        self.moea = MOEA(population_size, dimensions, combinatorial_options=[], value_range=[0, upper_value_limit])
+        self.moea = MOEA(population_size=population_size, dimensions=dimensions, combinatorial_options=[], value_range=[0, upper_value_limit])
 
     def test_initialize_population(self):
         curr_population, initial_solution = self.moea.initialize_population()
@@ -87,8 +87,8 @@ class TestNSGA2(unittest.TestCase):
 
 class TestSPEA2(unittest.TestCase):
     def setUp(self) -> None:
-        dim = 10
-        n_obj = 3
+        self.dim = 10
+        self.n_obj = 3
 
 
 class TestMOEAD(unittest.TestCase):
@@ -96,17 +96,30 @@ class TestMOEAD(unittest.TestCase):
         self.dim = 10
         self.n_obj = 3
         self.decomposition = Tchebicheff()
-        self.n_neighbors = 15
+        self.n_neighbors = 10
+        self.n_partitions = 12
+        self.combs = math.comb(self.n_partitions + self.n_obj - 1, self.n_obj - 1)
+        self.ideal = np.array([0.1, 0.1, 0.1])
 
     def test_reference_weights(self):
-        ideal = np.array([0.1, 0.1, 0.1])
-        ref_dirs = get_reference_directions("das-dennis", self.n_obj, n_partitions=12)
-        print(ref_dirs)
-        neighbors = np.argsort(cdist(ref_dirs, ref_dirs), axis=1, kind='quicksort')[:, :self.n_neighbors]
-        print(neighbors)
-        p = self.decomposition.do(np.array([0.2, 0.4, 0.6]), weights=ref_dirs[2, :], ideal_point=ideal)
-        print(p)
+        ref_dirs = get_reference_directions("das-dennis", self.n_obj, n_partitions=self.n_partitions)
         self.assertEqual(ref_dirs.shape[1], self.n_obj)
+        self.assertEqual(ref_dirs.shape[0], self.combs)
+
+    def test_neighbors(self):
+        ref_dirs = get_reference_directions("das-dennis", self.n_obj, n_partitions=self.n_partitions)
+        neighbors = np.argsort(cdist(ref_dirs, ref_dirs), axis=1, kind='quicksort')[:, :self.n_neighbors]
+        self.assertEqual(neighbors.shape[1], self.n_neighbors)
+        self.assertEqual(neighbors.shape[0], self.combs)
+        # p = self.decomposition.do(np.array([0.2, 0.4, 0.6]), weights=ref_dirs[2, :], ideal_point=self.ideal)
+
+    def test_neighborhood_selection(self):
+        ref_dirs = get_reference_directions("das-dennis", self.n_obj, n_partitions=self.n_partitions)
+        # neighbors = np.argsort(cdist(ref_dirs, ref_dirs), axis=1, kind='quicksort')[:, :self.n_neighbors]
+        moead = MOEAD(weight_vector=ref_dirs, problem_decomposition=self.decomposition, n_neighbors=self.n_neighbors,
+                      dimensions=self.dim)
+        parents = moead.neighborhood_selection(n_select=1, n_parents=2, neighbors=moead.neighbors[0])
+        print(parents)
 
 
 if __name__ == '__main__':

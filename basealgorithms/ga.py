@@ -138,9 +138,10 @@ class GA:
                             xy = 1.0 - delta_2
                             val = 2.0 * (1.0 - rand) + 2.0 * (rand - 0.5) * xy ** (eta + 1)
                             delta_q = 1.0 - val ** mut_pow
-
+                        if isinstance(delta_q, complex):
+                            delta_q = delta_q.real
                         x = x + delta_q * (ubound - lbound)
-                        x = min(max(x, lbound), ubound)
+                        _solution[i] = min(max(x, lbound), ubound)
             else:
                 for i in range(len(_solution)):
                     if random.random() < mutation_rate:
@@ -212,7 +213,6 @@ class GA:
         This can be applied to any of the three above methods.
         @return: The crossed over children, or an empty array if crossover was not performed.
         """
-
         if not crossover_rate:
             crossover_rate = self.crossover_rate
 
@@ -276,10 +276,11 @@ class GA:
         3. Mutation of the resulting offspring
         These steps are repeated until the length of the children set is equal to offspring_size.
         """
-        j = 0
         children = []
         if curr_population:
             self.population = [x for x in curr_population]
+        if len(self.population[0].variables) <= 4 and self.crossover_type == 'multi':
+            self.crossover_type = 'single'
         while len(children) < self.offspring_size:
             first_solution, idx1 = self.tournament_selection(self.population)
             self.population.pop(idx1)
@@ -298,7 +299,6 @@ class GA:
             child2 = self.mutate(child2)
             children.append(child1)
             children.append(child2)
-            j += 1
         return children
 
     def selection(self, total_population):
