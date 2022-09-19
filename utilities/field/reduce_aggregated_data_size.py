@@ -11,23 +11,32 @@ For extract 2D patches as well: uses double for loop with a kind of step size to
 '''
 
 
-def reduce_dataframe(field, data_to_use, agg_file, transform_to_latlon=False, transform_from_latlon=False, spatial_sampling=False):
+def reduce_dataframe(field, agg_file, data_to_use=None, transform_to_latlon=False, transform_from_latlon=False, epsg_string='', sampling_type='random'):
+    """
+    @param sampling_type: which type of sampling to apply: 'random', 'spatial', 'aggregate'
+    """
     df = pd.read_csv(agg_file)
-    project_from_latlong = Transformer.from_crs(field.latlong_crs, 'epsg:32612')
-    project_to_latlong = Transformer.from_crs('EPSG:6657', field.latlong_crs)# 'epsg:32612')
+    project_from_latlong = Transformer.from_crs(field.latlong_crs, epsg_string)
+    project_to_latlong = Transformer.from_crs(epsg_string, field.latlong_crs)# 'epsg:32612') CANADA: 'EPSG:6657'
     x_int = 0
     y_int = 1
-    dps = df[data_to_use]
-    dps = dps.dropna(axis=0)
+    if data_to_use is None:
+        dps = df
+    else:
+        dps = df[data_to_use]
+    #
+    dps = dps.dropna(axis=0, subset=['yld', 'aa_n'])
+    dps = dps.dropna(axis=1, how='all')
+    dps = dps.select_dtypes(include=['number'])
+    print(dps.columns)
     new_df = pd.DataFrame()
-    print(dps)
     if transform_to_latlon:
         xy = np.array(
             [np.array(project_to_latlong.transform(x, y)) for x, y in zip(np.array(dps['x']), np.array(dps['y']))])
         dps.loc[:, 'x'] = xy[:, 0]
         dps.loc[:, 'y'] = xy[:, 1]
     for i, gridcell in enumerate(field.cell_list):
-        if spatial_sampling:
+        if sampling_type == 'spatial':
             minx, miny, maxx, maxy = gridcell.true_bounds.bounds
             dx = (maxx - minx) / 2  # width of a small part
             dy = (maxy - miny) / 5  # height of a small part
@@ -49,6 +58,19 @@ def reduce_dataframe(field, data_to_use, agg_file, transform_to_latlon=False, tr
                 elif len(points_in_cell) > 1:
                     cell_df = pd.DataFrame(random.sample(points_in_cell, 2))
                     new_df = pd.concat([cell_df, new_df])
+        elif sampling_type == 'aggregate':
+            bl_x, bl_y = gridcell.bottomleft_x, gridcell.bottomleft_y
+            ur_x, ur_y = gridcell.upperright_x, gridcell.upperright_y
+            points_in_cell = dps[(dps['y'] >= bl_x) &
+                                 (dps['y'] <= ur_x) &
+                                 (dps['x'] <= ur_y) &
+                                 (dps['x'] >= bl_y)].values.tolist()
+            if len(points_in_cell) > 0:
+                points_in_cell = pd.DataFrame(points_in_cell)
+                aggregate_point = points_in_cell.mean(axis=0).to_numpy()
+                cell_df = pd.DataFrame([aggregate_point])
+                new_df = pd.concat([cell_df, new_df])
+
         else:
             bl_x, bl_y = gridcell.bottomleft_x, gridcell.bottomleft_y
             ur_x, ur_y = gridcell.upperright_x, gridcell.upperright_y
@@ -70,18 +92,25 @@ def reduce_dataframe(field, data_to_use, agg_file, transform_to_latlon=False, tr
              zip(new_df[x_int], new_df[y_int])])
         new_df.loc[:, x_int] = xy[:, 0]
         new_df.loc[:, y_int] = xy[:, 1]
-    new_df.columns = data_to_use
+    if data_to_use is not None:
+        new_df.columns = data_to_use
+    else:
+        new_df.columns = dps.columns
     return new_df
 
 
 if __name__ == '__main__':
     current_working_dir = os.getcwd()
-    path = re.search(r'^(.*?\\FEA)', current_working_dir)
-    path = path.group()
+    path_ = re.search(r'^(.*?[\\/]FEA)', current_working_dir)
+    path_ = path_.group()
 
-    data_to_use = ['x', 'y', 'yld', 'prev_yld', 'aa_sr', 'prev_aa_sr', 'elev', 'slope', 'ndvi_py_s', 'ndvi_2py_s', 'ndvi_cy_s', 'ndwi_py_s', 'bm_wd', 'carboncontent10cm', 'phw10cm', 'watercontent10cm', 'sandcontent10cm', 'claycontent10cm']
+    data_to_use = ['x', 'y', 'n_lbs_ac', 'elev_m', 'slope_deg', 'ndvi_2012', 'ndvi_2014', 'ndvi_2015', 'yl14_nn_bu_ac', 'n15_lbs_ac', 'n14_lbs_ac']
+    #['x', 'y', 'yld', 'prev_yld', 'aa_sr', 'prev_aa_sr', 'elev', 'slope', 'ndvi_py_s', 'ndvi_2py_s', 'ndvi_cy_s', 'ndwi_py_s', 'bm_wd', 'carboncontent10cm', 'phw10cm', 'watercontent10cm', 'sandcontent10cm', 'claycontent10cm']
 
-    agg_file = "C:/Users/amypeerlinck/Documents/work/OFPE/Data/millview/mv20.7.csv"
-    field = pickle.load(open(path+'/utilities/saved_fields/millview.pickle', 'rb'))
-    reduced = reduce_dataframe(field, data_to_use, agg_file, transform_to_latlon=True, spatial_sampling=True)
-    reduced.to_csv("C:/Users/amypeerlinck/Documents/work/OFPE/Data/millview/reduced_millview20_spatial.csv")
+    agg_file = "/home/amy/Documents/Work/OFPE/Data/Sec35Mid/broyles_sec35mid_10m_yld_2016-2020_UPDATE.csv"
+    field = pickle.load(open(path_+'/utilities/saved_fields/sec35mid.pickle', 'rb'))
+    reduced = reduce_dataframe(field, agg_file, transform_to_latlon=True, sampling_type='random', epsg_string='epsg:32612')
+    reduced.to_csv("/home/amy/Documents/Work/OFPE/Data/Sec35Mid/reduced_broyles_sec35mid_cnn_random.csv")
+
+    # reduced = reduce_dataframe(field, agg_file, transform_to_latlon=True, spatial_sampling=False)
+    # reduced.to_csv("/home/amy/Documents/Work/OFPE/Data/Sec35Mid/reduced_broyles_sec35mid_cnn_random.csv")
