@@ -10,7 +10,7 @@ import random
 
 
 class MOFEA:
-    def __init__(self, fea_iterations, alg_iterations, pop_size, dimensions, factor_architecture=None, base_alg=None,
+    def __init__(self, fea_iterations, dimensions, factor_architecture=None, base_alg=None,
                  combinatorial_options=None, value_range=[0, 1], ref_point=[1, 1, 1]):
         self.combinatorial_options = combinatorial_options
         self.value_range = value_range
@@ -20,8 +20,6 @@ class MOFEA:
         self.factor_architecture = factor_architecture
         self.base_algorithm = base_alg
         self.fea_runs = fea_iterations
-        self.base_alg_iterations = alg_iterations
-        self.pop_size = pop_size
         self.current_iteration = 0
         self.global_solutions = []
         self.worst_fitness_ref = ref_point
@@ -41,14 +39,15 @@ class MOFEA:
         if self.combinatorial_options:
             random_global_variables = random.choices(self.combinatorial_options, k=self.dim)
         else:
-            random_global_variables = [random.randrange(self.value_range[0], self.value_range[1]) for x in range(self.dim)]
+            random_global_variables = [random.randrange(self.value_range[0], self.value_range[1]) for x in
+                                       range(self.dim)]
         objs = self.base_algorithm(dimensions=self.dim).calc_fitness(random_global_variables)
         random_global_solution = PopulationMember(random_global_variables, objs)
         self.global_solutions.append(random_global_solution)
-        return [self.base_algorithm(ea_runs=self.base_alg_iterations, dimensions=len(factor),
+        return [self.base_algorithm(dimensions=len(factor),
                                     combinatorial_values=self.combinatorial_options, value_range=self.value_range,
-                                    population_size=self.pop_size, factor=factor,
-                                    global_solution=random_global_solution) for factor in self.factor_architecture.factors]
+                                    factor=factor, global_solution=random_global_solution) for factor in
+                self.factor_architecture.factors]
 
     def run(self):
         '''
@@ -67,7 +66,7 @@ class MOFEA:
         fea_run = 0
         while fea_run != self.fea_runs:  # len(change_in_nondom_size) < 4 and
             for s, alg in enumerate(self.subpopulations):
-                print('Subpopulation: ', s)
+                print('Subpopulation: ', s, alg.dimensions, type(alg))
                 alg.run(fea_run=fea_run)
             self.compete()
             self.share_solution()
@@ -85,7 +84,7 @@ class MOFEA:
             print("eval dict", eval_dict)
             # [print(s.objective_values) for s in self.nondom_archive]
             # [print(i, ': ', s.objective_values) for i,s in enumerate(self.iteration_stats[fea_run+1]['global solutions'])]
-            fea_run = fea_run+1
+            fea_run = fea_run + 1
 
     def compete(self):
         """
@@ -113,12 +112,13 @@ class MOFEA:
                         new_solutions.append([x for x in curr_pop.random_nondom_solutions[-1]])
                     pop_var_idx = np.where(np.array(curr_pop.factor) == var_idx)
                     # pick one of the nondominated solutions from this population based on sorting criterium or randomly if no nondom solutions
-                    if len(curr_pop.nondom_pop) != 0:
-                        sorted = curr_pop.sorting_mechanism(curr_pop.nondom_pop)
-                        random_sol = sorted[0]
+                    if len(curr_pop.nondom_archive) == 0:
+                        random_sol = random.choice(curr_pop.curr_population)
+                    elif len(curr_pop.nondom_archive) < 3:
+                        random_sol = random.choice(curr_pop.nondom_archive)
                     else:
-                        random_sol = random.choice(curr_pop.gbests)
-                    # new_solutions.append([x for x in random_sol.variables])
+                        sorted = curr_pop.sorting_mechanism(curr_pop.nondom_archive)
+                        random_sol = sorted[0]
                     var_candidate_value = random_sol.variables[pop_var_idx[0][0]]
                     vars[var_idx] = var_candidate_value
                     if vars not in new_solutions:
@@ -126,14 +126,15 @@ class MOFEA:
             elif len(self.factor_architecture.optimizers[var_idx]) == 1:
                 curr_pop = self.subpopulations[self.factor_architecture.optimizers[var_idx][0]]
                 pop_var_idx = np.where(np.array(curr_pop.factor) == var_idx)
-                if len(curr_pop.nondom_pop) != 0:
-                    for solution in curr_pop.nondom_pop:
+                if len(curr_pop.nondom_archive) != 0:
+                    for solution in curr_pop.nondom_archive:
                         var_candidate_value = solution.variables[pop_var_idx[0][0]]
                         vars[var_idx] = var_candidate_value
                         if vars not in new_solutions:
                             new_solutions.append(vars)
         # Recalculate fitnesses for new solutions
-        new_solutions = [PopulationMember(vars, self.base_algorithm(dimensions=self.dim).calc_fitness(vars)) for vars in new_solutions]
+        new_solutions = [PopulationMember(vars, self.base_algorithm(dimensions=self.dim).calc_fitness(vars)) for vars in
+                         new_solutions]
         # Reassert non-dominance
         nondom_indeces = find_non_dominated(np.array([np.array(x.fitness) for x in new_solutions]))
         # Assign current iteration of global solutions based on non-dominance
@@ -167,10 +168,14 @@ class MOFEA:
                 raise IndexError
             # update fitnesses
             alg.global_solution = gs
-            alg.curr_population = [PopulationMember(p.variables, self.base_algorithm().calc_fitness(p.variables, alg.global_solution, alg.factor)) for p in alg.curr_population]
+            alg.curr_population = [PopulationMember(p.variables,
+                                                    self.base_algorithm().calc_fitness(p.variables, alg.global_solution,
+                                                                                       alg.factor)) for p in
+                                   alg.curr_population]
             # set best solution and replace worst solution with global solution across FEA
             alg.replace_worst_solution(self.global_solutions)
 
+    # TODO: include a diversity measure to reduce archive size when it goes above a certain size (similar to SPEA2 but more general)
     def update_archive(self, nd_archive=None):
         """
         Function to update the existing archive object, or a chosen archive

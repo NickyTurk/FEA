@@ -6,6 +6,9 @@ SPEA2 class -- Strength Pareto Evolutionary Algorithm 2
 HypE class --
 MOEAD class --
 """
+import math
+
+from pymoo.util.dominator import Dominator
 from scipy.spatial.distance import cdist
 
 from MOO.paretofrontevaluation import *
@@ -21,7 +24,11 @@ import random
 
 
 class MOEA:
-    def __init__(self, population_size=100, dimensions=10, combinatorial_options=[], value_range=[0, 1]):
+    def __init__(self, evolutionary_algorithm=GA, ea_runs=100, population_size=100, dimensions=10,
+                 combinatorial_options=None, value_range=None, reference_point=None,
+                 crossover_rate=.9, crossover_type='',
+                 mutation_rate=.1, mutation_type='',
+                 factor=None, global_solution=None):
         """
         Superclass for all MOO EAs.
         @param combinatorial_options: List of values, E.g. [0,1]. Set of values to create solutions from when dealing
@@ -33,9 +40,42 @@ class MOEA:
         Where 'gs'(=global solution) and 'factor' are only used when using the MOEA's as a base-algorithm for FEA.
         """
         self.combinatorial_values = combinatorial_options
-        self.value_range = value_range
+        if value_range is not None:
+            self.value_range = value_range
+        else:
+            self.value_range = [0.0, 1.0]
         self.population_size = population_size
         self.dimensions = dimensions
+        self.factor = factor
+        self.global_solution = global_solution
+        self.ea_runs = ea_runs
+        self.iteration_stats = []
+        self.nondom_archive = []
+        if reference_point is not None:
+            self.worst_fitness_ref = reference_point
+        else:
+            self.worst_fitness_ref = [1, 1, 1]
+        if self.combinatorial_values is not None:
+            self.crossover_type = 'uniform'
+            self.mutation_type = 'multi bitflip'
+        else:
+            self.crossover_type = 'multi'
+            self.mutation_type = 'polynomial'
+        if crossover_type:
+            self.crossover_type = crossover_type
+        if mutation_type:
+            self.mutation_type = mutation_type
+
+        if self.combinatorial_values is not None:
+            self.ea = evolutionary_algorithm(dimensions=dimensions, population_size=population_size, tournament_size=2,
+                                             offspring_size=population_size, combinatorial_options=self.combinatorial_values,
+                                             crossover_type=self.crossover_type, crossover_rate=crossover_rate,
+                                             mutation_type=self.mutation_type, mutation_rate=mutation_rate)
+        else:
+            self.ea = evolutionary_algorithm(dimensions=dimensions, population_size=population_size, tournament_size=2,
+                                             offspring_size=population_size, continuous_var_space=True, value_range=self.value_range,
+                                             mutation_type=self.mutation_type, mutation_rate=mutation_rate,
+                                             crossover_type=self.crossover_type, crossover_rate=crossover_rate)
 
     def initialize_population(self, gs=None, factor=None):
         """
@@ -55,14 +95,25 @@ class MOEA:
                 new_solution = random.choices(self.combinatorial_values,
                                               k=self.dimensions)  # Prescription(field=field, index=i, gs=self.global_solution, factor=self.factor)
             else:
-                new_solution = [random.uniform(self.value_range[0], self.value_range[1]) for x in range(self.dimensions)]
-                #new_solution = [random.random() for x in range(self.dimensions)]
+                new_solution = [random.uniform(self.value_range[0], self.value_range[1]) for x in
+                                range(self.dimensions)]
+                # new_solution = [random.random() for x in range(self.dimensions)]
             curr_population.append(
                 PopulationMember(new_solution, self.calc_fitness(variables=new_solution, gs=gs, factor=factor)))
             if i == 0:
                 initial_solution = new_solution
             i = i + 1
         return curr_population, initial_solution
+
+    def set_iteration_stats(self, iteration_idx):
+        '''
+        Calculate generation statistics for the found non-dominated solutions
+        '''
+        po = ParetoOptimization()
+        eval_dict = po.evaluate_solution(self.nondom_archive, self.worst_fitness_ref)
+        eval_dict['GA_run'] = iteration_idx
+        eval_dict['ND_size'] = len(self.nondom_archive)
+        self.iteration_stats.append(eval_dict)
 
     def calc_fitness(self, variables, gs=None, factor=None):
         """
@@ -81,8 +132,8 @@ class MOEA:
 
 class NSGA2(MOEA):
     def __init__(self, evolutionary_algorithm=GA, dimensions=100, population_size=500, ea_runs=100,
-                 # data_distribution=False,
-                 combinatorial_values=[], value_range=[0, 1], factor=None, global_solution=None, ref_point=None):
+                 combinatorial_values=None, value_range=None, reference_point=None,
+                 factor=None, global_solution=None):
         """
 
         @param evolutionary_algorithm: The base algorithm to use. Currently only Genetic Algorithm (GA) is implemented.
@@ -99,23 +150,12 @@ class NSGA2(MOEA):
         @param ref_point: List of worst potential fitness values. Has as many fitness values as there are objectives.
                 Used to calculate the Hypervolume indicator.
         """
-        super().__init__(population_size, dimensions, combinatorial_values, value_range)
-        self.dimensions = dimensions
-        self.population_size = population_size
-        if self.combinatorial_values:
-            self.ea = evolutionary_algorithm(dimensions=dimensions)
-        else:
-            self.ea = evolutionary_algorithm(dimensions=dimensions, continuous_var_space=True,
-                                             value_range=self.value_range, offspring_size=population_size)
+        super().__init__(evolutionary_algorithm=evolutionary_algorithm, ea_runs=ea_runs,
+                         population_size=population_size, reference_point=reference_point,
+                         dimensions=dimensions, combinatorial_options=combinatorial_values, value_range=value_range,
+                         factor=factor, global_solution=global_solution)
         self.curr_population = []
         self.initial_solution = []
-        self.factor = factor
-        self.global_solution = global_solution
-        self.ea_runs = ea_runs
-        self.nondom_pop = []
-        self.nondom_archive = []
-        self.iteration_stats = []
-        self.worst_fitness_ref = ref_point
         self.worst_index = None
         self.random_nondom_solutions = []
 
@@ -142,22 +182,15 @@ class NSGA2(MOEA):
             Only run this part of the algorithm in the single-population case.
             I.e. when NSGA2 is NOT used as the base-algorithm for FEA.
             '''
-            if self.factor is None and i != 1:
+            if self.factor is None:
                 self.nondom_archive = self.update_archive()
+                self.set_iteration_stats(i)
                 if len(self.nondom_archive) == old_archive_length and len(self.nondom_archive) >= 10:
                     change_in_nondom_size.append(True)
                 else:
                     change_in_nondom_size = []
                 old_archive_length = len(self.nondom_archive)
 
-                '''
-                Calculate generation statistics.
-                '''
-                po = ParetoOptimization()
-                eval_dict = po.evaluate_solution(self.nondom_archive, self.worst_fitness_ref)
-                eval_dict['GA_run'] = i
-                eval_dict['ND_size'] = len(self.nondom_archive)
-                self.iteration_stats.append(eval_dict)
             i += 1
 
     def replace_worst_solution(self, gs):
@@ -226,10 +259,10 @@ class NSGA2(MOEA):
         total_population = [x for x in self.curr_population]
         fitnesses = np.array([np.array(x.fitness) for x in total_population])
         nondom_indeces = find_non_dominated(fitnesses)
-        self.nondom_pop = [total_population[i] for i in nondom_indeces]
-        self.nondom_archive.extend(self.nondom_pop)
+        nondom_pop = [total_population[i] for i in nondom_indeces]
+        self.nondom_archive.extend(nondom_pop)
         # Less non-dominated solutions than population size
-        if len(self.nondom_pop) < self.population_size:
+        if len(nondom_pop) < self.population_size:
             new_population = []
             fronts = fast_non_dominated_sort(fitnesses)
             last_front = []
@@ -252,7 +285,7 @@ class NSGA2(MOEA):
         # More non-dominated solutions than the population size
         # Select the first n based on crowding distance
         else:
-            sorted_population = self.sorting_mechanism(self.nondom_pop)
+            sorted_population = self.sorting_mechanism(nondom_pop)
             self.curr_population = sorted_population[:self.population_size]
             worst_fitness = tuple([x for x in self.curr_population[-1].fitness])
         random.shuffle(self.curr_population)
@@ -261,7 +294,7 @@ class NSGA2(MOEA):
         if generation_idx == self.ea_runs - 1 and self.factor is not None:
             # Extend archive with found non-dom population for this generation
             seen = set()
-            for s in self.nondom_pop:
+            for s in nondom_pop:
                 if s.fitness not in seen:
                     seen.add(s.fitness)
                     self.nondom_archive.append(s)
@@ -277,34 +310,22 @@ class NSGA2(MOEA):
 
 class SPEA2(MOEA):
     def __init__(self, evolutionary_algorithm=GA, dimensions=100, population_size=200, ea_runs=100,
-                 # data_distribution=False,
-                 combinatorial_values=[], value_range=[0, 1], factor=None, global_solution=None, archive_size=200):
-        super().__init__(population_size, dimensions, combinatorial_values)
-        self.dimensions = dimensions
-        self.population_size = population_size
-        if self.combinatorial_values:
-            self.ea = evolutionary_algorithm(dimensions, population_size, tournament_size=2, offspring_size=population_size,
-                                             mutation_type='multi bitflip', crossover_type='uniform')
-        else:
-            self.ea = evolutionary_algorithm(dimensions, population_size, tournament_size=2,
-                                             offspring_size=population_size, continuous_var_space=True,
-                                             mutation_type='scramble', crossover_type='multi',
-                                             value_range=self.value_range)
+                 combinatorial_values=None, value_range=None, reference_point=None,
+                 factor=None, global_solution=None,
+                 archive_size=200):
+        super().__init__(evolutionary_algorithm=evolutionary_algorithm, ea_runs=ea_runs,
+                         population_size=population_size, reference_point=reference_point,
+                         dimensions=dimensions, combinatorial_options=combinatorial_values, value_range=value_range,
+                         factor=factor, global_solution=global_solution)
         self.curr_population = []
         self.initial_solution = []
-        self.value_range = value_range
-        self.factor = factor
-        self.global_solution = global_solution
-        self.ea_runs = ea_runs
-        self.nondom_pop = []
         self.archive_size = archive_size
-        self.nondom_archive = []
-        self.strength_pop = []
-        self.iteration_stats = []
-        self.distance_matrix = []
-        self.final_strengths = []
+        self.strength_pop = None
+        self.distance_matrix = None
+        self.final_strengths = None
         self.worst_index = None
         self.random_nondom_solutions = []
+        self.k_to_find = round(math.sqrt(self.population_size + self.archive_size))
 
     def run(self, fea_run=0):
         """
@@ -316,37 +337,37 @@ class SPEA2(MOEA):
             self.curr_population, self.initial_solution = self.initialize_population(gs=self.global_solution,
                                                                                      factor=self.factor)
         i = 1
+
         change_in_nondom_size = []
         old_archive_length = 0
         '''
-        Convergence criterion based on change in non-dominated solution set size
+        Stop based on criterion
         '''
         while i <= self.ea_runs:  # and len(change_in_nondom_size) < 10:
             # calculate strength value fitness for entire population
-            self.strength_pop = self.sorting_mechanism(self.curr_population)
-            # set non-dominated population keeping the original FITNESS score
-            self.nondom_pop = [y for x, y in zip(self.strength_pop, self.curr_population) if x.fitness < 1.0]
-            # set non-dominated archive with STRENGTH values for offspring generation
-            self.nondom_archive = [x for x in self.strength_pop if x.fitness < 1.0]
+            self.strength_pop = self.sorting_mechanism(self.curr_population, self.nondom_archive)
+            # set non-dominated archive keeping the original FITNESS score
+            self.nondom_archive = [y for x, y in zip(self.strength_pop, self.curr_population) if x.fitness < 1.0]
             # update archive to have exact length set by algorithm parameter
             self.nondom_archive = self.update_archive()
-
             # find worst index
             if self.factor is not None:
-                self.worst_index = self.final_strengths.index(max(self.final_strengths))
+                self.worst_index = self.final_strengths.argmax()
 
             # create new generation
-            children = self.ea.create_offspring(self.nondom_archive)
+            children = self.ea.create_offspring(self.strength_pop)
             self.curr_population = [PopulationMember(c, self.calc_fitness(c, self.global_solution, self.factor)) for c
                                     in children]
-            if i == self.ea_runs - 1 and self.factor is not None:
-                choice = random.choice(self.nondom_archive)
-                full_solution = [x for x in self.global_solution.variables]
-                for j, x in zip(self.factor, choice.variables):
-                    full_solution[j] = x
-                self.random_nondom_solutions.append(full_solution)
-
+            if self.factor is None:
+                self.set_iteration_stats(i)
             i += 1
+
+        if self.factor is not None:
+            choice = random.choice(self.nondom_archive)
+            full_solution = [x for x in self.global_solution.variables]
+            for j, x in zip(self.factor, choice.variables):
+                full_solution[j] = x
+            self.random_nondom_solutions.append(full_solution)
 
     def replace_worst_solution(self, gs):
         """
@@ -361,7 +382,7 @@ class SPEA2(MOEA):
         else:
             sol = random.choice(gs)
             self.curr_population[self.worst_index] = PopulationMember(
-                    variables=[sol.variables[j] for j in self.factor], fitness=sol.fitness)
+                variables=[sol.variables[j] for j in self.factor], fitness=sol.fitness)
 
     def update_archive(self, nd_archive=None, strength_pop=None):
         '''
@@ -375,18 +396,17 @@ class SPEA2(MOEA):
         if strength_pop is None:
             strength_pop = self.strength_pop
         if len(nd_archive) < self.archive_size:
-            remaining = [x for x in strength_pop if x.fitness >= 1.0]
-            remaining = sorted(remaining, key=attrgetter('fitness'))
+            remaining = [y for x, y in sorted(zip(strength_pop, self.curr_population), key=lambda pair: pair[0].fitness) if x.fitness >= 1.0]
             nd_archive.extend(remaining[:(self.archive_size - len(nd_archive))])
         elif len(nd_archive) > self.archive_size:
-            distance_matrix = self.calculate_distance_matrix(np.array([np.array(x.fitness) for x in self.nondom_pop]))
+            distance_matrix = self.calculate_distance_matrix(np.array([np.array(x.fitness) for x in nd_archive]))
             while len(nd_archive) > self.archive_size:
                 most_crowded_idx = self.find_most_crowded(distance_matrix)
                 self.remove_point_from_dist_mtx(distance_matrix, most_crowded_idx)
                 del nd_archive[most_crowded_idx]
         return nd_archive
 
-    def sorting_mechanism(self, population):
+    def sorting_mechanism(self, population, nondom_archive=None):
         """
         Code based on Platypus implementation:
         https://platypus.readthedocs.io/en/latest/_modules/platypus/algorithms.html
@@ -394,38 +414,35 @@ class SPEA2(MOEA):
         K = sqrt(pop size + archive size)
         Original population is not altered.
         """
-        fitnesses = np.array([np.array(x.fitness) for x in population])
+        if nondom_archive:
+            total_population = [x for x in population]
+            total_population.extend(nondom_archive)
+            fitnesses = np.array([np.array(x.fitness) for x in total_population])
+        else:
+            fitnesses = np.array([np.array(x.fitness) for x in population])
 
-        raw_strength = [0] * len(population)
-        final_strength = [0.0] * len(population)
+        if len(population) == self.population_size:
+            self.distance_matrix = self.calculate_distance_matrix(fitnesses)
+            temp_distance_matrix = self.distance_matrix
+        else:
+            temp_distance_matrix = self.calculate_distance_matrix(fitnesses)
+        domination_matrix = Dominator().calc_domination_matrix(fitnesses)
+        # the number of solutions each individual dominates
+        S = (domination_matrix == 1).sum(axis=1)
 
-        # compute dominance flags
-        keys = list(itertools.combinations(range(len(population)), 2))
-        flags = list(map(compare_solutions, [population[k[0]] for k in keys], [population[k[1]] for k in keys]))
-
-        self.distance_matrix = self.calculate_distance_matrix(fitnesses)
-
-        # count the number of individuals each solution dominates
-        for key, flag in zip(keys, flags):
-            if flag < 0:
-                raw_strength[key[0]] += 1
-            elif flag > 0:
-                raw_strength[key[1]] += 1
-
-        # the raw fitness is the sum of the dominance counts (strength) of all
-        # dominated solutions
-        for key, flag in zip(keys, flags):
-            if flag < 0:
-                final_strength[key[1]] += raw_strength[key[0]]
-            elif flag > 0:
-                final_strength[key[0]] += raw_strength[key[1]]
+        # the raw fitness of each solution = sum of the dominance counts in S of all solutions it is dominated by
+        raw_strength = ((domination_matrix == -1) * S).sum(axis=1)
 
         # add density to fitness
+        final_strengths = []
         for i in range(len(population)):
-            final_strength[i] += 1.0 / (self.kth_distance(i, 1) + 2.0)  # 1 stands for k=1, to find kth nearest neighbor
-
-        self.final_strengths = final_strength
-        return [PopulationMember(x.variables, fs) for fs, x in sorted(zip(final_strength, population))]
+            final_strengths.append(raw_strength[i] + (1.0 / (self.kth_distance(i, self.k_to_find,
+                                                                               temp_distance_matrix) + 2.0)))  # 1 stands for k=1, to find kth nearest neighbor
+        if len(population) == self.population_size:
+            self.final_strengths = np.array(final_strengths)
+        # key is used to force sort only on strengths when there are still duplicate strength values
+        return [PopulationMember(x.variables, fs) for fs, x in
+                sorted(zip(final_strengths, population), key=lambda pair: pair[0])]
 
     def calculate_distance_matrix(self, fitnesses, distance_fun=euclidean_distance):
         """
@@ -437,9 +454,6 @@ class SPEA2(MOEA):
         distances = []
         for i in range(len(fitnesses)):
             distances_i = [(j, distance_fun(fitnesses[i], fitnesses[j])) for j in range(len(fitnesses)) if i != j]
-            # for j in range(len(fitnesses)):
-            #     if i != j:
-            #         distances_i.append((j, distance_fun(fitnesses[i], fitnesses[j])))
             distances.append(sorted(distances_i, key=lambda x: x[1]))
         return distances
 
@@ -488,7 +502,7 @@ class SPEA2(MOEA):
         for i in range(len(distance_matrix)):
             distance_matrix[i] = [(x if x < index else x - 1, y) for (x, y) in distance_matrix[i] if x != index]
 
-    def kth_distance(self, i, k):
+    def kth_distance(self, i, k, distance_matrix):
         """
         Code from Platypus library!
         Returns the distance to the k-th nearest neighbor.
@@ -501,41 +515,41 @@ class SPEA2(MOEA):
             Finds the k-th nearest neightbor distance
             K = sqrt(pop size + archive size)
         """
-        return self.distance_matrix[i][k][1]
+        return distance_matrix[i][k][1]
 
 
 class MOEAD(MOEA):
-    from pymoo.decomposition.tchebicheff import Tchebicheff
-    from pymoo.decomposition.pbi import PBI
-
     """
     Qingfu Zhang and Hui Li. 
     A multi-objective evolutionary algorithm based on decomposition. 
     IEEE Transactions on Evolutionary Computation, 2007.
 
     Based on PYMOO implementation, and uses their decomposition methods: PBI, Tchebicheff, weighted_sum
-    https://github.com/anyoptimization/pymoo/blob/db63995689e446c343ca0ccb05cac8c682fcb98d/pymoo/algorithms/moo/moead.py#L174
+    https://github.com/anyoptimization/pymoo/blob/db63995689e446c343ca0ccb05cac8c682fcb98d/pymoo/algorithms/moo/moead.py
     """
 
-    def __init__(self, evolutionary_algorithm, prob_neighbor_mating=0.9, dimensions=100, population_size=200, ea_runs=100, problem_decomposition=None,
-                 combinatorial_values=[], value_range=[0, 1], factor=None, global_solution=None):
-        super().__init__( population_size, dimensions, combinatorial_values)
-        self.dimensions = dimensions
-        self.population_size = population_size
-        self.ea = evolutionary_algorithm(dimensions, population_size)
-        self.curr_population, self.initial_solution = self.initialize_population(gs=global_solution, factor=factor)
+    def __init__(self, evolutionary_algorithm=GA, dimensions=100, ea_runs=100,
+                 combinatorial_values=None, value_range=None, reference_point=None,
+                 factor=None, global_solution=None,
+                 problem_decomposition=None, n_neighbors=10, weight_vector=None, prob_neighbor_mating=0.9):
+        super().__init__(evolutionary_algorithm=evolutionary_algorithm, ea_runs=ea_runs,
+                         population_size=len(weight_vector), reference_point=reference_point,
+                         crossover_rate=1.0, crossover_type='simulated binary',
+                         dimensions=dimensions, combinatorial_options=combinatorial_values, value_range=value_range,
+                         factor=factor, global_solution=global_solution)
+        self.curr_population = []
+        self.initial_solution = []
         self.problem_decomposition = problem_decomposition
         self.prob_neighbor_mating = prob_neighbor_mating
-        self.neighbors = np.argsort(cdist(self.ref_dirs, self.ref_dirs), axis=1, kind='quicksort')[:, :self.n_neighbors]
-        self.factor = factor
-        self.global_solution = global_solution
-        self.ea_runs = ea_runs
         self.n_obj = 3
-        self.nondom_pop = []
-        self.nondom_archive = []
-        self.iteration_stats = []
-        self.weight_vector = []
-        self.ideal_point_fitness = np.min(np.array([np.array(x.fitness) for x in self.curr_population]), axis=0)
+        self.decomposed_archive_fitnesses = []
+        self.archive_size = 250
+        self.decomposed_fitnesses = np.zeros(len(weight_vector))
+        self.weight_vector = weight_vector
+        self.ideal_point_fitness = None
+        self.neighbors = np.argsort(cdist(self.weight_vector, self.weight_vector), axis=1, kind='quicksort')[:,
+                         :n_neighbors]
+        self.random_nondom_solutions = []
 
     def run(self, fea_run=0):
         """
@@ -547,66 +561,137 @@ class MOEAD(MOEA):
             Decomposition here is using scalar weights, the weights are used to calculate the decomposed fitness;
             the weights are selected based on the chosen neighbors
             (neighborhood includes itself so this replacement will also replace the "self" if its better)
+
+            NOTE: the weight vectors serve as reference directions, guiding the solutions through the objective space
+            by assigning different weights to different parts of the objective space
         """
+        # initialize population and "ideal point" approximation
+        # check fea-run, since we do not want to start over if we are running fea iterations
+        if fea_run == 0:
+            self.curr_population, self.initial_solution = self.initialize_population(gs=self.global_solution,
+                                                                                     factor=self.factor)
+            self.ideal_point_fitness = np.min([x.fitness for x in self.curr_population], axis=0)
 
-        #initialize algorithm
-        self.weight_vector = [] # INITIALIZE
-        self.ideal_point = []
-        for N in np.random.permutation(len(self.curr_population)):
-            # select parenst according to algorithm method
-            parents = self.neighborhood_selection(n_select=1, n_parents=2, neighbors=self.neighbors[N])
+        for i in range(self.ea_runs):
+            print('ea run: ', i)
+            for N in np.random.permutation(len(self.curr_population)):
+                # create offspring
+                offspring = self.generate_offspring_from_neighborhood(N)
 
-            # create offspring using regular EA methods
-            child = self.ea.mutate(self.ea.crossover(parents[0], parents[1])[0], lbound=self.value_range[0], ubound=self.value_range[1])
-            offspring = PopulationMember(child, self.calc_fitness(child))
+                # update ideal point
+                self.ideal_point_fitness = np.min(np.vstack([self.ideal_point_fitness, offspring.fitness]), axis=0)
 
-            # update ideal point
-            self.ideal_point_fitness = np.min(np.vstack([self.ideal_point_fitness, offspring.fitness]), axis=0)
+                # update neighborhood
+                neighborhood_to_check = self.neighbors[N]
+                neighborhood_fitnesses = np.array([np.array(self.curr_population[idx].fitness) for idx in neighborhood_to_check])
+                decomposed_og_fitness = self.problem_decomposition.do(neighborhood_fitnesses,
+                                                                      weights=self.weight_vector[neighborhood_to_check, :],
+                                                                      ideal_point=self.ideal_point_fitness)
+                decomposed_offspring_fitness = self.problem_decomposition.do(np.array(offspring.fitness),
+                                                                             weights=self.weight_vector[
+                                                                                     neighborhood_to_check, :],
+                                                                             ideal_point=self.ideal_point_fitness)
+                improved_indeces = np.where(decomposed_offspring_fitness < decomposed_og_fitness)[0]
+                for idx in improved_indeces:
+                    self.curr_population[neighborhood_to_check[idx]] = offspring
 
-            # update neighborhood
-            neighborhood_to_check = self.neighbors[N]
-            decomposed_og_fitness = self.problem_decomposition.do(self.curr_population[N].fitness, weights=self.weight_vector[N, :], ideal_point=self.ideal)
-            decomposed_offspring_fitness = self.problem_decomposition.do(offspring.fitness, weights=self.weight_vector[N, :], ideal_point=self.ideal)
-            I = np.where(decomposed_offspring_fitness < decomposed_og_fitness)[0]
-            self.curr_population[neighborhood_to_check[I]] = offspring
-            self.update_archive()
+                # Save decomposed fitness for ordering
+                if N in improved_indeces:
+                    self.decomposed_fitnesses[N] = decomposed_offspring_fitness[0]
+                else:
+                    self.decomposed_fitnesses[N] = decomposed_og_fitness[0]
+
+                # update archive
+                self.update_archive(offspring=offspring, decomposed_fitness=decomposed_offspring_fitness[0])
+
+            if self.factor is None:
+                self.set_iteration_stats(i)
+
+        if self.factor is not None:
+            choice = random.choice(self.nondom_archive)
+            full_solution = [x for x in self.global_solution.variables]
+            for j, x in zip(self.factor, choice.variables):
+                full_solution[j] = x
+            self.random_nondom_solutions.append(full_solution)
 
     def replace_worst_solution(self, gs):
-        pass
+        """
+        @param gs: global solution to replace "worst" solution with.
+        When algorithm is part of FEA, we want to keep track of the "worst" solution according to algorithmic method.
+        In this case, we check the decomposed fitness for each population member (and its own corresponding weight vector).
+        """
+        sol = random.choice(gs)
+        worst_idx = np.argmax(self.decomposed_fitnesses)
+        self.curr_population[worst_idx] = PopulationMember(
+                variables=[sol.variables[j] for j in self.factor], fitness=sol.fitness)
 
-    def update_archive(self):
-        pass
+    def update_archive(self, nd_archive=None, offspring=None, decomposed_fitness=None):
+        """
+        Function to update the existing archive object, or a chosen archive
+        @param nd_archive: The archive to be updated, if None, this is the algorithm's current generation archive
+        @return: updated non-dominated archive as list of PopulationMembers
+        """
+        if nd_archive is None:
+            nd_archive = self.nondom_archive
+        nd_archive.append(offspring)
+        self.decomposed_archive_fitnesses.append(decomposed_fitness)
+        if len(nd_archive) > 1:
+            if self.archive_size > len(nd_archive):
+                nondom_indeces = find_non_dominated(np.array([np.array(x.fitness) for x in nd_archive]))
+                old_nondom_archive = [nd_archive[i] for i in nondom_indeces]
+                old_decomposed_archive_fitnesses = [self.decomposed_archive_fitnesses[i] for i in nondom_indeces]
+            else:
+                sorted_ = self.sorting_mechanism(nd_archive)
+                self.decomposed_archive_fitnesses.sort()
+                nondom_indeces = find_non_dominated(np.array([np.array(x.fitness) for x in sorted_[:self.archive_size]]))
+                old_nondom_archive = [sorted_[i] for i in nondom_indeces]
+                old_decomposed_archive_fitnesses = [self.decomposed_archive_fitnesses[i] for i in nondom_indeces]
+            seen = set()
+            nondom_archive = []
+            decomposed_fitnesses = []
+            for i, s in enumerate(old_nondom_archive):
+                if s.fitness not in seen:
+                    seen.add(s.fitness)
+                    nondom_archive.append(s)
+                    decomposed_fitnesses.append(old_decomposed_archive_fitnesses[i])
+            self.nondom_archive = nondom_archive
+            self.decomposed_archive_fitnesses = decomposed_fitnesses
 
-    def sorting_mechanism(self, population):
+    def sorting_mechanism(self, population, decomposed_fitnesses=None):
         """
         Sorts solutions based on fitness.
+        For MOEA/D this is only used by FEA to sort the archive and to replace the worst solution.
         @param population: List of individuals to be sorted.
-        @return: List of sorted individuals.
+        @param decomposed_fitnesses: decompoed values to sort on
+        @return: List of sorted individuals based on their decomposed fitness values.
         """
-        fitnesses = np.array([np.array(x.fitness) for x in population])
-        return [x for y, x in sorted(zip(fitnesses, population))]
+        if decomposed_fitnesses is None:
+            decomposed_fitnesses = self.decomposed_archive_fitnesses
+        return [x for y, x in sorted(zip(decomposed_fitnesses, population), key=lambda pair: pair[0] )]
 
-    def neighborhood_selection(self, n_select, n_parents, neighbors):
-        P = np.full((n_select, n_parents), -1)
-
-        prob = np.random.uniform(low=0.0, high=1.0, size=n_select)
-
-        for k in range(n_select):
-            if np.random.random() < prob[k]:
-                P[k] = np.random.choice(neighbors[k], n_parents, replace=False)
-            else:
-                P[k] = np.random.permutation(len(self.curr_population))[:n_parents]
-
-        return P
-
-
+    def generate_offspring_from_neighborhood(self, N):
+        """
+        @param N: current individual being processed by algorithm
+        Select two parents from current population member N's neighborhood and perform:
+        1. simulated binary crossover
+        2. Polynomial mutation
+        Return resulting offspring
+        """
+        # select parents randomly from neighborhood
+        parents_idx = np.random.choice(self.neighbors[N], 2, replace=False)
+        parents = [[x for x in self.curr_population[parents_idx[0]].variables],
+                   [x for x in self.curr_population[parents_idx[1]].variables]]
+        # create offspring using regular EA methods
+        child = self.ea.mutate(self.ea.crossover(parents[0], parents[1])[0], lbound=self.value_range[0],
+                               ubound=self.value_range[1])
+        return PopulationMember(child, self.calc_fitness(child, gs=self.global_solution, factor=self.factor))
 
 
 class HYPE(MOEA):
     def __init__(self, evolutionary_algorithm, dimensions=100, population_size=200, ea_runs=100,
                  # data_distribution=False,
                  combinatorial_values=[], factor=None, global_solution=None):
-        super().__init__(population_size, dimensions, combinatorial_values)
+        super().__init__()
         self.dimensions = dimensions
         self.population_size = population_size
         self.ea = evolutionary_algorithm(dimensions, population_size)
@@ -614,6 +699,3 @@ class HYPE(MOEA):
         self.factor = factor
         self.global_solution = global_solution
         self.ea_runs = ea_runs
-        self.nondom_pop = []
-        self.nondom_archive = []
-        self.iteration_stats = []
