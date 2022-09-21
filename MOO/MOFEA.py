@@ -6,7 +6,7 @@ from FEA.factorarchitecture import FactorArchitecture
 from pymoo.util.nds.non_dominated_sorting import find_non_dominated
 
 import numpy as np
-import random
+import random, pickle
 
 
 class MOFEA:
@@ -84,7 +84,10 @@ class MOFEA:
             print("eval dict", eval_dict)
             # [print(s.objective_values) for s in self.nondom_archive]
             # [print(i, ': ', s.objective_values) for i,s in enumerate(self.iteration_stats[fea_run+1]['global solutions'])]
-            fea_run = fea_run + 1
+            fea_run = fea_run+1
+            file = open("../../../results/checkpoints/latest_run.p", "wb")
+            pickle.dump(self, file)
+            file.close()
 
     def compete(self):
         """

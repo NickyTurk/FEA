@@ -13,7 +13,7 @@ total_front = []
 
 file_regex = r'_single_knapsack_3_objectives_'
 stored_files = MultiFileReader(file_regex)
-experiment_filenames = stored_files.path_to_files
+experiment_filenames = stored_files.found_files
 
 for compare in comparing:
     experiment = [x for x in experiment_filenames if compare+'_' in x]
