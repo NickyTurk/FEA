@@ -12,15 +12,16 @@ path_ = path.group()
 
 np.set_printoptions(suppress=True)
 field = pickle.load(open(path_ + '/utilities/saved_fields/sec35mid.pickle', 'rb'))
+field.field_name = 'sec35middle'
 
-agg_file = "I:/FieldData/sec35mid/broyles_sec35mid_2016_yl_aggreg_20181112.csv"
-reduced_agg_files = ["I:/FieldData/sec35mid/broyles_sec35mid_2016_yl_aggreg_20181112.csv",
-                     "I:/FieldData/sec35mid/reduced_broyles_sec35mid_cnn_random.csv",
-                     "I:/FieldData/sec35mid/reduced_broyles_sec35mid_cnn_spatial.csv",
-                     "I:/FieldData/sec35mid/reduced_broyles_sec35mid_cnn_aggregate.csv"]
+agg_file = "home/amy/Documents/Work/OFPE/Data/Sec35Mid/broyles_sec35mid_2016_yl_aggreg_20181112.csv"
+reduced_agg_files = ["/home/amy/Documents/Work/OFPE/Data/Sec35Mid/broyles_sec35mid_2016_yl_aggreg_20181112.csv" ,#I:/FieldData/sec35mid/broyles_sec35mid_2016_yl_aggreg_20181112.csv",
+                     "/home/amy/Documents/Work/OFPE/Data/Sec35Mid/reduced_broyles_sec35mid_cnn_random.csv",
+                     "/home/amy/Documents/Work/OFPE/Data/Sec35Mid/reduced_broyles_sec35mid_cnn_spatial.csv",
+                     "/home/amy/Documents/Work/OFPE/Data/Sec35Mid/reduced_broyles_sec35mid_cnn_aggregate.csv"]
 type_of_file = ['full', 'random', 'spatial', 'aggregate']
 # df = pd.read_csv(agg_file)
-y_labels = df['yl_2016']  # yl18_bu_ac
+# y_labels = df['yl_2016']  # yl18_bu_ac
 data_to_use = ['x', 'y', 'n_lbs_ac', 'elev_m', 'slope_deg', 'ndvi_2012', 'ndvi_2014', 'ndvi_2015', 'yl14_nn_bu_ac',
                'n15_lbs_ac', 'n14_lbs_ac']
 # HENRYS ['x', 'y', 'n_lbs_ac', 'elev_m', 'slope_deg', 'ndvi15', 'ndvi16', 'ndvi17', 'yl16_nn_bu_ac','n16_lbs_ac']
@@ -30,12 +31,12 @@ data_to_use = ['x', 'y', 'n_lbs_ac', 'elev_m', 'slope_deg', 'ndvi_2012', 'ndvi_2
 Initialize CNN model
 """
 cnn = YieldMapPredictor(filename='/home/amy/Documents/Work/OFPE/Data/broyles_10m_yldDat_with_sentinel.csv',
-                        field=field.field_name, pred_year=2020, training_years=[2016, 2018])
+                        field='sec35middle', pred_year=2020, training_years=[2016, 2018])
 # Load prediction data (it will be saved in cnn.data)
 cnn.load_pred_data(objective='yld')
 # Load model weights
 cnn.model = cnn.init_model(modelType='Hyper3DNet')
-path_weights = '/home/amy/projects/OFPETool-master/static/uploads/Model-Hyper3DNet-sec35middle--Objective-yld/Hyper3DNet' + "-" + field.field_name + "--Objective-yld"
+path_weights = '/home/amy/projects/OFPETool-master/static/uploads/Model-Hyper3DNet-sec35middle--Objective-yld/Hyper3DNet' + "-sec35middle--Objective-yld"
 cnn.model.loadModel(path=path_weights)
 cnn.patches, centers = cnn.extract2DPatches()
 
@@ -67,6 +68,7 @@ combs = combinations(type_of_file, 2)
 
 for k in range(10):
     cell_predictions = dict()
+    total_predictions = dict()
     random_global_variables = [random.randrange(0, 150) for x in range(len(field.cell_list))]
     pr = Prescription(variables=random_global_variables, field=field)
     for i, reduced_agg_file in enumerate(reduced_agg_files):
@@ -76,14 +78,18 @@ for k in range(10):
         yp.adjust_nitrogen_data(prescription=pr, cnn=True)
         total_yield = yp.calculate_yield(cnn=True)
         cell_predictions[type_of_file[i]] = yp.cell_predictions
+        total_predictions[type_of_file[i]] = total_yield
 
-        print('#################################')
+        print('##################')
         print(type_of_file[i])
-        print('#################################')
+        print('##################')
         print('yield for whole field: ', total_yield)
-        print('cell specific predictions: ', yp.cell_predictions)
-
+        #print('cell specific predictions: ', yp.cell_predictions)
+    combs = combinations(type_of_file, 2)
     for comb in combs:
         print(comb)
-        diff = cell_predictions[comb[0]] - cell_predictions[comb[1]]
+        diff = np.array(cell_predictions[comb[0]]) - np.array(cell_predictions[comb[1]])
         print('avg difference: ', np.mean(diff))
+        print('total difference: ', total_predictions[comb[0]] - total_predictions[comb[1]])
+        
+    print('\n')
