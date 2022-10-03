@@ -27,6 +27,8 @@ class YieldPredictor:
         self.model = trained_model
         self.cnn_bool = cnn_bool
         self.weeds_model = weeds_model
+        self.variables = []
+        self.cell_predictions = []
 
         if not cnn_bool:
             # creating dataframe to adjust
@@ -42,27 +44,30 @@ class YieldPredictor:
         """
         if isinstance(prescription, Prescription):
             if isinstance(prescription.variables[0], GridCell):
-                variables = [x.nitrogen for x in prescription.variables]
+                self.variables = [x.nitrogen for x in prescription.variables]
             else:
-                variables = prescription.variables
+                self.variables = prescription.variables
         else:
             if isinstance(prescription[0], GridCell):
-                variables = [x.nitrogen for x in prescription]
+                self.variables = [x.nitrogen for x in prescription]
             else:
-                variables = prescription
-        if not cnn:
-            for i, cell_N in enumerate(variables):
-                self.full_df.loc[self.full_df['cell_index'] == i].loc[:, self.nitrogen_header] = cell_N
-                self.nitrogen_dataframe = self.full_df.loc[:, self.data_headers]
-                self.weeds_dataframe = self.full_df.loc[:, self.weeds_headers]
+                self.variables = prescription
+        if not isinstance(self.model, list):
+            if not cnn:
+                for i, cell_N in enumerate(self.variables):
+                    self.full_df.loc[self.full_df['cell_index'] == i].loc[:, self.nitrogen_header] = cell_N
+                    self.nitrogen_dataframe = self.full_df.loc[:, self.data_headers]
+                    self.weeds_dataframe = self.full_df.loc[:, self.weeds_headers]
+            else:
+                for i, cell_N in enumerate(self.variables):
+                    center_ids = list(self.model.centers[self.model.centers['cell_index'] == i][2])
+                    for j in range(len(self.model.patches)):
+                        if j in center_ids:
+                            nr = self.model.patches[j, 0, 0, :]
+                            nr[nr != 0] = cell_N
+                            self.model.patches[j, 0, 0, :] = nr
         else:
-            for i, cell_N in enumerate(variables):
-                center_ids = list(self.model.centers[self.model.centers['cell_index'] == i][2])
-                for j in range(len(self.model.patches)):
-                    if j in center_ids:
-                        nr = self.model.patches[j, 0, 0, :]
-                        nr[nr != 0] = cell_N
-                        self.model.patches[j, 0, 0, :] = nr
+            pass
 
     def calculate_yield(self, cnn=False):
         """
@@ -85,8 +90,14 @@ class YieldPredictor:
                 center_ids = self.model.centers.loc[self.model.centers['cell_index'] == i][2]
                 cell_pred = np.take(yield_predictions, center_ids, axis=0)
                 avg = np.mean(np.array(cell_pred))
+                self.cell_predictions.append(avg)
                 if not np.isnan(avg):
                     actual_yield += avg * self.gridcell_size
+        elif isinstance(self.model, list):
+            actual_yield = 0
+            for i in range(len(self.field.cell_list)):
+                actual_yield += self.model[i][self.variables[i]]
+
         else:
             adjusted_nitrogen_dataframe = self.full_df.loc[:, self.adjusted_data_headers]
             yield_predictions = self.model.predict(self.nitrogen_dataframe)
@@ -94,8 +105,8 @@ class YieldPredictor:
             adjusted_nitrogen_dataframe.loc[:, 'predicted'] = yield_predictions
             actual_yield = 0
             for i in range(len(self.field.cell_list)):
-                cell_predictions = adjusted_nitrogen_dataframe.loc[adjusted_nitrogen_dataframe['cell_index'] == i]
-                avg = np.mean(cell_predictions['predicted'])
+                cell_pred = adjusted_nitrogen_dataframe.loc[adjusted_nitrogen_dataframe['cell_index'] == i]
+                avg = np.mean(cell_pred['predicted'])
                 if not np.isnan(avg):
                     actual_yield += avg * self.gridcell_size
         return actual_yield
@@ -106,6 +117,17 @@ class YieldPredictor:
         else:
             weeds_predictions = 0
         return weeds_predictions
+
+
+def get_points_in_cell(gridcell, dps):
+    # Get cell location information
+    bl_x, bl_y = gridcell.bottomleft_x, gridcell.bottomleft_y
+    ur_x, ur_y = gridcell.upperright_x, gridcell.upperright_y
+    # Get all points in the cell
+    return dps[(dps[:, 1] >= bl_x) &
+                            (dps[:, 1] <= ur_x) &
+                            (dps[:, 0] <= ur_y) &
+                            (dps[:, 0] >= bl_y)]
 
 
 def create_indexed_dataframe(dps, field, headers=None, transform_to_latlon=False, transform_from_latlon=False):
@@ -138,14 +160,8 @@ def create_indexed_dataframe(dps, field, headers=None, transform_to_latlon=False
 
     np_dps = dps.to_numpy()
     for i, gridcell in enumerate(field.cell_list):
-        # Get cell location information
-        bl_x, bl_y = gridcell.bottomleft_x, gridcell.bottomleft_y
-        ur_x, ur_y = gridcell.upperright_x, gridcell.upperright_y
         # Get all points in the cell
-        points_in_cell = np_dps[(np_dps[:, y_int] >= bl_x) &
-                                (np_dps[:, y_int] <= ur_x) &
-                                (np_dps[:, x_int] <= ur_y) &
-                                (np_dps[:, x_int] >= bl_y)]
+        points_in_cell = get_points_in_cell(gridcell, np_dps)
         # Set nitrogen value for points
         if len(points_in_cell) > 0:
             cell_df = pd.DataFrame(points_in_cell)

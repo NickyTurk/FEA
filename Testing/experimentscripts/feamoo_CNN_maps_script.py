@@ -49,6 +49,7 @@ for i, field in enumerate(fields_to_test):
 
     #adjust patches and centers for use in MOO
     lat_lon = [utm.to_latlon(cnn.coords[x, y][0], cnn.coords[x, y][1], 12, northern=True) for (x, y) in centers]
+    # add cell ids to centers dataframe
     cnn.centers = create_indexed_dataframe(dps=pd.DataFrame(lat_lon), field=field)
     indeces = [center[2] for center in np.array(cnn.centers)]
     points_in_cells_indeces = np.array(indeces).astype(int)
@@ -63,7 +64,7 @@ for i, field in enumerate(fields_to_test):
     pr = Prescription(variables=random_global_variables, field=field)
     yp = YieldPredictor(prescription=pr, field=field, agg_data_file=reduced_agg_files[i], trained_model=cnn, data_headers=data_to_use, cnn_bool=True)
 
-    yp.calculate_yield(prescription=pr, cnn=True)
+    #yp.calculate_yield(cnn=True)
     FA = FactorArchitecture(len(field.cell_list))
     FA.factors = field.create_strip_groups(overlap=True)
     FA.get_factor_topology_elements()

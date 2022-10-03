@@ -1,3 +1,4 @@
+import random
 import numpy as np
 import scipy as sp
 
@@ -104,6 +105,24 @@ class FactorArchitecture(object):
         self.factors = zip(*[rotate(self.arbiters, n) for n in range(0, width)])
         self.determine_neighbors()
         self.calculate_optimizers()
+
+    def random_grouping(self, min_groups=5, max_groups=15, overlap=False):
+        self.method = "random"
+        number_of_groups = random.randint(min_groups,max_groups)
+        while True:
+            assigned_groups = random.choices(range(0,number_of_groups), k=self.dim)
+            if len(set(assigned_groups)) == number_of_groups:
+                break
+        self.factors = []
+        for i in range(number_of_groups):
+            factor = [idx for idx, grp in enumerate(assigned_groups) if grp == i]
+            self.factors.append(factor)
+        if overlap:
+            for i in range(0,number_of_groups-1):
+                factor = random.sample(self.factors[i],k=int(np.ceil(len(self.factors[i])/4)))
+                factor.extend(random.sample(self.factors[i+1],k=int(np.ceil(len(self.factors[i+1])/4))))
+                self.factors.append(factor)
+
 
     def diff_grouping(self, _function, epsilon, m=0, moo=False, n_obj=np.inf):
         """
@@ -367,3 +386,8 @@ class MooFactorArchitecture:
             all_factors.factors.extend(fa.factors)
         all_factors.get_factor_topology_elements()
         return all_factors
+
+
+if __name__ == "__main__":
+    fa = FactorArchitecture(dim=100)
+    fa.random_grouping(overlap=True)

@@ -373,7 +373,7 @@ class SPEA2(MOEA):
         There can be multiple "worst" solutions, in which case as many are replaces as there are global solutions.
         """
         if self.worst_index is None or self.worst_index == []:
-            self.worst_index = self.find_most_crowded(self.distance_matrix)
+            self.worst_index = self.final_strengths.index(max(self.final_strengths))
         else:
             sol = random.choice(gs)
             self.curr_population[self.worst_index] = PopulationMember(
