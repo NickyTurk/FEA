@@ -261,6 +261,7 @@ class NSGA2(MOEA):
         nondom_indeces = find_non_dominated(fitnesses)
         nondom_pop = [total_population[i] for i in nondom_indeces]
         self.nondom_archive.extend(nondom_pop)
+        self.update_archive(self.nondom_archive)
         # Less non-dominated solutions than population size
         if len(nondom_pop) < self.population_size:
             new_population = []
@@ -292,12 +293,6 @@ class NSGA2(MOEA):
 
         # Last generation if used by FEA or CCEA
         if generation_idx == self.ea_runs - 1 and self.factor is not None:
-            # Extend archive with found non-dom population for this generation
-            seen = set()
-            for s in nondom_pop:
-                if s.fitness not in seen:
-                    seen.add(s.fitness)
-                    self.nondom_archive.append(s)
             # randomly select a non-dom solution to add to FEA
             choice = random.choice(self.nondom_archive)
             full_solution = [x for x in self.global_solution.variables]
@@ -573,7 +568,6 @@ class MOEAD(MOEA):
             self.ideal_point_fitness = np.min([x.fitness for x in self.curr_population], axis=0)
 
         for i in range(self.ea_runs):
-            print('ea run: ', i)
             for N in np.random.permutation(len(self.curr_population)):
                 # create offspring
                 offspring = self.generate_offspring_from_neighborhood(N)
