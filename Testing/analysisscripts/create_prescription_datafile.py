@@ -4,6 +4,7 @@ from pyproj import Transformer
 from predictionalgorithms.yieldprediction import create_indexed_dataframe
 from pymoo.util.nds.non_dominated_sorting import find_non_dominated
 from optimizationproblems.prescription import Prescription
+from utilities.multifilereader import MultiFileReader
 
 try:
     import _pickle as pickle
@@ -14,27 +15,18 @@ import pandas as pd
 import numpy as np
 
 
-experiment_filenames = [
-    "../../results/FEAMOO/CCEAMOO_Henrys_trial_3_objectives_linear_topo_ga_runs_100_population_500_0508121527.pickle",
-    "../../results/FEAMOO/CCEAMOO_Sec35Middle_trial_3_objectives_strip_topo_ga_runs_100_population_500_3007121518.pickle",
-    "../../results/FEAMOO/CCEAMOO_Sec35West_trial_3_objectives_strip_topo_ga_runs_100_population_500_0408143024.pickle",
-    "../../results/FEAMOO/NSGA2_Henrys_trial_3_objectives_ga_runs_200_population_500_2807110247.pickle",
-    "../../results/FEAMOO/NSGA2_Sec35Middle_trial_3_objectives_ga_runs_200_population_500_2807110338.pickle",
-    "../../results/FEAMOO/NSGA2_Sec35West_trial_3_objectives_ga_runs_200_population_500_2807110402.pickle",
-    "../../results/FEAMOO/FEAMOO_Sec35West_trial_3_objectives_strip_topo_ga_runs_100_population_500_0808133844.pickle",
-    "../../results/FEAMOO/FEAMOO_Sec35Middle_trial_3_objectives_linear_topo_ga_runs_100_population_500_2807191458.pickle",
-    "../../results/FEAMOO/FEAMOO_Henrys_trial_3_objectives_strip_topo_ga_runs_100_population_500_1008025822.pickle"]
 aggregated_data_files = ["../../../Documents/Work/OFPE/Data/Henrys/wood_henrys_10m_yld_2016-2020_UPDATE.csv",
                          "../../../Documents/Work/OFPE/Data/Sec35West/broyles_sec35west_10m_yld_2016-2020_UPDATE.csv",
                          "../../../Documents/Work/OFPE/Data/Sec35Mid/broyles_sec35mid_10m_yld_2016-2020_UPDATE.csv"]  # "../../../Documents/Work/OFPE/Data/Henrys/wood_henrys_10m_yld_2016-2020_UPDATE.csv"]
-field_files = ["../utilities/saved_fields/Henrys.pickle", "../utilities/saved_fields/sec35west.pickle",
-               "../utilities/saved_fields/sec35mid.pickle"]
-field_names = ["henrys", "sec35west", "sec35middle"]
+field_files = ["../utilities/saved_fields/millview.pickle"]
+field_names = ["millview"]
 
 if __name__ == '__main__':
     objectives = ['jumps', 'strat', 'fertilizer_rate']
 
     for fieldfile, agg_file, name in zip(field_files, aggregated_data_files, field_names):
+        mf = MultiFileReader(name)
+        experiment_filenames = mf.path_to_files
         field = pickle.load(open(fieldfile, 'rb'))
         print(field.latlong_crs, field.aa_crs, field.field_crs)
         project_to_latlong = Transformer.from_crs('epsg:32612', field.latlong_crs)  # 32629, 32612 # 'epsg:32612'

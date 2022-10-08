@@ -39,10 +39,11 @@ class MultiFileReader(object):
         else:
             search_path = os.path.dirname(ROOT_DIR)#os.path.abspath('FunctionTesting.py'))
         regex = r'(.*)' + self.file_regex + r'(.*)'
+        #regex = self.file_regex
         r = re.compile(regex)
         for root, dir, files in os.walk(search_path):
             for x in files:
-                if r.match(x):
+                if r.search(x):
                     result.append(os.path.join(root, x))
         return result
 

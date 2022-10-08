@@ -109,7 +109,7 @@ class MOEA:
         '''
         Calculate generation statistics for the found non-dominated solutions
         '''
-        po = ParetoOptimization()
+        po = ParetoOptimization(obj_size=len(self.worst_fitness_ref))
         eval_dict = po.evaluate_solution(self.nondom_archive, self.worst_fitness_ref)
         eval_dict['GA_run'] = iteration_idx
         eval_dict['ND_size'] = len(self.nondom_archive)
