@@ -6,7 +6,7 @@ from FEA.factorarchitecture import FactorArchitecture
 from pymoo.util.nds.non_dominated_sorting import find_non_dominated
 
 import numpy as np
-import random, pickle
+import random, pickle, re, os
 
 
 class MOFEA:
@@ -27,6 +27,10 @@ class MOFEA:
         # keep track to have a reference point for the HV indicator
         self.subpopulations = None
         self.iteration_stats = []
+
+        current_working_dir = os.getcwd()
+        path = re.search(r'^(.*?[\\/]FEA)', current_working_dir)
+        self.path = path.group()
 
     def initialize_moo_subpopulations(self, factors=None):
         """
@@ -66,7 +70,7 @@ class MOFEA:
         fea_run = 0
         while fea_run != self.fea_runs:  # len(change_in_nondom_size) < 4 and
             for s, alg in enumerate(self.subpopulations):
-                print('Subpopulation: ', s, alg.dimensions, type(alg))
+                #print('Subpopulation: ', s, alg.dimensions, type(alg))
                 alg.run(fea_run=fea_run)
             self.compete()
             self.share_solution()
@@ -85,7 +89,7 @@ class MOFEA:
             # [print(s.objective_values) for s in self.nondom_archive]
             # [print(i, ': ', s.objective_values) for i,s in enumerate(self.iteration_stats[fea_run+1]['global solutions'])]
             fea_run = fea_run+1
-            file = open("../../../results/checkpoints/latest_run.p", "wb")
+            file = open(self.path+"/results/checkpoints/latest_run.p", "wb")
             pickle.dump(self, file)
             file.close()
 

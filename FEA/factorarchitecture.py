@@ -7,7 +7,7 @@ try:
 except:
     import pickle
 import os
-from utilities.clustering import FuzzyKmeans
+# from utilities.clustering import FuzzyKmeans
 
 
 def rotate(xs, n):
@@ -44,7 +44,10 @@ class FactorArchitecture(object):
     """
 
     def __init__(self, dim=0, factors=None):
-        self.factors = factors
+        if factors is not None:
+            self.factors = factors
+        else:
+            self.factors = []
         self.arbiters = []
         self.optimizers = []
         self.neighbors = []
@@ -122,7 +125,6 @@ class FactorArchitecture(object):
                 factor = random.sample(self.factors[i],k=int(np.ceil(len(self.factors[i])/4)))
                 factor.extend(random.sample(self.factors[i+1],k=int(np.ceil(len(self.factors[i+1])/4))))
                 self.factors.append(factor)
-
 
     def diff_grouping(self, _function, epsilon, m=0, moo=False, n_obj=np.inf):
         """
@@ -204,24 +206,25 @@ class FactorArchitecture(object):
         :param curr_factor:
         :return curr_factor:
         """
-        p1 = np.multiply(_function.lbound, np.ones(self.dim))  # python does weird things if you set p2 = p1
-        p2 = np.multiply(_function.lbound, np.ones(self.dim))  # python does weird things if you set p2 = p1
-        p2[i] = _function.ubound
+        p1 = [random.random() for x in range(self.dim)]
+        p2 = [x for x in p1]
+        p2[i] = p1[i]+.1
         if not moo:
             if m == 0:
                 delta1 = _function.run(p1) - _function.run(p2)
             else:
                 delta1 = _function.run(p1, m_group=m) - _function.run(p2, m_group=m)
         elif moo:
-            delta1 = _function.run(p1, i=n_obj) - _function.run(p2, i=n_obj)
+            delta1 = _function.evaluate(p1)[n_obj] - _function.evaluate(p2)[n_obj]
+            #print("obj: ", n_obj, "D1: ", delta1)
         self.function_evaluations += 2
 
         for j in range(i + 1, size):
-            p3 = np.multiply(_function.lbound, np.ones(self.dim))
-            p4 = np.multiply(_function.lbound, np.ones(self.dim))
-            p4[i] = _function.ubound
-            p3[dimensions[j]] = 0
-            p4[dimensions[j]] = 0  # grabs dimension to compare to, same as home
+            p3 = [x for x in p1]
+            p4 = [x for x in p2]
+            rand = random.random()
+            p3[j] = rand
+            p4[j] = rand
 
             if not moo:
                 if m == 0:
@@ -229,7 +232,8 @@ class FactorArchitecture(object):
                 else:
                     delta2 = _function.run(p3, m_group=m) - _function.run(p4, m_group=m)
             elif moo:
-                delta2 = _function.run(p3, i=n_obj) - _function.run(p4, i=n_obj)
+                delta2 = _function.evaluate(p3)[n_obj] - _function.evaluate(p4)[n_obj]
+                #print("obj: ", n_obj, "D2: ", delta2, _function.evaluate(p3)[n_obj], _function.evaluate(p4)[n_obj])
             self.function_evaluations += 2
 
             if abs(delta1 - delta2) > eps:
@@ -237,31 +241,31 @@ class FactorArchitecture(object):
 
         return curr_factor
 
-    def spectral_grouping(self, IM, num_clusters):
-        from networkx import to_networkx_graph, Graph
-        from networkx.linalg import laplacian_matrix
-        '''
-        Assign the datapoints to clusters using spectral clustering and return and array of cluster assignemnts
-        '''
-        self.method = "spectral"
-        IM_graph = to_networkx_graph(IM, create_using=Graph)
-
-        # get Laplacian
-        laplacian = sp.sparse.csr_matrix.toarray(laplacian_matrix(IM_graph))
-
-        # calc eigen vectors and values of the laplacian
-        eig_values, eig_vectors = np.linalg.eig(laplacian)
-        sorted_indices = eig_values.argsort()
-        eig_values = eig_values[sorted_indices]
-        eig_vectors = eig_vectors[sorted_indices]
-
-        # take k largest eigen vectors
-        k_arr = np.arange(num_clusters)
-        eig_values = eig_values[k_arr]
-        eig_vectors = np.transpose(eig_vectors[k_arr])
-
-        # run fuzzy kmeans with the eigen vectors
-        self.factors = FuzzyKmeans(eig_vectors, num_clusters).assign_clusters()
+    # def spectral_grouping(self, IM, num_clusters):
+    #     from networkx import to_networkx_graph, Graph
+    #     from networkx.linalg import laplacian_matrix
+    #     '''
+    #     Assign the datapoints to clusters using spectral clustering and return and array of cluster assignemnts
+    #     '''
+    #     self.method = "spectral"
+    #     IM_graph = to_networkx_graph(IM, create_using=Graph)
+    #
+    #     # get Laplacian
+    #     laplacian = sp.sparse.csr_matrix.toarray(laplacian_matrix(IM_graph))
+    #
+    #     # calc eigen vectors and values of the laplacian
+    #     eig_values, eig_vectors = np.linalg.eig(laplacian)
+    #     sorted_indices = eig_values.argsort()
+    #     eig_values = eig_values[sorted_indices]
+    #     eig_vectors = eig_vectors[sorted_indices]
+    #
+    #     # take k largest eigen vectors
+    #     k_arr = np.arange(num_clusters)
+    #     eig_values = eig_values[k_arr]
+    #     eig_vectors = np.transpose(eig_vectors[k_arr])
+    #
+    #     # run fuzzy kmeans with the eigen vectors
+    #     self.factors = FuzzyKmeans(eig_vectors, num_clusters).assign_clusters()
 
     def MEET(self, T):
         """
@@ -286,6 +290,39 @@ class FactorArchitecture(object):
             factor = list(T.neighbors(node))  # adjacent nodes
             factor.append(node)  # add itself to the group
             factors.append(factor)
+
+        self.factors = factors
+
+    def MEET2(self, T, number_of_factors=50):
+        """
+        Create directed graph with edge weights in MIC table.
+        Directed graph (IM) can be calculated using different methods, called from variableinteraction class
+        Create MAXimal spanning tree from this graph.
+        :param T, T is either a directed graph stored as a numpy array, or a networkx graph object
+        :return:
+        """
+
+        if isinstance(T, np.ndarray):  # convert np array to tree
+            from networkx import  from_numpy_array, maximum_spanning_tree
+            G = from_numpy_array(T)
+            T = maximum_spanning_tree(G)
+
+        self.method = "MEET"
+        factors = []
+
+        print(f'Total weight: {T.size(weight="weight")}')
+
+        for node in list(T.nodes):  # each dimension
+            factor = list(T.neighbors(node))  # adjacent nodes
+            factor.append(node)  # add itself to the group
+            factors.append(factor)
+
+        while len(factors) > number_of_factors:  # shrink the number of factors!
+            factors.sort(key=len)
+            f1 = factors.pop(0)
+            f2 = factors.pop(0)
+            new_f = set(f1 + f2)
+            factors.append(list(new_f))
 
         self.factors = factors
 
@@ -353,41 +390,56 @@ class FactorArchitecture(object):
 
 class MooFactorArchitecture:
 
-    def __init__(self, dim, problem, decomp_approach='diff_grouping'):
+    def __init__(self, dim, problem, n_obj, decomp_approach='diff_grouping'):
         self.dim = dim
         self.problem = problem
+        self.n_obj = n_obj
         self.decomp = decomp_approach
 
-    def create_objective_factors(self, save_files=True) -> FactorArchitecture:
+    def create_objective_factors(self, save_files=False) -> FactorArchitecture:
         """Create factors along different objective functions.
         For each objective, a FactorArchitecture object is created.
         :param save_files: Boolean that determines whether the created factorArchitectures are saved in pickle files
         :returns FactorArchitecture object: with all the factors generated
         """
         all_factors = FactorArchitecture(self.dim)
-        eps = 0.000000001
-        for i in range(self.problem.n_obj):
+        all_factors.method = self.decomp + '_MOO'
+        eps = 5
+        for i in range(self.n_obj):
             fa = FactorArchitecture(self.dim)
             if self.decomp == 'diff_grouping':
                 getattr(fa, self.decomp)(self.problem, eps, moo=True, n_obj=i)
             if save_files:
                 fa.save_architecture(
-                    '../factor_architecture_files/n_obj_' + str(self.problem.n_obj) + '/MOO_' + fa.method + '_dim_' + str(self.dim) + '_obj_' + str(i))
-            all_factors.factors.extend(fa.factors)
+                    '../factor_architecture_files/n_obj_' + str(self.n_obj) + '_' + fa.method + '_dim_' + str(self.dim) + '_obj_' + str(i))
+            print(fa.factors)
+            print(len(fa.factors))
+            for f in fa.factors:
+                all_factors.factors.append(f)
         all_factors.get_factor_topology_elements()
         return all_factors
 
     def read_objective_factors(self, method_name) -> FactorArchitecture:
         all_factors = FactorArchitecture(self.dim)
-        for i, obj in enumerate(self.problem.n_obj):
+        for i, obj in enumerate(self.n_obj):
             fa = FactorArchitecture(self.dim)
             fa.load_architecture(
-                '../factor_architecture_files/MOO_' + method_name + '_dim_' + str(self.dim) + '_obj_' + str(i))
+                '../factor_architecture_files/n_obj_' + str(self.n_obj) + '_' + method_name + '_dim_' + str(self.dim) + '_obj_' + str(i))
             all_factors.factors.extend(fa.factors)
         all_factors.get_factor_topology_elements()
         return all_factors
 
 
 if __name__ == "__main__":
-    fa = FactorArchitecture(dim=100)
-    fa.random_grouping(overlap=True)
+    from pymoo.factory import get_problem
+    import re
+
+    current_working_dir = os.getcwd()
+    path = re.search(r'^(.*?[\\/]FEA)', current_working_dir)
+    path = path.group()
+
+    # dtlz = get_problem("dtlz1", n_var=1000, n_obj=3)
+    # moofa = MooFactorArchitecture(dim=1000, problem=dtlz, n_obj=3)
+    # factors = moofa.create_objective_factors()
+    # print(len(factors.factors))
+    # factors.save_architecture(path_to_save=path+"/FEA/factor_architecture_files/DG_MOO/DG_DTLZ1_3_eps5")
