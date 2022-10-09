@@ -13,7 +13,7 @@ from pymoo.factory import get_problem
 file_regexes = [r'', r'']
 file_regex = r'CCNSGA2_multi_knapsack_3_objectives_'
 
-problems = ['DTLZ2', 'DTLZ3']
+problems = ['DTLZ2', 'DTLZ1', 'WFG1', 'WFG2']
 algorithms = ['NSGA2', 'SPEA2', 'MOEAD']
 nr_objs = [3,5, 10]
 
