@@ -10,9 +10,9 @@ import os, re, time, pickle
 from pymoo.problems.many.dtlz import DTLZ1
 
 dimensions = 1000
-ga_run = 100
+ga_run = 200
 population = 500
-nr_objs = [3, 5]
+nr_objs = [3] #, 5]
 
 current_working_dir = os.getcwd()
 path = re.search(r'^(.*?[\\/]FEA)', current_working_dir)
@@ -22,24 +22,21 @@ path = path.group()
 # moea2 = partial(NSGA2, population_size=population, ea_runs=ga_run)
 # moea3 = partial(MOEAD, ea_runs=ga_run, weight_vector=ref_dirs, n_neighbors=10, problem_decomposition=Tchebicheff())
 
-names = ['SPEA2', 'NSGA2', 'MOEAD']
+names = ['MOEAD']#, 'NSGA2', 'MOEAD']
 
 for nr_obj in nr_objs:
     @add_method(MOEA)
     def calc_fitness(variables, gs=None, factor=None):
-        dtlz = get_problem("dtlz1", n_var=dimensions, n_obj=nr_obj)
+        dtlz = get_problem("dtlz2", n_var=dimensions, n_obj=nr_obj)
         objective_values = dtlz.evaluate(variables)
         return tuple(objective_values)
 
     for name in names:
         print(name)
-        if nr_obj == 3 and (name == 'SPEA2' or name == 'NSGA2'):
-            print('skip')
-            continue
         for i in range(10):
             print('##############################################\n', i)
             start = time.time()
-            filename = path + '/results/DTLZ1/' + name + '/' + name + '_DTLZ1_' + str(dimensions) + '_dimensions_' + str(nr_obj) + \
+            filename = path + '/results/DTLZ2/' + name + '/' + name + '_DTLZ2_' + str(dimensions) + '_dimensions_' + str(nr_obj) + \
                 '_objectives_ea_runs_' + str(ga_run) + '_population_' + str(population) + time.strftime(
                 '_%d%m%H%M%S') + '.pickle'
             if name == 'SPEA2':

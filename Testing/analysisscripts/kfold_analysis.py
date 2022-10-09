@@ -6,6 +6,7 @@ import numpy as np
 from itertools import combinations
 from scipy.stats import ttest_ind
 from pymoo.util.nds.non_dominated_sorting import find_non_dominated
+from pymoo.factory import get_problem
 
 #TODO: make reusable and general
 
@@ -21,15 +22,17 @@ po = ParetoOptimization()
 for problem in problems:
     print('************************************************')
     print(problem)
-    for obj in nr_objs:
-        print(obj)
-        file_regex = re.escape(problem)+r'_1000_dimensions_'+ re.escape(str(obj))+r'_objectives_ea_runs_(.*)_population_500_'
+    for n_obj in nr_objs:
+        print(n_obj)
+        file_regex = problem+r'_1000_dimensions_'+ re.escape(str(n_obj))+r'_objectives_ea_runs_(.*)_population_500_'
         #file_regex = r'_1000_dimensions_3_objectives_ea_runs_[0-9]*_population_500_'
 
         t_test_pop = dict()
         total_nondom_pop = []
         
         for alg in algorithms:
+            print('************************************************')
+            print(alg)
             print('************************************************')
             stored_files = MultiFileReader(file_regex=file_regex, dir = "/media/amy/WD Drive/"+problem+"/"+alg+"/")
             file_list = stored_files.path_to_files
@@ -39,10 +42,13 @@ for problem in problems:
             ND_size = 0
             amount = 0
             for file in file_list:
-                print(file)
                 amount += 1
                 obj = pickle.load(open(file, 'rb'))
                 new_div = po.calculate_diversity(obj.nondom_archive)
+                print(obj.nondom_archive[0].fitness)
+                if obj.nondom_archive[0].fitness[0] < 0:
+                    #dtlz = get_problem(problem, n_var=1000, n_obj=n_obj)
+                    print(obj.nondom_archive[0].variables)
                 t_test_pop[alg]["spread"].append(new_div) #obj.iteration_stats[-1]['diversity'])
                 t_test_pop[alg]["HV"].append(obj.iteration_stats[-1]['hypervolume'])
                 ND_size = ND_size + obj.iteration_stats[-1]['ND_size']
@@ -51,7 +57,7 @@ for problem in problems:
             ND_size = ND_size/amount
             spread = np.sum(t_test_pop[alg]["spread"])/amount
             # #print(file_regex)
-            print('\n------------------------------------------------\n', alg)
+            print('\n------------------------------------------------\n')
             print('hv: ', HV, 'nd: ', ND_size, 'spread: ', spread)
         nondom_fitnesses = []
         for x in total_nondom_pop:
