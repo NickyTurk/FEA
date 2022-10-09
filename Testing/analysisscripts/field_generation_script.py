@@ -1,6 +1,6 @@
 from utilities.field.field_creation import Field
-
-import pickle
+import pandas as pd
+import pickle, os, re
 
 # field_ = Field()
 # print('HENRYS')
@@ -26,12 +26,20 @@ import pickle
 # field_2.create_field()
 # pickle.dump(field_2, open('../../utilities/saved_fields/sec35west.pickle', 'wb'))
 
-field_organic = Field()
-print('Millview')
-field_organic.field_shape_file = "C:/Users/f24n127/OneDrive - Montana State University/Documents/raw-farm-data/millview/millview_bbox.shp"
-field_organic.yld_file = "C:/Users/f24n127/OneDrive - Montana State University/Documents/raw-farm-data/millview/mv19.csv"
-#field_organic.as_applied_file = "../../../Documents/Work/OFPE/Data/Sec35West/Loewen Hill _Loewen Hill _Millview_Seeding_2020-05-29_00.shp"
-field_organic.cell_width = 43/field_organic.conversion_measure
-field_organic.create_field()
-pickle.dump(field_organic, open('../../utilities/saved_fields/millview.pickle', 'wb'))
+current_working_dir = os.getcwd()
+path = re.search(r'^(.*?[\\/]FEA)', current_working_dir)
+path = path.group()
+
+field_names = ['millview']
+for fieldname in field_names:
+    field_organic = Field()
+    field_organic.cell_length_min = 350
+    field_organic.cell_length_max = 600
+    field_organic.cell_width = 43
+    field_organic.angle = 90
+    field_organic.field_shape_file = "/home/amy/Documents/Work/OFPE/Data/organic/" + fieldname + "/bbox_mv_2020.shp"
+    df = pd.read_csv("/home/amy/Documents/Work/OFPE/Data/organic/all_agg_exp_2.csv")
+    field_organic.yld_file = df.loc[(df['field']==fieldname)]
+    field_organic.create_field()
+    pickle.dump(field_organic, open(path+'/utilities/saved_fields/' + fieldname + '.pickle', 'wb'))
 

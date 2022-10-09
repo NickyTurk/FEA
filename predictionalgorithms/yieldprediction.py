@@ -32,7 +32,10 @@ class YieldPredictor:
 
         if not cnn_bool:
             # creating dataframe to adjust
-            self.full_df = create_indexed_dataframe(field=field, headers=self.headers,
+            if 'cell_index' in self.dps.columns.to_list():
+                self.full_df = self.dps
+            else:
+                self.full_df = create_indexed_dataframe(field=field, headers=self.headers,
                                                     dps=self.dps)
             # self.data_headers.append('cell_index')
             self.nitrogen_dataframe = self.full_df.loc[:, data_headers]
@@ -130,7 +133,7 @@ def get_points_in_cell(gridcell, dps):
                             (dps[:, 0] >= bl_y)]
 
 
-def create_indexed_dataframe(dps, field, headers=None, transform_to_latlon=False, transform_from_latlon=False):
+def create_indexed_dataframe(dps, field, headers=None, transform_to_latlon=False, transform_from_latlon=False, epsg_string='epsg:32612'):
     """
     Method to assign cell index to each datapoint, includes ability to transform data from and to latlong coordinate system.
 
@@ -142,8 +145,8 @@ def create_indexed_dataframe(dps, field, headers=None, transform_to_latlon=False
     """
 
     all_points_df = pd.DataFrame()
-    project_from_latlong = Transformer.from_crs(field.latlong_crs, 'epsg:32612')
-    project_to_latlong = Transformer.from_crs('epsg:32612', field.latlong_crs)  # 'epsg:32612')
+    project_from_latlong = Transformer.from_crs(field.latlong_crs, epsg_string)
+    project_to_latlong = Transformer.from_crs(epsg_string, field.latlong_crs)  # 'epsg:32612')
     if headers:
         x_int = headers['x']
         y_int = headers['y']

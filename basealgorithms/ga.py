@@ -213,6 +213,9 @@ class GA:
         This can be applied to any of the three above methods.
         @return: The crossed over children, or an empty array if crossover was not performed.
         """
+        if self.continuous_bool:
+            lbound = self.value_range[0]
+            ubound = self.value_range[1]
         if not crossover_rate:
             crossover_rate = self.crossover_rate
 
@@ -226,7 +229,7 @@ class GA:
                     index_2 = random.randint(1, self.dimensions - 1)
                 min_index, max_index = maxmin_indeces(index_1, index_2)
                 if self.continuous_bool:
-                    third_solution = [(x + y)/2 for (x, y) in zip(first_solution, second_solution)]
+                    third_solution = [min(max((x + y)/2, lbound), ubound) for (x, y) in zip(first_solution, second_solution)]
                     _first_solution[min_index:max_index] = third_solution[min_index:max_index]
                     _second_solution[0:min_index] = third_solution[0:min_index]
                     _second_solution[max_index:] = third_solution[max_index:]
@@ -236,7 +239,7 @@ class GA:
             elif self.crossover_type == 'single':
                 index_1 = random.randint(1, self.dimensions - 1)
                 if self.continuous_bool:
-                    third_solution = [(x + y)/2 for (x, y) in zip(first_solution, second_solution)]
+                    third_solution = [min(max((x + y)/2, lbound), ubound) for (x, y) in zip(first_solution, second_solution)]
                     _first_solution[0:index_1] = third_solution[0:index_1]
                     _second_solution[index_1:] = third_solution[index_1:]
                 else:
@@ -246,7 +249,7 @@ class GA:
                 for i in range(len(first_solution)):
                     if random.random() < crossover_rate:
                         if self.continuous_bool:
-                            third_solution = [(x + y) / 2 for (x, y) in zip(first_solution, second_solution)]
+                            third_solution = [min(max((x + y)/2, lbound), ubound) for (x, y) in zip(first_solution, second_solution)]
                             _first_solution[i] = third_solution[i]
                             _second_solution[i] = third_solution[i]
                         else:

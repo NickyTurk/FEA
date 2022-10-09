@@ -3,6 +3,7 @@ Functionality to read and write WKT data.
  TODO: Needs to be made more generalizable.
 """
 
+import pickle
 import csv, os, re
 import osgeo, fiona
 from fiona.crs import from_epsg
@@ -52,12 +53,11 @@ class ShapeFiles:
         schema = {'geometry': 'Polygon', 'properties': shapefile_schema}
         crs = from_epsg(4326)
         with fiona.open(filestring + '.shp', 'w', driver='ESRI Shapefile', crs=crs, schema=schema) as output:
-            prop = {'ID': 0, 'AvgYield': 0, 'AvgProtein': 0, 'Nitrogen': 100}
+            prop = {'ID': 0} #, 'AvgYield': 0, 'AvgProtein': 0, 'Nitrogen': 100}
             # poly = field_.field_shape - MultiPolygon(field_.cell_polys) #field_.field_shape -
             output.write({'geometry': mapping(field_.field_shape), 'properties': prop})
             for geom in geometries:
-                prop = {'ID': geom.sorted_index, 'AvgYield': geom.yield_, 'AvgProtein': geom.pro_,
-                        'Nitrogen': geom.nitrogen}
+                prop = {'ID': geom.sorted_index} #, 'AvgYield': geom.yield_, 'AvgProtein': geom.pro_, 'Nitrogen': geom.nitrogen}
                 output.write({'geometry': mapping(geom.true_bounds), 'properties': prop})
 
 
@@ -161,5 +161,12 @@ class WKTFiles:
 
 
 if __name__ == '__main__':
-    shape_reader = ShapeFiles("C:\\Users\\f24n127\\Documents\\raw-farm-data\\wood-henrys-2018\\WOOD_YL18_YLD_2018_henrys.shp")
-    shape_reader.read_shape_file('yld')
+    current_working_dir = os.getcwd()
+    path = re.search(r'^(.*?[\\/]FEA)', current_working_dir)
+    path = path.group()
+
+    field_names = ['uw', 'blumenhof']
+    shape_reader = ShapeFiles()
+    for fieldname in field_names:
+        field = pickle.load(open(path + '/utilities/saved_fields/'+ fieldname +'.pickle', 'rb'))
+        shape_reader.write_field_to_shape_file(field.cell_list, field, {'ID': 'int'}, path + '/utilities/saved_fields/' + fieldname +'_grid')

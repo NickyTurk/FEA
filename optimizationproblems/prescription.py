@@ -9,7 +9,7 @@ from copy import deepcopy
 class Prescription:
 
     def __init__(self, variables=None, field=None, factor=None, index=-1, normalize_objectives=False, optimized=False, organic=False, yield_predictor=None,
-                 fertilizer_cost=1, yield_price=5.40):
+                 applicator_cost=1, yield_price=5.40):
         if variables and factor is None and field is None:
             self.variables = variables
         elif variables and factor and field:
@@ -44,7 +44,7 @@ class Prescription:
         self.organic = organic
         self.normalize = normalize_objectives
         self.yield_predictor = yield_predictor
-        self.fertilizer_cost = fertilizer_cost  # cost in dollars for fertilizer based on application measure
+        self.applicator_cost = applicator_cost  # cost in dollars for fertilizer based on application measure
         self.yield_price = yield_price  # dollars made per unit, e.g. bushels per acre of winter wheat
         if not self.optimized:
             self.objective_values = (self.strat, self.jumps, self.fertilizer_rate)
@@ -194,8 +194,8 @@ class Prescription:
     def optimize_yld(self, solution):
         predicted_yield = self.yield_predictor.calculate_yield(cnn=self.yield_predictor.cnn_bool)
         # P = base_price + ()
-        fertilizer_applied = sum([c.nitrogen*self.gridcell_size for c in solution])
-        net_return = predicted_yield * self.yield_price - fertilizer_applied * self.fertilizer_cost - self.field.fixed_costs
+        applicator = sum([c.nitrogen*self.gridcell_size for c in solution])
+        net_return = predicted_yield * self.yield_price - applicator * self.applicator_cost - self.field.fixed_costs
         return -net_return
 
     def minimize_weeds(self):

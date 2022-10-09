@@ -15,7 +15,10 @@ def reduce_dataframe(field, agg_file, data_to_use=None, transform_to_latlon=Fals
     """
     @param sampling_type: which type of sampling to apply: 'random', 'spatial', 'aggregate'
     """
-    df = pd.read_csv(agg_file)
+    if isinstance(agg_file, pd.DataFrame):
+        df = agg_file
+    else:
+        df = pd.read_csv(agg_file)
     project_from_latlong = Transformer.from_crs(field.latlong_crs, epsg_string)
     project_to_latlong = Transformer.from_crs(epsg_string, field.latlong_crs)# 'epsg:32612') CANADA: 'EPSG:6657'
     x_int = 0
@@ -24,11 +27,12 @@ def reduce_dataframe(field, agg_file, data_to_use=None, transform_to_latlon=Fals
         dps = df
     else:
         dps = df[data_to_use]
-    #
-    dps = dps.dropna(axis=0, subset=['yld', 'aa_n'])
+    try:
+        dps = dps.dropna(axis=0, subset=['yld', 'aa_n'])
+    except KeyError:
+        pass
     dps = dps.dropna(axis=1, how='all')
     dps = dps.select_dtypes(include=['number'])
-    print(dps.columns)
     new_df = pd.DataFrame()
     if transform_to_latlon:
         xy = np.array(
@@ -54,9 +58,11 @@ def reduce_dataframe(field, agg_file, data_to_use=None, transform_to_latlon=Fals
                                      (dps['x'] >= bl_y)].values.tolist()
                 if len(points_in_cell) == 1:
                     cell_df = pd.DataFrame(random.sample(points_in_cell, 1))
+                    cell_df.loc[:, 'cell_index'] = i
                     new_df = pd.concat([cell_df, new_df])
                 elif len(points_in_cell) > 1:
                     cell_df = pd.DataFrame(random.sample(points_in_cell, 2))
+                    cell_df.loc[:, 'cell_index'] = i
                     new_df = pd.concat([cell_df, new_df])
         elif sampling_type == 'aggregate':
             bl_x, bl_y = gridcell.bottomleft_x, gridcell.bottomleft_y
@@ -69,6 +75,7 @@ def reduce_dataframe(field, agg_file, data_to_use=None, transform_to_latlon=Fals
                 points_in_cell = pd.DataFrame(points_in_cell)
                 aggregate_point = points_in_cell.mean(axis=0).to_numpy()
                 cell_df = pd.DataFrame([aggregate_point])
+                cell_df.loc[:, 'cell_index'] = i
                 new_df = pd.concat([cell_df, new_df])
 
         else:
@@ -85,6 +92,7 @@ def reduce_dataframe(field, agg_file, data_to_use=None, transform_to_latlon=Fals
                     n_keep = len(points_in_cell)
                 to_keep = random.sample(points_in_cell, n_keep)
                 cell_df = pd.DataFrame(to_keep)
+                cell_df.loc[:, 'cell_index'] = i
                 new_df = pd.concat([cell_df, new_df])
     if transform_from_latlon:
         xy = np.array(
@@ -95,7 +103,9 @@ def reduce_dataframe(field, agg_file, data_to_use=None, transform_to_latlon=Fals
     if data_to_use is not None:
         new_df.columns = data_to_use
     else:
-        new_df.columns = dps.columns
+        columns = dps.columns.to_list()
+        columns.append('cell_index')
+        new_df.columns = columns
     return new_df
 
 
@@ -104,13 +114,17 @@ if __name__ == '__main__':
     path_ = re.search(r'^(.*?[\\/]FEA)', current_working_dir)
     path_ = path_.group()
 
-    data_to_use = ['x', 'y', 'n_lbs_ac', 'elev_m', 'slope_deg', 'ndvi_2012', 'ndvi_2014', 'ndvi_2015', 'yl14_nn_bu_ac', 'n15_lbs_ac', 'n14_lbs_ac']
-    #['x', 'y', 'yld', 'prev_yld', 'aa_sr', 'prev_aa_sr', 'elev', 'slope', 'ndvi_py_s', 'ndvi_2py_s', 'ndvi_cy_s', 'ndwi_py_s', 'bm_wd', 'carboncontent10cm', 'phw10cm', 'watercontent10cm', 'sandcontent10cm', 'claycontent10cm']
+    agg_file = "~/Documents/Work/OFPE/Data/all_agg_exp_2.csv"
 
-    agg_file = "/home/amy/Documents/Work/OFPE/Data/Sec35Mid/broyles_sec35mid_10m_yld_2016-2020_UPDATE.csv"
-    field = pickle.load(open(path_+'/utilities/saved_fields/sec35mid.pickle', 'rb'))
-    reduced = reduce_dataframe(field, agg_file, transform_to_latlon=True, sampling_type='random', epsg_string='epsg:32612')
-    reduced.to_csv("/home/amy/Documents/Work/OFPE/Data/Sec35Mid/reduced_broyles_sec35mid_cnn_random.csv")
+    df = pd.read_csv(agg_file)
+    df20 = df.loc[(df['year']==2020) & (df['field']=='millview')]
+    df21 = df.loc[(df['year']==2021) & (df['field']=='millview')]
+
+    df_20_21 = pd.merge(df20, df21, on=('x', 'y', 'lon', 'lat', 'elev', 'slope'), sort=False, suffixes=('_2020', '_2021'))
+
+    field = pickle.load(open(path_+'/utilities/saved_fields/millview.pickle', 'rb'))
+    reduced = reduce_dataframe(field, df_20_21, transform_to_latlon=True, sampling_type='random', epsg_string='EPSG:6657')
+    reduced.to_csv("~/Documents/Work/OFPE/Data/millview/reduced_millview20_21_spatial.csv")
 
     # reduced = reduce_dataframe(field, agg_file, transform_to_latlon=True, spatial_sampling=False)
     # reduced.to_csv("/home/amy/Documents/Work/OFPE/Data/Sec35Mid/reduced_broyles_sec35mid_cnn_random.csv")
