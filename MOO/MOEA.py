@@ -578,6 +578,8 @@ class MOEAD(MOEA):
             for N in np.random.permutation(len(self.curr_population)):
                 # create offspring
                 offspring = self.generate_offspring_from_neighborhood(N)
+                if any(offspring.fitness) < 0:
+                    print(offspring.fitness)
 
                 # update ideal point
                 self.ideal_point_fitness = np.min(np.vstack([self.ideal_point_fitness, offspring.fitness]), axis=0)
@@ -685,6 +687,7 @@ class MOEAD(MOEA):
         # create offspring using regular EA methods
         child = self.ea.mutate(self.ea.crossover(parents[0], parents[1])[0], lbound=self.value_range[0],
                                ubound=self.value_range[1])
+        child = [min(max(var, self.value_range[0]), self.value_range[1]) for var in child]
         return PopulationMember(child, self.calc_fitness(child, gs=self.global_solution, factor=self.factor))
 
 
