@@ -18,7 +18,7 @@ current_working_dir = os.getcwd()
 path = re.search(r'^(.*?[\\/]FEA)', current_working_dir)
 path = path.group()
 
-problems = ['DTLZ1', 'DTLZ2', 'DTLZ3']
+problems = ['WFG1', 'WFG2', 'WFG3']
 
 # moea1 = partial(SPEA2, population_size=population, ea_runs=ga_run)
 # moea2 = partial(NSGA2, population_size=population, ea_runs=ga_run)
@@ -46,7 +46,10 @@ for problem in problems:
                     moo = SPEA2(dimensions=dimensions, value_range=[0.0, 1.0], reference_point=list(np.ones(nr_obj)),
                             ea_runs=ga_run)
                 elif name == 'MOEAD':
-                    ref_dirs = get_reference_directions("das-dennis", nr_obj, n_partitions=12)
+                    if nr_obj <= 3:
+                        ref_dirs = get_reference_directions("das-dennis", nr_obj, n_partitions=12)
+                    else:
+                        ref_dirs = get_reference_directions("das-dennis", nr_obj, n_partitions=4)
                     # pf = get_problem("dtlz1", n_var=dimensions, n_obj=nr_obj).pareto_front(ref_dirs)
                     # reference_point = np.max(pf, axis=0)
                     moo = MOEAD(dimensions=dimensions, value_range=[0.0, 1.0], reference_point=list(np.ones(nr_obj)),

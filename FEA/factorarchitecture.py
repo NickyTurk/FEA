@@ -353,10 +353,17 @@ class FactorArchitecture(object):
 
 class MooFactorArchitecture:
 
-    def __init__(self, dim, problem, decomp_approach='diff_grouping'):
+    def __init__(self, dim, n_obj, problem=None, decomp_approach='diff_grouping'):
         self.dim = dim
         self.problem = problem
         self.decomp = decomp_approach
+        self.n_obj = n_obj
+
+    def graph_based_MOO_dg(self, ubound=1, lbound=0, shift_param=111.1, nr_samples=20):
+        # Property analysis
+        # Interaction learning
+        # Graph grouping
+        pass
 
     def create_objective_factors(self, save_files=True) -> FactorArchitecture:
         """Create factors along different objective functions.
@@ -366,13 +373,13 @@ class MooFactorArchitecture:
         """
         all_factors = FactorArchitecture(self.dim)
         eps = 0.000000001
-        for i in range(self.problem.n_obj):
+        for i in range(self.n_obj):
             fa = FactorArchitecture(self.dim)
             if self.decomp == 'diff_grouping':
                 getattr(fa, self.decomp)(self.problem, eps, moo=True, n_obj=i)
             if save_files:
                 fa.save_architecture(
-                    '../factor_architecture_files/n_obj_' + str(self.problem.n_obj) + '/MOO_' + fa.method + '_dim_' + str(self.dim) + '_obj_' + str(i))
+                    '../factor_architecture_files/n_obj_' + str(self.n_obj) + '/MOO_' + fa.method + '_dim_' + str(self.dim) + '_obj_' + str(i))
             all_factors.factors.extend(fa.factors)
         all_factors.get_factor_topology_elements()
         return all_factors

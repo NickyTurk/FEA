@@ -285,23 +285,28 @@ class GA:
         if len(self.population[0].variables) <= 4 and self.crossover_type == 'multi':
             self.crossover_type = 'single'
         while len(children) < self.offspring_size:
-            first_solution, idx1 = self.tournament_selection(self.population)
-            self.population.pop(idx1)
-            second_solution, idx2 = self.tournament_selection(self.population)
-            self.population.insert(idx1, first_solution)
-            first_solution = [x for x in first_solution.variables]
-            second_solution = [x for x in second_solution.variables]
-            crossed_over = self.crossover(first_solution, second_solution)
-            if crossed_over:
-                child1 = crossed_over[0]
-                child2 = crossed_over[1]
+            if len(self.population[0].variables) == 1:
+                first_solution, idx1 = self.tournament_selection(self.population)
+                child1 = self.mutate([x for x in first_solution.variables], mutation_rate = 0.99)
+                children.append(child1)
             else:
-                child1 = [x for x in first_solution]
-                child2 = [x for x in second_solution]
-            child1 = self.mutate(child1)
-            child2 = self.mutate(child2)
-            children.append(child1)
-            children.append(child2)
+                first_solution, idx1 = self.tournament_selection(self.population)
+                self.population.pop(idx1)
+                second_solution, idx2 = self.tournament_selection(self.population)
+                self.population.insert(idx1, first_solution)
+                first_solution = [x for x in first_solution.variables]
+                second_solution = [x for x in second_solution.variables]
+                crossed_over = self.crossover(first_solution, second_solution)
+                if crossed_over:
+                    child1 = crossed_over[0]
+                    child2 = crossed_over[1]
+                else:
+                    child1 = [x for x in first_solution]
+                    child2 = [x for x in second_solution]
+                child1 = self.mutate(child1)
+                child2 = self.mutate(child2)
+                children.append(child1)
+                children.append(child2)
         return children
 
     def selection(self, total_population):
