@@ -1,25 +1,26 @@
 import numpy as np
 from minepy import MINE
 from networkx import from_numpy_array, maximum_spanning_tree, connected_components
-from random import choice
+import random
 
 
 class MEE(object):
-    def __init__(self, func, dim, samples, mic_thresh, de_thresh, delta, use_mic_value=True):
+    def __init__(self, func, dim, samples, mic_thresh, de_thresh, delta, measure = None, use_mic_value=True):
         self.f = func
         self.d = dim
-        self.ub = np.ones(self.d) * func.ubound
-        self.lb = np.ones(self.d) * func.lbound
+        rand = random.random()
+        self.ub = np.ones(self.d) * rand
+        self.lb = np.ones(self.d) * rand
         self.samples = samples
         self.mic_thresh = mic_thresh  # mic threshold
         self.de_thresh = de_thresh  # diff equation (de) threshold
         self.delta = delta  # account for small variations
         self.IM = np.zeros((self.d, self.d))
         self.use_mic_value = use_mic_value
-
+        self.measure = measure
         # Define measure
         # self.measure = Entropic(self.f, self.d, self.lb, self.ub, self.samples, self.delta, self.de_thresh)
-        self.measure = DGInteraction(self.f, self.d, 0.001, func.lbound, func.ubound, m=4)
+        #self.measure = DGInteraction(self.f, self.d, 0.001, m=4)
 
     def get_IM(self):
         self.direct_IM()
@@ -36,6 +37,7 @@ class MEE(object):
         f, dim, lb, ub, sample_size, delta = self.f, self.d, self.lb, self.ub, self.samples, self.delta
         # for each dimension
         for i in range(dim):
+            print("dim: ", i)
             # compare to consecutive variable (/dimension)
             for j in range(i + 1, dim):
 
@@ -66,19 +68,12 @@ class MEE(object):
 
 
 class RandomTree(object):
-    def __init__(self, func, dim, samples, de_thresh, delta):
-        self.f = func
+    def __init__(self, dim, measure):
         self.d = dim
-        self.ub = np.ones(self.d) * func.ubound
-        self.lb = np.ones(self.d) * func.lbound
-        self.delta = delta  # account for small variations
         r = np.random.random(size=(self.d, self.d))
 
         self.IM = (r + r.T) - 2  # init IM to be symmetric with random values between [-2, 0]
         # self.IM = np.ones((self.d, self.d)) * -1  # init IM to bunch of -1's (so we can initialize a tree)
-
-        self.samples = samples
-        self.de_thresh = de_thresh
 
         self.iteration_ctr = 0
 
@@ -86,9 +81,7 @@ class RandomTree(object):
         self.G = from_numpy_array(self.IM)  # We don't technically need this in self, but might as well have it
         self.T = maximum_spanning_tree(self.G)  # just make a tree (they're all -1 so it is a boring tree)
 
-        # Define measure
-        # self.measure = Entropic(self.f, self.d, self.lb, self.ub, self.samples, self.delta, self.de_thresh)
-        self.measure = DGInteraction(self.f, self.d, 0.001, func.lbound, func.ubound, m=4)
+        self.measure = measure
 
     def run(self, trials):
         """
@@ -100,17 +93,16 @@ class RandomTree(object):
         summary = ""
         for i in range(trials):
             self.iteration_ctr += 1  # keep track of global counter to allow for multiple, sequential run calls
-            # print("Iteration " + str(self.iteration_ctr))
 
             edges = list(self.T.edges(data="weight"))
-            remove = choice(edges)  # remove a random edge
+            remove = random.choice(edges)  # remove a random edge
             # remove = min(edges, key=lambda e: e[2])  # find the cheapest edge
             self.T.remove_edge(remove[0], remove[1])  # delete the edge
 
             comp1, comp2 = connected_components(self.T)
 
-            node1 = choice(list(comp1))  # generate random start node
-            node2 = choice(list(comp2))  # generate random end node
+            node1 = random.choice(list(comp1))  # generate random start node
+            node2 = random.choice(list(comp2))  # generate random end node
 
             interact = self.compute_interaction(node1, node2)
             summary += f"\t|\t{remove[2]} --> {interact} "
@@ -131,6 +123,7 @@ class RandomTree(object):
         :return: MIC value
         """
         if self.IM[i][j] > 0:
+            print('IM larger')
             return self.IM[i][j]
 
         mic = self.measure.compute(i, j)
@@ -150,13 +143,11 @@ class Measure(object):
 
 
 class Entropic(Measure):
-    def __init__(self, f, d, lb, ub, samples, delta, de_thresh):
+    def __init__(self, f, d, samples, delta, de_thresh,moo=False, n_obj=0):
         """
         Uses MEE to compute interaction
         :param f: function
         :param d: dimensions
-        :param lb: lower bound matrix
-        :param ub: upper bound matrix
         :param samples: number of samples to take
         :param delta: pertubation
         :param de_thresh: threshold value
@@ -164,25 +155,34 @@ class Entropic(Measure):
         self.de_thresh = de_thresh
         self.delta = delta
         self.samples = samples
-        self.ub = ub
-        self.lb = lb
         self.d = d
         self.f = f
+        rand = random.random()
+        self.ub = np.ones(self.d) * rand
+        self.lb = np.ones(self.d) * (rand-.25)
+        self.moo = moo
+        self.n_obj = n_obj
 
     def compute(self, i, j):
         # number of values to calculate == sample size
-        f, dim, lb, ub, sample_size, delta = self.f, self.d, self.lb, self.ub, self.samples, self.delta
+        f, dim, sample_size, delta = self.f, self.d, self.samples, self.delta
         de = np.zeros(sample_size)
         # generate n values (i.e. samples) for j-th dimension
-        x_j = np.random.rand(sample_size) * (ub[j] - lb[j]) + lb[j]
+        x_j = np.random.rand(sample_size) * (self.ub[j] - self.lb[j]) + self.lb[j]
         # randomly generate solution -- initialization of function variables
-        x = np.random.uniform(lb, ub, size=dim)
+        x = np.random.uniform(self.lb, self.ub, size=dim)
         for k in range(1, sample_size):
             cp = x[j]
             x[j] = x_j[k]  # set jth value to random sample value
-            y_1 = f.run(x)
+            if not self.moo:
+                y_1 = f.run(x)
+            else:
+                y_1 = f.evaluate(x)[self.n_obj]
             x[i] = x[i] + delta
-            y_2 = f.run(x)
+            if not self.moo:
+                y_2 = f.run(x)
+            else:
+                y_2 = f.evaluate(x)[self.n_obj]
             de[k] = (y_2 - y_1) / delta
             # Reset the changes
             x[j] = cp
@@ -198,34 +198,47 @@ class Entropic(Measure):
 
 
 class DGInteraction(Measure):
-    def __init__(self, func, dim, epsilon, lbound, ubound, m=0):
+    def __init__(self, func, dim, epsilon, n_obj=0, moo=False, m=0):
         self.f = func
         self.dim = dim
         self.eps = epsilon
         self.m = m
-        self.lbound = lbound
-        self.ubound = ubound
+        self.n_obj = n_obj
+        self.moo = moo
 
     def compute(self, i, j):
-        p1 = np.multiply(self.lbound, np.ones(self.dim))  # python does weird things if you set p2 = p1
-        p2 = np.multiply(self.lbound, np.ones(self.dim))  # python does weird things if you set p2 = p1
-        p2[i] = self.ubound
+        p1 = [random.random() for x in range(self.dim)]
+        p2 = [x for x in p1]
+        while True:
+            rand1 = random.random()
+            if abs(rand1 - p1[i]) > 0.1:
+                break
+        while True:
+            rand2 = random.random()
+            if abs(rand2 - p1[j]) > 0.1:
+                break
+        p2[i] = rand1
+        if not self.moo:
+            delta1 = self.f.run(p1) - self.f.run(p2)
+        else:
+            delta1 = self.f.evaluate(p1)[self.n_obj] - self.f.evaluate(p2)[self.n_obj]
+            # print("obj: ", self.n_obj, "D1: ", delta1)
 
-        delta1 = self.f.run(p1) - self.f.run(p2)
+        p1[j] = rand2
+        p2[j] = rand2
 
-        p3 = np.multiply(self.lbound, np.ones(self.dim))
-        p4 = np.multiply(self.lbound, np.ones(self.dim))
-        p4[i] = self.ubound
-        p3[j] = 0  # In factorarcitecture.check_delta it is self.dimensions[j]. In ODG this is equivalent
-        p4[j] = 0  # grabs dimension to compare to, same as home
-
-        delta2 = self.f.run(p3) - self.f.run(p4)
+        if not self.moo:
+            delta2 = self.f.run(p1) - self.f.run(p2)
+        else:
+            delta2 = self.f.evaluate(p1)[self.n_obj] - self.f.evaluate(p2)[self.n_obj]
+            # print("obj: ", self.n_obj, "D2: ", delta2)
 
         return abs(delta1 - delta2)
 
 
 if __name__ == '__main__':
-    from optimizationProblems.function import Function
-    f = Function(function_number=1, shift_data_file="f01_o.txt")
-    mee = MEE(f, 5, 5, 0.1, 0.0001, 0.000001)
-    mee.get_IM()
+    pass
+    #f = Function(function_number=1, shift_data_file="f01_o.txt")
+    #mee = MEE(f, 5, 5, 0.1, 0.0001, 0.000001)
+    #MEE(func=f, dim=5, samples=5, mic_thresh=0.1, de_thresh=0.0001, delta=0.000001)
+    #mee.get_IM()

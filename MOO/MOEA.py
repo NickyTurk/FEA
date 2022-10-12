@@ -105,14 +105,16 @@ class MOEA:
             i = i + 1
         return curr_population, initial_solution
 
-    def set_iteration_stats(self, iteration_idx):
+    def set_iteration_stats(self, iteration_idx, nd_archive=None):
         '''
         Calculate generation statistics for the found non-dominated solutions
         '''
-        po = ParetoOptimization(obj_size=len(self.worst_fitness_ref))
-        eval_dict = po.evaluate_solution(self.nondom_archive, self.worst_fitness_ref)
+        if nd_archive is None:
+            nd_archive = self.nondom_archive
+        po = ParetoOptimization()
+        eval_dict = po.evaluate_solution(nd_archive, self.worst_fitness_ref)
         eval_dict['GA_run'] = iteration_idx
-        eval_dict['ND_size'] = len(self.nondom_archive)
+        eval_dict['ND_size'] = len(nd_archive)
         self.iteration_stats.append(eval_dict)
 
     def calc_fitness(self, variables, gs=None, factor=None):
@@ -158,6 +160,7 @@ class NSGA2(MOEA):
         self.initial_solution = []
         self.worst_index = None
         self.random_nondom_solutions = []
+        self.nondom_pop = []
 
     def run(self, fea_run=0):
         """
@@ -183,13 +186,13 @@ class NSGA2(MOEA):
             I.e. when NSGA2 is NOT used as the base-algorithm for FEA.
             '''
             if self.factor is None:
-                self.nondom_archive = self.update_archive()
-                self.set_iteration_stats(i)
-                if len(self.nondom_archive) == old_archive_length and len(self.nondom_archive) >= 10:
-                    change_in_nondom_size.append(True)
-                else:
-                    change_in_nondom_size = []
-                old_archive_length = len(self.nondom_archive)
+                #self.nondom_archive = self.update_archive()
+                self.set_iteration_stats(i, self.nondom_pop)
+                # if len(self.nondom_archive) == old_archive_length and len(self.nondom_archive) >= 10:
+                #     change_in_nondom_size.append(True)
+                # else:
+                #     change_in_nondom_size = []
+                # old_archive_length = len(self.nondom_archive)
 
             i += 1
 
@@ -259,11 +262,11 @@ class NSGA2(MOEA):
         total_population = [x for x in self.curr_population]
         fitnesses = np.array([np.array(x.fitness) for x in total_population])
         nondom_indeces = find_non_dominated(fitnesses)
-        nondom_pop = [total_population[i] for i in nondom_indeces]
-        self.nondom_archive.extend(nondom_pop)
-        self.update_archive(self.nondom_archive)
+        self.nondom_pop = [total_population[i] for i in nondom_indeces]
+        # self.nondom_archive.extend(nondom_pop)
+        # self.update_archive(self.nondom_archive)
         # Less non-dominated solutions than population size
-        if len(nondom_pop) < self.population_size:
+        if len(self.nondom_pop) < self.population_size:
             new_population = []
             fronts = fast_non_dominated_sort(fitnesses)
             last_front = []
@@ -286,13 +289,17 @@ class NSGA2(MOEA):
         # More non-dominated solutions than the population size
         # Select the first n based on crowding distance
         else:
-            sorted_population = self.sorting_mechanism(nondom_pop)
+            sorted_population = self.sorting_mechanism(self.nondom_pop)
             self.curr_population = sorted_population[:self.population_size]
             worst_fitness = tuple([x for x in self.curr_population[-1].fitness])
         random.shuffle(self.curr_population)
 
         # Last generation if used by FEA or CCEA
+        if generation_idx == self.ea_runs-1 and self.factor is None:
+            self.nondom_archive = self.nondom_pop
         if generation_idx == self.ea_runs - 1 and self.factor is not None:
+            self.nondom_archive = self.nondom_pop
+            self.update_archive(self.nondom_archive)
             # randomly select a non-dom solution to add to FEA
             choice = random.choice(self.nondom_archive)
             full_solution = [x for x in self.global_solution.variables]

@@ -12,8 +12,8 @@ import os, re, time, pickle
 from pymoo.problems.many.dtlz import DTLZ1
 
 dimensions = 1000
-sizes = [1]  # [100, 100, 200, 200]
-overlaps = [1]  # 80, 100, 160, 200]  
+sizes = [100, 100, 200, 200]  # , 200, 100]
+overlaps = [80, 100, 160, 200]  # 100, 160, 80]  # , 10, 20]
 fea_runs = [20]
 ga_run = 20
 population = 500

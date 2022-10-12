@@ -282,7 +282,7 @@ class GA:
         children = []
         if curr_population:
             self.population = [x for x in curr_population]
-        if len(self.population[0].variables) <= 4 and self.crossover_type == 'multi':
+        if len(self.population[0].variables) <= 6 and self.crossover_type == 'multi':
             self.crossover_type = 'single'
         while len(children) < self.offspring_size:
             if len(self.population[0].variables) == 1:
