@@ -12,7 +12,7 @@ from pymoo.problems.many.dtlz import DTLZ1
 dimensions = 1000
 ga_run = 200
 population = 500
-nr_objs = [3, 5, 10]
+nr_objs = [10]
 
 current_working_dir = os.getcwd()
 path = re.search(r'^(.*?[\\/]FEA)', current_working_dir)
@@ -71,6 +71,7 @@ for problem in problems:
                     if not os.path.isdir(path + '/results/' + problem.upper() + '/' + name + '/'):
                         try:
                             os.mkdir(path + '/results/' + problem.upper() + '/' + name + '/')
+                            file = open(filename, "wb")
                         except FileNotFoundError:
                             if not os.path.isdir(path + '/results/' + problem.upper() + '/'):
                                 os.mkdir(path + '/results/' + problem.upper() + '/')

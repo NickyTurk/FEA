@@ -3,5 +3,6 @@ venv/
 *.pyc
 *.asv
 .idea/
+/results/
 /results/Knapsack/
 /results/prescriptions/
