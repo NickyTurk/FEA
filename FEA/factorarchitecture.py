@@ -1,6 +1,10 @@
 import random
+from tokenize import group
 import numpy as np
 import scipy as sp
+
+from basealgorithms.ga import GA
+from utilities.util import PopulationMember, add_method
 
 try:
     import _pickle as pickle
@@ -109,22 +113,88 @@ class FactorArchitecture(object):
         self.determine_neighbors()
         self.calculate_optimizers()
 
+    def classic_random_grouping(self, group_size):
+        self.method = "classic_random"
+        number_of_groups = self.dim/group_size
+        indeces = range(0,self.dim)
+        factors = []
+        for n in range(number_of_groups-1):
+            grp = random.choices(indeces, k=group_size)
+            print('random choices: ', grp)
+            factors.append(grp)
+            del(indeces[grp])
+            print(len(indeces))
+        print(indeces)
+        factors.append(indeces)
+
     def random_grouping(self, min_groups=5, max_groups=15, overlap=False):
         self.method = "random"
         number_of_groups = random.randint(min_groups,max_groups)
         while True:
+            # make sure each group has at least one variable
             assigned_groups = random.choices(range(0,number_of_groups), k=self.dim)
             if len(set(assigned_groups)) == number_of_groups:
                 break
-        self.factors = []
+        factors = []
         for i in range(number_of_groups):
+            # check which variables belong to each group and add them to the factor group
             factor = [idx for idx, grp in enumerate(assigned_groups) if grp == i]
-            self.factors.append(factor)
+            factors.append(factor)
         if overlap:
             for i in range(0,number_of_groups-1):
                 factor = random.sample(self.factors[i],k=int(np.ceil(len(self.factors[i])/4)))
                 factor.extend(random.sample(self.factors[i+1],k=int(np.ceil(len(self.factors[i+1])/4))))
-                self.factors.append(factor)
+                factors.append(factor)
+        return factors
+
+    def genetic_grouping(self, problem, population_size=200, ga_runs=100, c1=0, c2=1):
+        # initialize GA to perform optimization
+        ga = GA(dimensions=self.dim, population_size=population_size, mutation_type="grouping", crossover_type="grouping", parent_selection="grouping")
+        # define fitness function to check difference between full evaluation and group evaluations
+        full_c1 = np.ones(self.dim)*c1
+        full_c2 = np.ones(self.dim)*c2
+        full_c1_fitness = np.sum(problem.evaluate(full_c1))
+        full_c2_fitness = np.sum(problem.evaluate(full_c2))
+        
+        def calc_fitness(variables):
+            # variables here are the genes in the chromosome, which can have different lengths
+            chromosome_length = len(variables)
+            full_fitness = chromosome_length * (full_c1_fitness+full_c2_fitness)
+            print("fitness for c1/c2 combined", full_fitness)
+            per_group_fitness = 0
+            for gene in variables:
+                group_solution_c1 = np.ones(self.dim)*c2
+                group_solution_c2 = np.ones(self.dim)*c1
+                for var_idx in gene:
+                    group_solution_c1[var_idx] = c1
+                    group_solution_c2[var_idx] = c2
+                per_group_fitness += np.sum(problem.evaluate(group_solution_c1))
+                print("c1 group added: ", per_group_fitness)
+                per_group_fitness += np.sum(problem.evaluate(group_solution_c2))
+                print("c2 group added: ", per_group_fitness)
+            return abs(full_fitness-per_group_fitness)
+                
+        # generate population: each chromosome consists of genes representing a group of variables
+        population = []
+        for i in range(population_size):
+            chromosome = self.random_grouping(min_groups=1, max_groups=self.dim)
+            chromosome_fitness = calc_fitness(chromosome)
+            print(chromosome, chromosome_fitness)
+            population.append(PopulationMember(chromosome, chromosome_fitness))
+        run = 0
+        VI_diff = np.inf
+        # until max gen or varinteraction_diff != 0
+        while run < ga_runs and VI_diff != 0:
+            children = ga.create_offspring(population)
+            offspring = []
+            for child in children:
+                offspring.append(PopulationMember(child, calc_fitness(child)))
+            total_population = population + offspring
+            population = ga.selection(total_population)
+            VI_diff = population[0].fitness
+            run += 1
+        print(population[0])
+        self.factors = population[0].variables
 
     def diff_grouping(self, _function, epsilon, m=0, moo=False, n_obj=np.inf):
         """

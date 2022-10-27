@@ -18,21 +18,18 @@ current_working_dir = os.getcwd()
 path = re.search(r'^(.*?[\\/]FEA)', current_working_dir)
 path = path.group()
 
-problems = ['WFG1', 'WFG2', 'WFG3']
+problems = ['DTLZ1', 'DTLZ2', 'DTLZ3', 'WFG1', 'WFG2', 'WFG3']
 
 # moea1 = partial(SPEA2, population_size=population, ea_runs=ga_run)
 # moea2 = partial(NSGA2, population_size=population, ea_runs=ga_run)
 # moea3 = partial(MOEAD, ea_runs=ga_run, weight_vector=ref_dirs, n_neighbors=10, problem_decomposition=Tchebicheff())
 
-names = ['NSGA2', 'SPEA2', 'MOEAD'] #'SPEA2',
-problems = ["wfg1", "wfg2", "wfg3", "wfg4"]
+names = ['MOEAD'] #'SPEA2',
 
 for problem in problems:
     print(problem)
     for nr_obj in nr_objs:
         print(nr_obj)
-        if nr_obj in [3, 5] and problem == 'dtlz2':
-            continue
         @add_method(MOEA)
         def calc_fitness(variables, gs=None, factor=None):
             dtlz = get_problem(problem, n_var=dimensions, n_obj=nr_obj)
