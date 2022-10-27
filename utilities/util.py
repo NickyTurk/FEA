@@ -28,11 +28,18 @@ def euclidean_distance(a, b):
 def compare_solutions(solution1, solution2):
     dominate1 = False
     dominate2 = False
-    n_objs = len(solution1.fitness)
+    if isinstance(solution1, PopulationMember):
+        n_objs = len(solution1.fitness)
+        fitness1 = solution1.fitness
+        fitness2 = solution2.fitness
+    else:
+        n_objs = len(solution1)
+        fitness1 = solution1
+        fitness2 = solution2
 
     for i in range(n_objs):
-        o1 = solution1.fitness[i]
-        o2 = solution2.fitness[i]
+        o1 = fitness1[i]
+        o2 = fitness2[i]
 
         if o1 < o2:
             dominate1 = True

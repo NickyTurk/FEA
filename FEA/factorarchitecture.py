@@ -388,8 +388,11 @@ class FactorArchitecture(object):
         self.neighbors = neighbors
 
 
-class MooFactorArchitecture:
+from utilities.util import compare_solutions
+from networkx import from_numpy_array, connected_components
 
+
+class MooFactorArchitecture:
     def __init__(self, dim, n_obj, problem=None, decomp_approach='diff_grouping'):
         self.dim = dim
         self.problem = problem
@@ -398,21 +401,89 @@ class MooFactorArchitecture:
         self.n_obj = n_obj
 
     def graph_based_MOO_dg(self, ubound=1, lbound=0, shift_param=111.1, nr_samples=20):
+        if isinstance(ubound, int):
+            ubound_vars = np.ones(self.dim) * ubound
+            lbound_vars = np.ones(self.dim) * lbound
+        else:
+            ubound_vars = ubound
+            lbound_vars = lbound
         # Property analysis
+        diversity_variables, convergence_variables = self.variable_property_analysis(ubound_vars, lbound_vars, shift_param, nr_samples)
         # Interaction learning
+        interaction_matrix = self.graph_DG_interaction_learning(convergence_variables, ubound_vars, lbound_vars, shift_param, omega=1e-08)
         # Graph grouping
-        pass
+        G = from_numpy_array(interaction_matrix)
+        components = [list(g) for g in connected_components(G)]
+        fa = FactorArchitecture(self.dim, factors=components)
+        return fa
 
-    def variable_property_analysis(self, shift_param=111.1, nr_samples=20):
+    def variable_property_analysis(self, ubound, lbound, shift_param=111.1, nr_samples=20):
+        diversity_variables = []
+        convergence_variables = []
         for i in range(self.dim):
             solutions = []
             for j in range(nr_samples):
+                solution = []
                 shift_value = j-1 + (1/shift_param)
                 for k in range(self.dim):
                     if i == k:
-                        y = []
+                        solution.append((shift_value/nr_samples) * (ubound[k]-lbound[k]) + lbound[k])
+                    else:
+                        solution.append(.5 * (ubound[k]+lbound[k]) + shift_value)
+                solutions.append(solution)
+            flag = False
+            for j in range(nr_samples):
+                for k in range(j+1, nr_samples):
+                    if compare_solutions(solutions[j], solutions[k]) == 0:
+                        flag = True
+            if flag:
+                diversity_variables.append(i)
+            else:
+                convergence_variables.append(i)
+        return diversity_variables, convergence_variables
 
-    def create_objective_factors(self, save_files=False) -> FactorArchitecture:
+    def graph_DG_interaction_learning(self, convergence_vars, ubound, lbound, shift_param, omega):
+        max_weights = np.zeros(self.n_obj)
+        min_weights = np.ones(self.n_obj) * 10000
+        fitnesses = []
+        fitness_matrix = np.zeros((len(convergence_vars), len(convergence_vars), self.n_obj))
+        shift_vector = (ubound - lbound) / shift_param
+        x0 = lbound+shift_vector
+        f0 = self.problem.evaluate(x0)
+        for i, convergence_idx in enumerate(convergence_vars):
+            x1 = [x for x in x0]
+            x1[convergence_idx] = ubound[convergence_idx] - shift_vector[convergence_idx]
+            fitnesses.append(self.problem.evaluate(x1))
+            for j in range(i+1, len(convergence_vars)):
+                x2 = [x for x in x1]
+                x2[convergence_vars[j]] = ubound[convergence_vars[j]] - shift_vector[convergence_vars[j]]
+                fitness_matrix[i, j] = self.problem.evaluate(x2)
+        delta_matrix = np.zeros((self.n_obj, len(convergence_vars), len(convergence_vars)))
+        for i, convergence_idx in enumerate(convergence_vars):
+            for j in range(i + 1, len(convergence_vars)):
+                for l in range(self.n_obj):
+                    delta1 = f0[l] - fitnesses[i][l]
+                    delta2 = fitnesses[j][l] - fitness_matrix[i, j][l]
+                    diff = abs(delta1 - delta2)
+                    delta_matrix[l, i, j] = diff
+                    delta_matrix[l, j, i] = diff
+                    if min_weights[l] > diff:
+                        min_weights[l] = diff
+                    if max_weights[l] < diff:
+                        max_weights[l] = diff
+        IM = np.zeros((len(convergence_vars), len(convergence_vars)))
+        for i, convergence_idx in enumerate(convergence_vars):
+            for j in range(i + 1, len(convergence_vars)):
+                for l in range(self.n_obj):
+                    # perform normalization if weights are larger than threshold omega
+                    if (max_weights[l]-min_weights[l]) > omega:
+                        delta_matrix[l,i,j] = min_weights[l] + ((delta_matrix[l,i,j]-min_weights[l])/(max_weights[l]-min_weights[l]))
+                    if delta_matrix[l,i,j] > omega:
+                        IM[i, j] = 1
+                        IM[j, i] = 1
+        return IM
+
+    def create_objective_factors(self, save_files=False, disjoint=False) -> FactorArchitecture:
         """Create factors along different objective functions.
         For each objective, a FactorArchitecture object is created.
         :param save_files: Boolean that determines whether the created factorArchitectures are saved in pickle files
@@ -420,7 +491,7 @@ class MooFactorArchitecture:
         """
         all_factors = FactorArchitecture(self.dim)
         all_factors.method = self.decomp + '_MOO'
-        eps = 5
+        eps = 3
         for i in range(self.n_obj):
             fa = FactorArchitecture(self.dim)
             if self.decomp == 'diff_grouping':
@@ -432,6 +503,8 @@ class MooFactorArchitecture:
             print(len(fa.factors))
             for f in fa.factors:
                 all_factors.factors.append(f)
+        # if disjoint:
+
         all_factors.get_factor_topology_elements()
         return all_factors
 
@@ -454,8 +527,11 @@ if __name__ == "__main__":
     path = re.search(r'^(.*?[\\/]FEA)', current_working_dir)
     path = path.group()
 
-    # dtlz = get_problem("dtlz1", n_var=1000, n_obj=3)
-    # moofa = MooFactorArchitecture(dim=1000, problem=dtlz, n_obj=3)
-    # factors = moofa.create_objective_factors()
+    function_name = 'DTLZ1'
+    n_obj=5
+    problem = get_problem(function_name, n_var=1000, n_obj=n_obj)
+    moofa = MooFactorArchitecture(dim=1000, problem=problem, n_obj=n_obj)
+    #factors = moofa.graph_based_MOO_dg()
+    factors = moofa.create_objective_factors()
     # print(len(factors.factors))
-    # factors.save_architecture(path_to_save=path+"/FEA/factor_architecture_files/DG_MOO/DG_DTLZ1_3_eps5")
+    factors.save_architecture(path_to_save=path+"/FEA/factor_architecture_files/DG_MOO/DG_"+function_name+"_"+str(n_obj))

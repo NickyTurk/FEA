@@ -68,12 +68,14 @@ class MOEA:
 
         if self.combinatorial_values is not None:
             self.ea = evolutionary_algorithm(dimensions=dimensions, population_size=population_size, tournament_size=2,
-                                             offspring_size=population_size, combinatorial_options=self.combinatorial_values,
+                                             offspring_size=population_size,
+                                             combinatorial_options=self.combinatorial_values,
                                              crossover_type=self.crossover_type, crossover_rate=crossover_rate,
                                              mutation_type=self.mutation_type, mutation_rate=mutation_rate)
         else:
             self.ea = evolutionary_algorithm(dimensions=dimensions, population_size=population_size, tournament_size=2,
-                                             offspring_size=population_size, continuous_var_space=True, value_range=self.value_range,
+                                             offspring_size=population_size, continuous_var_space=True,
+                                             value_range=self.value_range,
                                              mutation_type=self.mutation_type, mutation_rate=mutation_rate,
                                              crossover_type=self.crossover_type, crossover_rate=crossover_rate)
 
@@ -186,7 +188,7 @@ class NSGA2(MOEA):
             I.e. when NSGA2 is NOT used as the base-algorithm for FEA.
             '''
             if self.factor is None:
-                #self.nondom_archive = self.update_archive()
+                # self.nondom_archive = self.update_archive()
                 self.set_iteration_stats(i, self.nondom_pop)
                 # if len(self.nondom_archive) == old_archive_length and len(self.nondom_archive) >= 10:
                 #     change_in_nondom_size.append(True)
@@ -295,7 +297,7 @@ class NSGA2(MOEA):
         random.shuffle(self.curr_population)
 
         # Last generation if used by FEA or CCEA
-        if generation_idx == self.ea_runs-1 and self.factor is None:
+        if generation_idx == self.ea_runs - 1 and self.factor is None:
             self.nondom_archive = self.nondom_pop
         if generation_idx == self.ea_runs - 1 and self.factor is not None:
             self.nondom_archive = self.nondom_pop
@@ -398,7 +400,8 @@ class SPEA2(MOEA):
         if strength_pop is None:
             strength_pop = self.strength_pop
         if len(nd_archive) < self.archive_size:
-            remaining = [y for x, y in sorted(zip(strength_pop, self.curr_population), key=lambda pair: pair[0].fitness) if x.fitness >= 1.0]
+            remaining = [y for x, y in sorted(zip(strength_pop, self.curr_population), key=lambda pair: pair[0].fitness)
+                         if x.fitness >= 1.0]
             nd_archive.extend(remaining[:(self.archive_size - len(nd_archive))])
         elif len(nd_archive) > self.archive_size:
             distance_matrix = self.calculate_distance_matrix(np.array([np.array(x.fitness) for x in nd_archive]))
@@ -586,9 +589,11 @@ class MOEAD(MOEA):
 
                 # update neighborhood
                 neighborhood_to_check = self.neighbors[N]
-                neighborhood_fitnesses = np.array([np.array(self.curr_population[idx].fitness) for idx in neighborhood_to_check])
+                neighborhood_fitnesses = np.array(
+                    [np.array(self.curr_population[idx].fitness) for idx in neighborhood_to_check])
                 decomposed_og_fitness = self.problem_decomposition.do(neighborhood_fitnesses,
-                                                                      weights=self.weight_vector[neighborhood_to_check, :],
+                                                                      weights=self.weight_vector[neighborhood_to_check,
+                                                                              :],
                                                                       ideal_point=self.ideal_point_fitness)
                 decomposed_offspring_fitness = self.problem_decomposition.do(np.array(offspring.fitness),
                                                                              weights=self.weight_vector[
@@ -626,7 +631,7 @@ class MOEAD(MOEA):
         sol = random.choice(gs)
         worst_idx = np.argmax(self.decomposed_fitnesses)
         self.curr_population[worst_idx] = PopulationMember(
-                variables=[sol.variables[j] for j in self.factor], fitness=sol.fitness)
+            variables=[sol.variables[j] for j in self.factor], fitness=sol.fitness)
 
     def update_archive(self, nd_archive=None, offspring=None, decomposed_fitness=None):
         """
@@ -646,7 +651,8 @@ class MOEAD(MOEA):
             else:
                 sorted_ = self.sorting_mechanism(nd_archive)
                 self.decomposed_archive_fitnesses.sort()
-                nondom_indeces = find_non_dominated(np.array([np.array(x.fitness) for x in sorted_[:self.archive_size]]))
+                nondom_indeces = find_non_dominated(
+                    np.array([np.array(x.fitness) for x in sorted_[:self.archive_size]]))
                 old_nondom_archive = [sorted_[i] for i in nondom_indeces]
                 old_decomposed_archive_fitnesses = [self.decomposed_archive_fitnesses[i] for i in nondom_indeces]
             seen = set()
@@ -670,7 +676,7 @@ class MOEAD(MOEA):
         """
         if decomposed_fitnesses is None:
             decomposed_fitnesses = self.decomposed_archive_fitnesses
-        return [x for y, x in sorted(zip(decomposed_fitnesses, population), key=lambda pair: pair[0] )]
+        return [x for y, x in sorted(zip(decomposed_fitnesses, population), key=lambda pair: pair[0])]
 
     def generate_offspring_from_neighborhood(self, N):
         """
@@ -685,8 +691,12 @@ class MOEAD(MOEA):
         parents = [[x for x in self.curr_population[parents_idx[0]].variables],
                    [x for x in self.curr_population[parents_idx[1]].variables]]
         # create offspring using regular EA methods
-        child = self.ea.mutate(self.ea.crossover(parents[0], parents[1])[0], lbound=self.value_range[0],
-                               ubound=self.value_range[1])
+        if self.dimensions == 1:
+            child = self.ea.mutate(parents[0], lbound=self.value_range[0],
+                                   ubound=self.value_range[1])
+        else:
+            child = self.ea.mutate(self.ea.crossover(parents[0], parents[1])[0], lbound=self.value_range[0],
+                                   ubound=self.value_range[1])
         child = [min(max(var, self.value_range[0]), self.value_range[1]) for var in child]
         return PopulationMember(child, self.calc_fitness(child, gs=self.global_solution, factor=self.factor))
 

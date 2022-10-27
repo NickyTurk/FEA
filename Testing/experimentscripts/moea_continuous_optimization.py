@@ -25,14 +25,12 @@ problems = ['WFG1', 'WFG2', 'WFG3']
 # moea3 = partial(MOEAD, ea_runs=ga_run, weight_vector=ref_dirs, n_neighbors=10, problem_decomposition=Tchebicheff())
 
 names = ['NSGA2', 'SPEA2', 'MOEAD'] #'SPEA2',
-problems = ["wfg1", "wfg2", "wfg3", "wfg4"]
+problems = ["dtlz1", "dtlz2", "dtlz3", "dtlz4", "dtlz5"]
 
 for problem in problems:
     print(problem)
     for nr_obj in nr_objs:
         print(nr_obj)
-        if nr_obj in [3, 5] and problem == 'dtlz2':
-            continue
         @add_method(MOEA)
         def calc_fitness(variables, gs=None, factor=None):
             dtlz = get_problem(problem, n_var=dimensions, n_obj=nr_obj)

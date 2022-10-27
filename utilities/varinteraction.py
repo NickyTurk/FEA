@@ -132,7 +132,6 @@ class RandomTree(object):
         self.IM[j, i] = mic
         return mic
 
-
 class Measure(object):
     """
     Base class
