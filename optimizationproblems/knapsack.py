@@ -35,6 +35,7 @@ class Knapsack:
         self.nr_objectives = nr_objectives
         self.total_items = None
         self.constraints = None
+        self.knapsack_type = knapsack_type
         if knapsack_type == 'single':
             self.initialize_single_knapsack()
             self.constraints = {0: 1250, 1:100*self.max_nr_items, 2: 2500}
@@ -75,6 +76,13 @@ class Knapsack:
             total_weight = sum(items_in_knapsack)
             print('max weight %d with constraint %f.' % (total_weight, total_weight/2))
             self.constraints[i] = [items_in_knapsack, total_weight/2]
+    
+    def evaluate(self, variables):
+        if self.knapsack_type == 'multi':
+            self.set_fitness_multi_knapsack(variables)
+        elif self.knapsack_type == 'single':
+            self.set_fitness_single_knapsack(variables)
+        return self.objective_values
 
     def set_fitness_multi_knapsack(self, variables):
         """
