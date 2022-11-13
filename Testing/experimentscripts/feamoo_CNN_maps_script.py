@@ -27,18 +27,20 @@ print('path: ', path_)
 field_2 = pickle.load(open(path_ + '/utilities/saved_fields/sec35mid.pickle', 'rb'))
 #field_3 = pickle.load(open(path + '/utilities/saved_fields/sec35west.pickle', 'rb'))
 fields_to_test = [field_2] #[field_1, field_2, field_3]
-print(field_2.nitrogen_list)
 
 for i, field in enumerate(fields_to_test):
     field.field_name = field_names[i]
+    field.angle = 0
+    field.cell_length_min = field.cell_height
+    field.cell_length_max = field.cell_height
     agg_files = ["/home/amy/Documents/Work/OFPE/Data/Sec35Mid/broyles_sec35mid_2016_yl_aggreg_20181112.csv"]
-    reduced_agg_files = ["/home/amy/Documents/Work/OFPE/Data/Sec35Mid/reduced_broyles_sec35mid_agg.csv"]
+    reduced_agg_files = ["/home/amy/Documents/Work/OFPE/Data/Sec35Mid/reduced_broyles_sec35mid_cnn_random.csv"]
     df = pd.read_csv(agg_files[i])
     y_labels = df['yl_2016'] #yl18_bu_ac
     data_to_use = ['x', 'y', 'n_lbs_ac', 'elev_m', 'slope_deg', 'ndvi_2012', 'ndvi_2014', 'ndvi_2015', 'yl14_nn_bu_ac', 'n15_lbs_ac', 'n14_lbs_ac']
     #HENRYS ['x', 'y', 'n_lbs_ac', 'elev_m', 'slope_deg', 'ndvi15', 'ndvi16', 'ndvi17', 'yl16_nn_bu_ac','n16_lbs_ac']
     #SEC35MID ['x', 'y', 'n_lbs_ac', 'elev_m', 'slope_deg', 'ndvi_2012', 'ndvi_2014', 'ndvi_2015', 'yl14_nn_bu_ac', 'n15_lbs_ac', 'n14_lbs_ac']
-    cnn = YieldMapPredictor(filename='/home/amy/Documents/Work/OFPE/Data/broyles_10m_yldDat_with_sentinel.csv', field=field.field_name, pred_year=2020, training_years=[2016, 2018] )
+    cnn = YieldMapPredictor(filename='/home/amy/Documents/Work/OFPE/Data/broyles_10m_yldDat_with_sentinel.csv', field=field.field_name, pred_year=2018, training_years=[2016] )
     # Load prediction data (it will be saved in cnn.data)
     cnn.load_pred_data(objective='yld')
     # Load model weights

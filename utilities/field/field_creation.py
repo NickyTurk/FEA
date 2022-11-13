@@ -981,6 +981,33 @@ class Field:
                             cells_in_curr_ylpro_combo.append(cell)
                     self.assign_random_binned_applicator(cells_in_curr_ylpro_combo, to_apply)
 
+    def create_strip_groups(self, overlap=False, overlap_ratio=0.1):
+        cell_indeces = self.create_strip_trial()
+        factors = []
+        single_cells = []
+        sum = 0
+        for j, strip in enumerate(cell_indeces):
+            if len(strip.original_index) == 1:
+                single_cells.append(sum)
+            else:
+                factors.append([i + sum for i, og in enumerate(strip.original_index)])
+            sum = sum + len(strip.original_index)
+        if single_cells:
+            factors.append(single_cells)
+        if overlap:
+            new_factors = []
+            nr_of_cells = [int(np.ceil(len(f) * overlap_ratio)) for f in factors]
+            for i, f in enumerate(factors):
+                if i != len(factors) -1:
+                    nf = []
+                    for j in range(1, nr_of_cells[i]+1):
+                        nf.append(f[-j])
+                    for j in range(nr_of_cells[i+1]):
+                        nf.append(f[j])
+                    new_factors.append(nf)
+            factors.extend(new_factors)
+        print(len(factors))
+        return factors
 
 class Column:
     '''

@@ -4,12 +4,17 @@ from utilities.util import PopulationMember
 from MOO.paretofrontevaluation import ParetoOptimization
 from FEA.factorarchitecture import FactorArchitecture
 from pymoo.util.nds.non_dominated_sorting import find_non_dominated
+from pymoo.algorithms.nsga2 import calc_crowding_distance
 
 import numpy as np
 import random, pickle, re, os
 
 
 class MOFEA:
+    """
+    Multi-Objective Factored Evolutionary Algorithm.
+    Adjusts compete and share steps to create a set of non-dominated solutions, called the archive, which createsan approximate Pareto front.
+    """
     def __init__(self, fea_iterations, dimensions, factor_architecture=None, base_alg=None,
                  combinatorial_options=None, value_range=[0, 1], ref_point=[1, 1, 1]):
         self.combinatorial_options = combinatorial_options
@@ -24,7 +29,6 @@ class MOFEA:
         self.global_solutions = []
         self.worst_fitness_ref = ref_point
         self.po = ParetoOptimization(obj_size=len(ref_point))
-        # keep track to have a reference point for the HV indicator
         self.subpopulations = None
         self.iteration_stats = []
 
@@ -97,10 +101,10 @@ class MOFEA:
         """
         For each variable:
             - gather subpopulations with said variable
-            - replace variable value in global solution with corresponding subpop value
-            - check if it improves fitness for said solution
-            - replace variable if fitness improves
-        Set new global solution after all variables have been checked
+            - randomly select non-dominated solution from subpopulation
+            - add randomly selected solution to temporary archive
+            - replace variable value in global solution with corresponding subpop value and add to temporary archive
+        Once this has been done for all variables and subpopulations: re-evaluate temporary archive for non-dominance to get new archive.
         """
         new_solutions = []
         seen_populations = set()
@@ -152,7 +156,9 @@ class MOFEA:
 
     def share_solution(self):
         """
-        Construct new global solution based on best shared variables from all swarms
+        Share non-dominated solutions from the archive created in the compete step.
+        Each subpopulation is randomly assigned a non-dominated solution 
+        (without replacement until all solutions have been assigned to at least one subpop).
         """
         if len(self.global_solutions) != 0:
             to_pick = [s for s in self.global_solutions]
@@ -183,7 +189,7 @@ class MOFEA:
             alg.replace_worst_solution(self.global_solutions)
 
     # TODO: include a diversity measure to reduce archive size when it goes above a certain size (similar to SPEA2 but more general)
-    def update_archive(self, nd_archive=None):
+    def update_archive(self, nd_archive=None, reduce_archive=False):
         """
         Function to update the existing archive object, or a chosen archive
         @param nd_archive: The archive to be updated, if None, this is the algorithm's current generation archive
@@ -199,4 +205,10 @@ class MOFEA:
             if s.fitness not in seen:
                 seen.add(s.fitness)
                 nondom_archive.append(s)
+        #ADD-ON to reduce non-dom archive size
+        if reduce_archive and len(nondom_archive) > 1000:
+            fitnesses = np.array([np.array(x.fitness) for x in population])
+            distances = calc_crowding_distance(fitnesses)
+            sorted_arch = [x for y, x in sorted(zip(distances, population))]
+            nondom_archive = sorted_arch[:self.population_size]
         return nondom_archive

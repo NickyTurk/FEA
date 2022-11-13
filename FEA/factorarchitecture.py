@@ -1,10 +1,12 @@
+from basealgorithms.ga import GA
+from utilities.util import PopulationMember, add_method
+
 import random
 from tokenize import group
 import numpy as np
 import scipy as sp
-
-from basealgorithms.ga import GA
-from utilities.util import PopulationMember, add_method
+import pandas as pd
+from ast import literal_eval
 
 try:
     import _pickle as pickle
@@ -48,8 +50,13 @@ class FactorArchitecture(object):
     """
 
     def __init__(self, dim=0, factors=None):
+        """
+        @param dim: number of dimensions, i.e., variables of a problem
+        @param factors: if factors are generated externally, they can be initialized using this parameter
+        """
         if factors is not None:
             self.factors = factors
+            self.get_factor_topology_elements()
         else:
             self.factors = []
         self.arbiters = []
@@ -60,6 +67,10 @@ class FactorArchitecture(object):
         self.function_evaluations = 0
 
     def save_architecture(self, path_to_save=""):
+        """
+        Save generated factorarchitecture, i.e., "self" to a pickle fle
+        @param path_to_save: string of static filepath with filename to save to (e.g. "C:/user/documents/factorarchitectures/my_factorarchitecture.pickle)
+        """
         if path_to_save == "":
             if not os.path.isdir("factor_architecture_files/"):
                 os.mkdir("factor_architecture_files/")
@@ -74,6 +85,10 @@ class FactorArchitecture(object):
         pickle.dump(self.__dict__, file)
 
     def load_architecture(self, path_to_load="", method="", dim=0):
+        """
+        Load architecture from pickle file.
+        Can either send through full filepath, OR method name and dimensions to find existing file
+        """
         from utilities.exceptions import PickleException
         if path_to_load == "" and (method == "" or dim == 0):
             raise PickleException()
@@ -87,45 +102,72 @@ class FactorArchitecture(object):
             pickle_object = pickle.load(open(path_to_load, 'rb'))
             self.__dict__.update(pickle_object)
 
-    def load_csv_architecture(self, file, dim, method=""):
-        from utilities.multifilereader import MultiFileReader
+    def load_csv_architecture(self, file_regex, dim, method=""):
+        """
+        Load architecture from csv file
+        """
+        frame = pd.read_csv(file_regex, header=0)
+        frame.columns = map(str.upper, frame.columns)
+        frame = frame.rename(columns={"DIM": "DIMENSION"}, errors="ignore")
+        dim_frame = frame.loc[frame['DIMENSION'] == int(dim)]
+        f = frame['FUNCTION'].unique()
+        dim_array = np.array(dim_frame['FACTORS'])
 
-        csv = MultiFileReader(file)
-        self.factors, f = csv.import_factors(dim)
+        if epsilon == 0:
+            home = dim_frame['NR_GROUPS'].argmax()
+            factors = literal_eval(dim_array[home])
+        else:
+            epsilon_row = dim_frame.loc[dim_frame['EPSILON'] == epsilon]
+            factors = literal_eval(np.array(epsilon_row['FACTORS'])[0])
+        self.factors = factors
         self.dim = dim
         self.get_factor_topology_elements()
 
-    def linear_grouping(self, width, offset):
+
+    def linear_grouping(self, group_size, offset):
+        """
+        create a linear grouping with specified group_size and offset, 
+        e.g.: 10 variables, group_size = 5, offset = 3: factor 1 = [0,1,2,3,4], factor 2 = [3,4,5,6,7], factor 3 = [6,7,8,9]
+        @param group_size: variables per factor
+        @param offset: where to start the next factor group
+        """
         self.method = "linear"
-        assert offset <= width
-        if offset == width:
+        assert offset <= group_size
+        if offset == group_size:
             print("WARNING - offset and width are equal; the factors will not overlap.")
-        self.factors = list(zip(*[range(i, self.dim, offset) for i in range(0, width)]))
+        self.factors = list(zip(*[range(i, self.dim, offset) for i in range(0, group_size)]))
         if self.factors[-1][-1] != self.dim-1:
-            step_back = width - offset
+            step_back = group_size - offset
             new_group = tuple(range(self.factors[-1][-step_back], self.dim, 1))
             self.factors.append(new_group)
 
-    def ring_grouping(self, width=2):
+    def ring_grouping(self, group_size=2):
+        """
+        create a ring architecture which rotates through the variables.
+        """
         self.method = "ring"
         self.arbiters = list(range(0, self.dim))
-        self.factors = zip(*[rotate(self.arbiters, n) for n in range(0, width)])
+        self.factors = zip(*[rotate(self.arbiters, n) for n in range(0, group_size)])
         self.determine_neighbors()
         self.calculate_optimizers()
 
     def classic_random_grouping(self, group_size):
-        self.method = "classic_random"
-        number_of_groups = self.dim/group_size
-        indeces = range(0,self.dim)
+        """
+        Random grouping as defined by Yang et al.
+        Uses pre-defined group size to create distinct groupings, where variables are randomly added to groups.
+
+        """
+        self.method = "classic_random_"+str(group_size)
+        number_of_groups = int(self.dim/group_size)
+        indeces = list(range(0,self.dim))
         factors = []
         for n in range(number_of_groups-1):
-            grp = random.choices(indeces, k=group_size)
-            print('random choices: ', grp)
+            grp = random.sample(indeces, k=group_size)
             factors.append(grp)
-            del(indeces[grp])
-            print(len(indeces))
-        print(indeces)
+            for grpidx in grp:
+                indeces.remove(grpidx)
         factors.append(indeces)
+        self.factors = factors
 
     def random_grouping(self, min_groups=5, max_groups=15, overlap=False):
         self.method = "random"
@@ -148,6 +190,9 @@ class FactorArchitecture(object):
         return factors
 
     def genetic_grouping(self, problem, population_size=200, ga_runs=100, c1=0, c2=1):
+        """
+        Genetic grouping strategy to group variables in combinatorial problems without pre-defining group sizes.
+        """
         # initialize GA to perform optimization
         ga = GA(dimensions=self.dim, population_size=population_size, mutation_type="grouping", crossover_type="grouping", parent_selection="grouping")
         # define fitness function to check difference between full evaluation and group evaluations
@@ -236,7 +281,7 @@ class FactorArchitecture(object):
 
     def overlapping_diff_grouping(self, _function, epsilon, m=0, moo=False, n_obj=np.inf):
         """
-        Use differential grouping approach to determine factors.
+        Use differential grouping approach to determine overlapping factors.
         :return:
         """
         self.method = "ODG"
@@ -463,6 +508,10 @@ from networkx import from_numpy_array, connected_components
 
 
 class MooFactorArchitecture:
+    """
+    Create factor architecture along different objective axes.
+    Need to be generalized a bit more.
+    """
     def __init__(self, dim, n_obj, problem=None, decomp_approach='diff_grouping'):
         self.dim = dim
         self.problem = problem
@@ -587,7 +636,6 @@ class MooFactorArchitecture:
             all_factors.factors.extend(fa.factors)
         all_factors.get_factor_topology_elements()
         return all_factors
-
 
 if __name__ == "__main__":
     from pymoo.factory import get_problem

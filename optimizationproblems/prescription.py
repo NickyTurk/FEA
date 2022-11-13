@@ -7,6 +7,12 @@ from copy import deepcopy
 
 
 class Prescription:
+    """
+    Prescription object to create experimental or optimal fertilizer/seeding rate prescription maps.
+    Experimental: optimizes stratification, jump minimization, and fertilizer minimization
+    Optimal: optimizes net return,  jump minimization, and fertilizer minimization
+    organic maps: optimizes net return and looks at weed minimization: needs work
+    """
 
     def __init__(self, variables=None, field=None, factor=None, index=-1, normalize_objectives=False, optimized=False, organic=False, yield_predictor=None,
                  applicator_cost=1, yield_price=5.40):
@@ -101,6 +107,10 @@ class Prescription:
             return f
 
     def set_fitness(self, solution=None, global_solution=None, cont_bool=False):
+        """
+        depending on which map you are creating, select correct objective functions
+        If part of FEA, create full solution using the global solution before sending to objective calculations.
+        """
         complete_solution = []
         if solution:
             self.variables = solution
@@ -124,16 +134,25 @@ class Prescription:
             self.objective_values = (self.jumps, self.fertilizer_rate, self.strat)
 
     def set_field(self, field):
+        """
+        Setter function for field object
+        """
         self.field = field
         self.field.nitrogen_list.sort()
 
     def calculate_organic_fitness(self, solution):
+        """
+        organic maps objective functions
+        """
         self.yield_predictor.adjust_nitrogen_data(solution, cnn=self.yield_predictor.cnn_bool)
         net_return = self.optimize_yld(solution)
         weeds = self.minimize_weeds()
         return (weeds + net_return) / 2, weeds, net_return
 
     def calculate_optimal_fitness(self, solution, cont_bool):
+        """
+        traditional maps objective function
+        """
         jumps = self.minimize_jumps(solution, continuous=cont_bool)
         rate = self.minimize_overall_fertilizer_rate(solution)
         self.yield_predictor.adjust_nitrogen_data(solution, cnn=self.yield_predictor.cnn_bool)
@@ -141,12 +160,20 @@ class Prescription:
         return (jumps + rate + net_return) / 3, jumps, rate, net_return
 
     def calculate_experimental_fitness(self, solution):
+        """
+        experimental maps objective functions
+        """
         jumps = self.minimize_jumps(solution)
         strat = self.maximize_stratification(solution)
         rate = self.minimize_overall_fertilizer_rate(solution)
         return (jumps + strat + rate) / 3, jumps, strat, rate
 
     def minimize_jumps(self, solution, continuous=False):
+        """
+        minimize rate jumps between consecutive cells in grid
+        Experimental maps: combinatorial problem, so we use indeces of fertilizer rates to calculate jump difference
+        Optimal maps: continuous problem, so we simply sum the difference in jumps
+        """
         jump_diff = 0
         for i, c in enumerate(solution):
             # calculate jump between nitrogen values for consecutive cells
@@ -166,6 +193,10 @@ class Prescription:
         return final_jumps
 
     def maximize_stratification(self, solution):
+        """
+        for experimental maps only
+        tries to optimize even spread of fertilizer rates across cells with yield and protein bins
+        """
         stratification_diff = 0
         nitrogen_counts = np.zeros((len(self.field.nitrogen_list), self.field.total_ylpro_bins), dtype=int)
 
@@ -188,10 +219,19 @@ class Prescription:
         return stratification_diff / self.field.max_strat
 
     def minimize_overall_fertilizer_rate(self, solution):
+        """
+        sum fertilizer applied to get total fertilizer applied
+         normalize by dividing over max potential fertilizer applied
+        """
         total_fertilizer = sum([c.nitrogen for c in solution])
         return total_fertilizer / self.field.max_fertilizer_rate
 
     def optimize_yld(self, solution):
+        """
+        maximize net return
+        predict yield using trained model (e.g. CNN or Random Forest), which is wrapped in the "YieldPredictor" class
+        use predicted yield to calculate net return
+        """
         predicted_yield = self.yield_predictor.calculate_yield(cnn=self.yield_predictor.cnn_bool)
         # P = base_price + ()
         applicator = sum([c.nitrogen*self.gridcell_size for c in solution])
@@ -199,6 +239,10 @@ class Prescription:
         return -net_return
 
     def minimize_weeds(self):
+        """
+        for organic maps only.
+        predict weeds volume using prediction model 
+        """
         from sklearn.preprocessing import MinMaxScaler
 
         weeds_predictions = self.yield_predictor.calculate_weeds(cnn=self.yield_predictor.cnn_bool)
