@@ -151,7 +151,7 @@ class FactorArchitecture(object):
         self.determine_neighbors()
         self.calculate_optimizers()
 
-    def classic_random_grouping(self, group_size):
+    def classic_random_grouping(self, group_size, overlap=True):
         """
         Random grouping as defined by Yang et al.
         Uses pre-defined group size to create distinct groupings, where variables are randomly added to groups.
@@ -167,6 +167,14 @@ class FactorArchitecture(object):
             for grpidx in grp:
                 indeces.remove(grpidx)
         factors.append(indeces)
+        if overlap:
+            disjoint_length = len(factors)  # number of factors after disjoint grouping
+            halfsize = int(group_size/2)  # how many variables need to be selected from each factor to create overlap
+            for i in range(disjoint_length):
+                if i < disjoint_length-1: # stop before getting to last disjoint group, since this will be included already
+                    new_factor = random.sample(factors[i], k=halfsize)
+                    new_factor.extend(random.sample(factors[i+1], k=group_size-halfsize)) # if group size is odd, make sure overlapping groups have the same size
+                    factors.append(new_factor)           
         self.factors = factors
 
     def random_grouping(self, min_groups=5, max_groups=15, overlap=False):

@@ -6,10 +6,10 @@ from itertools import combinations
 
 #TODO: make reusable and general
 
-algorithms = ['MOEAD', 'SPEA2', 'NSGA2']
-objs = [10]
-problems = ['DTLZ1', 'DTLZ2', 'DTLZ3', 'DTLZ4', 'DTLZ5', 'DTLZ6', 'DTLZ7', 'WFG1', 'WFG2', 'WFG3', 'WFG4', 'WFG5', 'WFG7']
-comparing = ['population_500']#, 'grouping_linear_100_100', 'grouping_linear_100_80', 'classic_random_100'] # 'grouping_200_200', 'grouping_200_160', 'grouping_MEET2', 'grouping_diff_grouping']
+algorithms = ['NSGA2'] #MOEAD, SPEA2
+objs = [5]
+problems = ['DTLZ1', 'DTLZ2', 'DTLZ3', 'DTLZ4'] #['DTLZ1', 'DTLZ2', 'DTLZ3', 'DTLZ4', 'DTLZ5', 'DTLZ6'] #, 'WFG1', 'WFG2', 'WFG3', 'WFG4', 'WFG5', 'WFG7']
+comparing = ['population_500', 'grouping_linear_100_100', 'classic_random_100']#, 'grouping_linear_100_100', 'grouping_linear_100_80', 'classic_random_100'] # 'grouping_200_200', 'grouping_200_160', 'grouping_MEET2', 'grouping_diff_grouping']
 
 for problem in problems:
     print(problem)
@@ -27,7 +27,7 @@ for problem in problems:
             for compare in comparing:
                 full_compare = compare+'_'+alg
                 alg_list.append(full_compare)
-                experiment = [x for x in experiment_filenames if compare+'_' in x and alg+'_' in x]
+                experiment = [x for x in experiment_filenames if compare in x and alg in x]
                 if experiment:
                     rand_int = random.randint(0, len(experiment)-1)
                     experiment = experiment[rand_int]
