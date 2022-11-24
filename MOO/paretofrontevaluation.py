@@ -1,7 +1,7 @@
 import itertools
 
 from pymoo.factory import get_performance_indicator
-from pymoo.algorithms.nsga2 import calc_crowding_distance
+# from pymoo.indicators.hv import Hypervolume
 import numpy as np
 import math
 from operator import attrgetter, itemgetter
@@ -27,6 +27,7 @@ class ParetoOptimization:
         diversity = self.calculate_diversity(approx_pareto_set)
 
         updated_pareto_set = [np.array(sol.fitness) for sol in approx_pareto_set]
+        # hv = Hypervolume(ref_point=np.array(reference_point))
         hv = get_performance_indicator("hv",
                                        ref_point=np.array(reference_point))  # hypervolume(np.array(updated_pareto_set))
         return {'hypervolume': hv.calc(np.array(updated_pareto_set)), 'diversity': diversity}

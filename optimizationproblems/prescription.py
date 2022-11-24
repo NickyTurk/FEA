@@ -8,8 +8,8 @@ from copy import deepcopy
 
 class Prescription:
 
-    def __init__(self, variables=None, field=None, factor=None, index=-1, normalize_objectives=False, optimized=False, organic=False, yield_predictor=None,
-                 applicator_cost=1, yield_price=5.40):
+    def __init__(self, variables=None, field=None, factor=None, index=-1, normalize_objectives=False, optimized=True, organic=False, yield_predictor=None,
+                 applicator_cost=1.09, yield_price=9.1784):
         if variables and factor is None and field is None:
             self.variables = variables
         elif variables and factor and field:
@@ -46,14 +46,14 @@ class Prescription:
         self.yield_predictor = yield_predictor
         self.applicator_cost = applicator_cost  # cost in dollars for fertilizer based on application measure
         self.yield_price = yield_price  # dollars made per unit, e.g. bushels per acre of winter wheat
-        if not self.optimized:
-            self.objective_values = (self.strat, self.jumps, self.fertilizer_rate)
-            self.objectives = [self.maximize_stratification, self.minimize_jumps,
-                               self.minimize_overall_fertilizer_rate]
-        else:
-            self.objective_values = (self.jumps, self.fertilizer_rate, self.net_return)
-            self.objectives = [self.minimize_jumps,
-                               self.minimize_overall_fertilizer_rate, self.optimize_yld]
+        # if not self.optimized:
+        #     self.objective_values = (self.strat, self.jumps, self.fertilizer_rate)
+        #     self.objectives = [self.maximize_stratification, self.minimize_jumps,
+        #                        self.minimize_overall_fertilizer_rate]
+        # else:
+        self.objective_values = (self.jumps, self.fertilizer_rate, self.net_return)
+        self.objectives = [self.minimize_jumps,
+                           self.minimize_overall_fertilizer_rate, self.optimize_yld]
         self.n_obj = len(self.objectives)
         self.factor = factor
         self.ref_point = [1, 1, 1]
@@ -100,7 +100,7 @@ class Prescription:
                 f.append(self.objectives[j](x))
             return f
 
-    def set_fitness(self, solution=None, global_solution=None, cont_bool=False):
+    def set_fitness(self, solution=None, global_solution=None, cont_bool=True):
         complete_solution = []
         if solution:
             self.variables = solution
@@ -115,7 +115,7 @@ class Prescription:
         if self.optimized:
             self.overall_fitness, self.jumps, self.fertilizer_rate, self.net_return = self.calculate_optimal_fitness(complete_solution, cont_bool)
             self.objective_values = (self.jumps, self.fertilizer_rate, self.net_return)
-        if self.organic:
+        elif self.organic:
             self.overall_fitness, self.weeds_rate, self.net_return = self.calculate_organic_fitness(complete_solution)
             self.objective_values = (self.weeds_rate, self.net_return)
         else:
@@ -125,7 +125,7 @@ class Prescription:
 
     def set_field(self, field):
         self.field = field
-        self.field.nitrogen_list.sort()
+        self.field.fertilizer_list_1.sort()
 
     def calculate_organic_fitness(self, solution):
         self.yield_predictor.adjust_nitrogen_data(solution, cnn=self.yield_predictor.cnn_bool)
@@ -146,7 +146,7 @@ class Prescription:
         rate = self.minimize_overall_fertilizer_rate(solution)
         return (jumps + strat + rate) / 3, jumps, strat, rate
 
-    def minimize_jumps(self, solution, continuous=False):
+    def minimize_jumps(self, solution, continuous=True):
         jump_diff = 0
         for i, c in enumerate(solution):
             # calculate jump between nitrogen values for consecutive cells
@@ -160,14 +160,14 @@ class Prescription:
                 else:
                     jump_diff += abs(c.nitrogen - solution[i + 1].nitrogen)
         if continuous:
-            final_jumps = jump_diff / (max(self.field.nitrogen_list) * (len(self.field.cell_list) - 1) )
+            final_jumps = jump_diff / (max(self.field.fertilizer_list_1) * (len(self.field.cell_list) - 1) )
         else:
-            final_jumps = jump_diff / ((len(self.field.nitrogen_list) - 1) * (len(self.field.cell_list) - 1))
+            final_jumps = jump_diff / ((len(self.field.fertilizer_list_1) - 1) * (len(self.field.cell_list) - 1))
         return final_jumps
 
     def maximize_stratification(self, solution):
         stratification_diff = 0
-        nitrogen_counts = np.zeros((len(self.field.nitrogen_list), self.field.total_ylpro_bins), dtype=int)
+        nitrogen_counts = np.zeros((len(self.field.fertilizer_list_1), self.field.total_ylpro_bins), dtype=int)
 
         for i, c in enumerate(solution):
             # Count nitrogen values across yield and protein bin combinations
@@ -195,7 +195,7 @@ class Prescription:
         predicted_yield = self.yield_predictor.calculate_yield(cnn=self.yield_predictor.cnn_bool)
         # P = base_price + ()
         applicator = sum([c.nitrogen*self.gridcell_size for c in solution])
-        net_return = predicted_yield * self.yield_price - applicator * self.applicator_cost - self.field.fixed_costs
+        net_return = predicted_yield * self.yield_price - (applicator * self.applicator_cost) - self.field.fixed_costs
         return -net_return
 
     def minimize_weeds(self):

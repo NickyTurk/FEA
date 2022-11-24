@@ -70,7 +70,7 @@ class MOFEA:
         fea_run = 0
         while fea_run != self.fea_runs:  # len(change_in_nondom_size) < 4 and
             for s, alg in enumerate(self.subpopulations):
-                #print('Subpopulation: ', s, alg.dimensions, type(alg))
+                # print('Subpopulation: ', s, alg.dimensions, type(alg))
                 alg.run(fea_run=fea_run)
             self.compete()
             self.share_solution()

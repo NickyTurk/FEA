@@ -4,10 +4,10 @@ import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 import numpy as np
 
-field_files= ["../utilities/saved_fields/sec35mid.pickle"]
-field_names = ['sec35mid']
+field_files= ["../utilities/saved_fields/henrys.pickle"]
+field_names = ['Henrys']
 methods = ["CCEAMOO", "NSGA", "FEAMOO", "COMBINED"]
-objectives = ["center", "fertilizer_rate", "jumps", "strat"]
+objectives = ["center", "fertilizer_rate", "jumps", "NR"]
 
 all_data = dict() #{'henrys': { 'cceamoo':{'jumps': 0, 'strat': 0, 'fertilizer_rate': 0, 'center': 0}, 'nsga2': {} } }
 for fieldfile, field_name in zip(field_files, field_names):

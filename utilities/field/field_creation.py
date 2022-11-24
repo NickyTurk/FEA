@@ -9,21 +9,19 @@ An exact conversion can be accomplished by multiplying U.S. survey feet by the f
 A coordinate system in meters may be converted to a coordinate system in U.S. survey feet by scaling the system to a scale factor of 3.28083333333. 
 An exact conversion can be accomplished by multiplying meters by the fraction 3937/1200.
 """
-from lib2to3.pytree import convert
-from platform import win32_edition
+
 import re
 from select import select
 from tkinter import Grid
 
 from shapely.geometry import Polygon, shape, Point, LineString, MultiPolygon, MultiLineString
 from shapely.ops import split
-import numpy as np
 import pysal as ps
 from shapely.ops import cascaded_union, transform, unary_union
 from shapely import wkb
 from shapely.affinity import rotate
 from copy import deepcopy
-import os, math, pandas, time, ogr, random, fiona, shortuuid, itertools, haversine, pyproj
+import os, math, pandas, time, ogr, random, fiona, shortuuid, itertools, pyproj
 
 from utilities.fileIO import WKTFiles, ShapeFiles
 from utilities.util import *
@@ -156,6 +154,7 @@ class Field:
         self.cell_polys = [] # list of shapely polygon objects representing the gridcells
         self.protein_bounds = []
         self.yield_bounds = []
+        self.total_ylpro_bins = self.num_pro_bins * self.num_yield_bins
 
         self.field_shape = None # field shape polygon read in from boundary (bbox) file
         self.field_shape_buffered = None # polygon with buffer zone removed
@@ -563,6 +562,8 @@ class Field:
         # initialize values
         grid_cell_list = []
         full_strip_set = []
+        all_cell_indeces = []
+        cell_indeces = []
         x_coord = 0
 
         for i, cell in enumerate(self.cell_list):
@@ -577,28 +578,37 @@ class Field:
                 if self.field_shape.contains(cell.true_bounds):
                     x_coord = bottomleft_x
                     grid_cell_list.append(true_bounds)
+                    cell_indeces.append(cell.original_index)
+
             else:
                 if x_coord == bottomleft_x:
                     if i != len(self.cell_list)-1:
                         next_cell = self.cell_list[i+1]
                     if self.field_shape.contains(cell.true_bounds):
                         grid_cell_list.append(true_bounds)
+                        cell_indeces.append(cell.original_index)
                     if bottomleft_x == next_cell.bottomleft_x and cell.bottomleft_y != next_cell.upperright_y:
                         if len(grid_cell_list) != 0:
                             full_strip_set.append(grid_cell_list)
+                            all_cell_indeces.append(cell_indeces)
                         grid_cell_list = []
+                        cell_indeces = []
                 elif x_coord != cell.bottomleft_x:
                     if len(grid_cell_list) != 0:
                         full_strip_set.append(grid_cell_list)
+                        all_cell_indeces.append(cell_indeces)
                     grid_cell_list = []
+                    cell_indeces = []
                     x_coord = bottomleft_x
                     grid_cell_list.append(true_bounds)
+                    cell_indeces.append(cell.original_index)
 
         final_cells = []
         polygon_list = []
         for i, s in enumerate(full_strip_set):
             strip = unary_union(s)
             cell_strip = GridCell(strip.bounds)
+            cell_strip.original_index = all_cell_indeces[i]
             cell_strip.folium_bounds = [[cell_strip.bottomleft_y, cell_strip.bottomleft_x], [cell_strip.upperright_y, cell_strip.upperright_x]]
             cell_strip.sorted_index = i
             final_cells.append(cell_strip)
@@ -981,6 +991,34 @@ class Field:
                             cells_in_curr_ylpro_combo.append(cell)
                     self.assign_random_binned_applicator(cells_in_curr_ylpro_combo, to_apply)
 
+    def create_strip_groups(self, overlap=False, overlap_ratio=0.1):
+        self.create_strip_trial()
+        cell_indeces = self.cell_list
+        factors = []
+        single_cells = []
+        sum = 0
+        for j, strip in enumerate(cell_indeces):
+            if len(strip.original_index) == 1:
+                single_cells.append(sum)
+            else:
+                factors.append([i + sum for i, og in enumerate(strip.original_index)])
+            sum = sum + len(strip.original_index)
+        if single_cells:
+            factors.append(single_cells)
+        if overlap:
+            new_factors = []
+            nr_of_cells = [int(np.ceil(len(f) * overlap_ratio)) for f in factors]
+            for i, f in enumerate(factors):
+                if i != len(factors) -1:
+                    nf = []
+                    for j in range(1, nr_of_cells[i]+1):
+                        nf.append(f[-j])
+                    for j in range(nr_of_cells[i+1]):
+                        nf.append(f[j])
+                    new_factors.append(nf)
+            factors.extend(new_factors)
+        print(len(factors))
+        return factors
 
 class Column:
     '''
@@ -1053,6 +1091,8 @@ class GridCell:
              (coordinates[2] - five_feet , coordinates[1] + five_feet ),
              (coordinates[2] - five_feet , coordinates[3] - five_feet ),
              (coordinates[0] + five_feet , coordinates[3] - five_feet )])
+        self.gridcell_size = self.true_bounds.area * self.conversion_measure * self.conversion_measure
+        # self.folium_bounds = [[coordinates[1], coordinates[0]], [coordinates[3], coordinates[2]]]
         self.folium_bounds = None
         self.original_bounds = None
 
@@ -1130,32 +1170,33 @@ class DataPoint:
 
         filepath, file_extension = os.path.splitext(str(self.filename))
         datapoints = []
-        if 'csv' in file_extension:
-            file = pandas.read_csv(self.filename)
+        if 'shp' in file_extension:
+            datapoints = ShapeFiles(self.filename).read_shape_file(datatype)
+        else:
+            if isinstance(self.filename, pandas.DataFrame):
+                file = self.filename
+            elif 'csv' in file_extension:
+                file = pandas.read_csv(self.filename)
             for i, row in file.iterrows():
                 datapoint = []
-                try:
+                if not pandas.isnull(row['geometry']):
                     if is_hex(row['geometry']):
                         wkt_point = wkb.loads(row['geometry'], hex=True)  # ogr.CreateGeometryFromWkb(bts)
-                    else:
+                    elif "," in row['geometry']:
+                        point = ''.join(re.findall("[0-9.,-]", row['geometry']))
+                        wkt_point = "POINT(" + re.sub(",", " ", point) + ")"
+                    elif "point" in row['geometry'].lower:
                         wkt_point = row['geometry']
-                except Exception as e:
-                    print(str(e))
-                    if datatype == 'yld':
-                        datatype_string = 'yield '
-                    elif datatype =='pro':
-                        datatype_string = 'protein '
-                    else:
-                        datatype_string = ''
-                    # raise FileHandleError("Your uploaded " + datatype_string + "csv file does not contain a 'geometry' column. ")
-                point = ogr.CreateGeometryFromWkt(str(wkt_point))
-                datapoint.append(point.GetX())
-                datapoint.append(point.GetY())
-                if row[datatype] != 'NONE' and not math.isnan(row[datatype]):
-                    datapoint.append(row[datatype])
-                    datapoints.append(datapoint)
-        elif 'shp' in file_extension:
-            datapoints = ShapeFiles(self.filename).read_shape_file(datatype)
+                    elif row['lon']:
+                        wkt_point = "POINT(" + str(row['lon']) + " " + str(row['lat']) + ")"
+                    point = ogr.CreateGeometryFromWkt(str(wkt_point))
+                    datapoint.append(point.GetX())
+                    datapoint.append(point.GetY())
+                    datapoint.append(i)
+
+                    if row[datatype] != 'NONE' and not math.isnan(row[datatype]):
+                        datapoint.append(row[datatype])
+                        datapoints.append(datapoint)
         return np.array(datapoints)
 
     def set_datapoints(self, gridcell):

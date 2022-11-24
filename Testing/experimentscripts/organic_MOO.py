@@ -26,7 +26,7 @@ should we change this to a biodiversity area, since having such an area positive
 NDWI 
 """
 
-from sklearn.ensemble import RandomForestRegressor
+# from sklearn.ensemble import RandomForestRegressor
 from predictionalgorithms.yieldprediction import YieldPredictor
 from optimizationproblems.prescription import Prescription
 from FEA.factorarchitecture import FactorArchitecture

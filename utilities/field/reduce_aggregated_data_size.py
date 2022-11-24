@@ -114,17 +114,17 @@ if __name__ == '__main__':
     path_ = re.search(r'^(.*?[\\/]FEA)', current_working_dir)
     path_ = path_.group()
 
-    agg_file = "~/Documents/Work/OFPE/Data/all_agg_exp_2.csv"
+    agg_file = "C:\\Users\\f24n127\\Documents\\Work\\Ag\\Data\\henrys\\wood_10m_yldDat_with_sentinel.csv"
 
     df = pd.read_csv(agg_file)
-    df20 = df.loc[(df['year']==2020) & (df['field']=='millview')]
-    df21 = df.loc[(df['year']==2021) & (df['field']=='millview')]
+    df20 = df.loc[(df['field']=='henrys')] # (df['year']==2020) &
+    # df21 = df.loc[(df['year']==2021) & (df['field']=='henrys')]
 
-    df_20_21 = pd.merge(df20, df21, on=('x', 'y', 'lon', 'lat', 'elev', 'slope'), sort=False, suffixes=('_2020', '_2021'))
+    #df_20_21 = pd.merge(df20, df21, on=('x', 'y', 'lon', 'lat', 'elev', 'slope'), sort=False, suffixes=('_2020', '_2021'))
 
-    field = pickle.load(open(path_+'/utilities/saved_fields/millview.pickle', 'rb'))
-    reduced = reduce_dataframe(field, df_20_21, transform_to_latlon=True, sampling_type='random', epsg_string='EPSG:6657')
-    reduced.to_csv("~/Documents/Work/OFPE/Data/millview/reduced_millview20_21_spatial.csv")
+    field = pickle.load(open(path_+'/utilities/saved_fields/Henrys.pickle', 'rb'))
+    reduced = reduce_dataframe(field, df, transform_to_latlon=True, sampling_type='aggregate', epsg_string='epsg:32612') # Canada: 'EPSG:6657'
+    reduced.to_csv("C:\\Users\\f24n127\\Documents\\Work\\Ag\\Data\\henrys\\reduced_wood_10m_yldDat_with_sentinel_aggregate.csv")
 
     # reduced = reduce_dataframe(field, agg_file, transform_to_latlon=True, spatial_sampling=False)
     # reduced.to_csv("/home/amy/Documents/Work/OFPE/Data/Sec35Mid/reduced_broyles_sec35mid_cnn_random.csv")

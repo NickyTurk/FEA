@@ -15,6 +15,7 @@ from MOO.paretofrontevaluation import *
 from basealgorithms.ga import GA
 from utilities.util import PopulationMember, compare_solutions, euclidean_distance
 
+# from pymoo.algorithms.moo.nsga2 import calc_crowding_distance
 from pymoo.algorithms.nsga2 import calc_crowding_distance
 from pymoo.util.nds.non_dominated_sorting import find_non_dominated
 from pymoo.util.nds.fast_non_dominated_sort import fast_non_dominated_sort
@@ -135,7 +136,7 @@ class MOEA:
 
 
 class NSGA2(MOEA):
-    def __init__(self, evolutionary_algorithm=GA, dimensions=100, population_size=500, ea_runs=100,
+    def __init__(self, evolutionary_algorithm=GA, dimensions=100, population_size=20, ea_runs=50,
                  combinatorial_values=None, value_range=None, reference_point=None,
                  factor=None, global_solution=None):
         """
@@ -190,6 +191,7 @@ class NSGA2(MOEA):
             if self.factor is None:
                 # self.nondom_archive = self.update_archive()
                 self.set_iteration_stats(i, self.nondom_pop)
+                print(self.iteration_stats[-1])
                 # if len(self.nondom_archive) == old_archive_length and len(self.nondom_archive) >= 10:
                 #     change_in_nondom_size.append(True)
                 # else:

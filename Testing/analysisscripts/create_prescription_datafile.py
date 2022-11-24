@@ -10,34 +10,37 @@ try:
     import _pickle as pickle
 except:
     import pickle
-import re
+import re, os
 import pandas as pd
 import numpy as np
 
+current_working_dir = os.getcwd()
+path = re.search(r'^(.*?[\\/]FEA)',current_working_dir)
+path = path.group()
 
 aggregated_data_files = ["../../../Documents/Work/OFPE/Data/Henrys/wood_henrys_10m_yld_2016-2020_UPDATE.csv",
                          "../../../Documents/Work/OFPE/Data/Sec35West/broyles_sec35west_10m_yld_2016-2020_UPDATE.csv",
                          "../../../Documents/Work/OFPE/Data/Sec35Mid/broyles_sec35mid_10m_yld_2016-2020_UPDATE.csv"]  # "../../../Documents/Work/OFPE/Data/Henrys/wood_henrys_10m_yld_2016-2020_UPDATE.csv"]
-field_files = ["../utilities/saved_fields/millview.pickle"]
-field_names = ["millview"]
+field_files = ["../utilities/saved_fields/Henrys.pickle"]
+field_names = ["henrys"]
 
 if __name__ == '__main__':
-    objectives = ['jumps', 'strat', 'fertilizer_rate']
+    objectives = ['jumps', 'fertilizer_rate', 'NR']
 
     for fieldfile, agg_file, name in zip(field_files, aggregated_data_files, field_names):
         mf = MultiFileReader(name)
         experiment_filenames = mf.path_to_files
         field = pickle.load(open(fieldfile, 'rb'))
-        print(field.latlong_crs, field.aa_crs, field.field_crs)
-        project_to_latlong = Transformer.from_crs('epsg:32612', field.latlong_crs)  # 32629, 32612 # 'epsg:32612'
-        df = pd.read_csv(agg_file)
-        xy = np.array([np.array(project_to_latlong.transform(x, y)) for x, y in zip(df['x'], df['y'])])
-        df['x'] = xy[:, 0]
-        df['y'] = xy[:, 1]
-        headers = {c: i for i, c in enumerate(df.columns)}
-        header_index = {i: c for i, c in enumerate(df.columns)}
-        header_index[len(df.columns)] = 'N'
-        dps = df.to_numpy()
+        # print(field.latlong_crs, field.aa_crs, field.field_crs)
+        # project_to_latlong = Transformer.from_crs('epsg:32612', field.latlong_crs)  # 32629, 32612 # 'epsg:32612'
+        # df = pd.read_csv(agg_file)
+        # xy = np.array([np.array(project_to_latlong.transform(x, y)) for x, y in zip(df['x'], df['y'])])
+        # df['x'] = xy[:, 0]
+        # df['y'] = xy[:, 1]
+        # headers = {c: i for i, c in enumerate(df.columns)}
+        # header_index = {i: c for i, c in enumerate(df.columns)}
+        # header_index[len(df.columns)] = 'N'
+        # dps = df.to_numpy()
 
         nondom_archive = []
         filenames = [x for x in experiment_filenames if name in x.lower()]
@@ -48,17 +51,22 @@ if __name__ == '__main__':
             field_method_name = re.search(r'.*\/FEAMOO\/(.*)_trial', experiment)
 
         find_center_obj = []
-        nondom_indeces = find_non_dominated(np.array([np.array(x.objective_values) for x in nondom_archive]))
-        nondom_archive = [nondom_archive[i] for i in nondom_indeces]
-        for obj in objectives:
+        try:
+            fitnesses = np.array([np.array(x.objective_values) for x in nondom_archive])
+            nondom_indeces = find_non_dominated(fitnesses)
+        except ValueError:
+            fitnesses = np.array([np.array(x.fitness) for x in nondom_archive])
+            nondom_indeces = find_non_dominated(fitnesses)
+        nondom_archive = [fitnesses[i] for i in nondom_indeces]
+        for i,obj in enumerate(objectives):
             filename_to_write = '../../MOO_final_prescriptions/' + name + '_combined_prescription_' + obj + '_objective_runs.csv'
-            nondom_archive.sort(key=attrgetter(obj))
+            nondom_archive.sort(key=lambda test_list: test_list[i])
             prescription = nondom_archive[0]
             find_center_obj.append(np.array(prescription.objective_values))
             #        print(prescription.objective_values)
             #        print([x.nitrogen for x in prescription.variables])
-            all_points_df = create_indexed_dataframe(prescription, field, headers, dps)
-            all_points_df.to_csv(filename_to_write)
+            # all_points_df = create_indexed_dataframe(prescription, field, headers, dps)
+            # all_points_df.to_csv(filename_to_write)
         find_center_obj = np.array(find_center_obj)
         length = find_center_obj.shape[0]
         sum_x = np.sum(find_center_obj[:, 0])
@@ -69,6 +77,6 @@ if __name__ == '__main__':
         dist = np.sum((nondom_objectives - point) ** 2, axis=1)
         idx = np.argmin(dist)
         prescription = nondom_archive[idx]
-        filename_to_write = '../../MOO_final_prescriptions/' + name + '_combined_prescription_center_objective_runs.csv'
-        all_points_df = create_indexed_dataframe(prescription, field, headers, dps)
-        all_points_df.to_csv(filename_to_write)
+        # filename_to_write = path + '/results/prescriptions/' + name + '_combined_prescription_center_objective_runs.csv'
+        # all_points_df = create_indexed_dataframe(prescription, field, headers, dps)
+        # all_points_df.to_csv(filename_to_write)

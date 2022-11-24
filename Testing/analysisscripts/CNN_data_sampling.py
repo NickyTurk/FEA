@@ -6,37 +6,39 @@ import pandas as pd
 import numpy as np
 import pickle, random, utm, re
 
+import warnings
+warnings.filterwarnings("ignore")
+
 current_working_dir = os.getcwd()
 path = re.search(r'^(.*?[\\/]FEA)', current_working_dir)
 path_ = path.group()
 
 np.set_printoptions(suppress=True)
-field = pickle.load(open(path_ + '/utilities/saved_fields/sec35mid.pickle', 'rb'))
-field.field_name = 'sec35middle'
+field = pickle.load(open(path_ + '/utilities/saved_fields/Henrys.pickle', 'rb'))
+field.field_name = 'henrys'
 
-agg_file = "home/amy/Documents/Work/OFPE/Data/Sec35Mid/broyles_sec35mid_2016_yl_aggreg_20181112.csv"
-reduced_agg_files = ["/home/amy/Documents/Work/OFPE/Data/Sec35Mid/broyles_sec35mid_2016_yl_aggreg_20181112.csv" ,#I:/FieldData/sec35mid/broyles_sec35mid_2016_yl_aggreg_20181112.csv",
-                     "/home/amy/Documents/Work/OFPE/Data/Sec35Mid/reduced_broyles_sec35mid_cnn_random.csv",
-                     "/home/amy/Documents/Work/OFPE/Data/Sec35Mid/reduced_broyles_sec35mid_cnn_spatial.csv",
-                     "/home/amy/Documents/Work/OFPE/Data/Sec35Mid/reduced_broyles_sec35mid_cnn_aggregate.csv"]
+agg_file = "C:\\Users\\f24n127\\Documents\\Work\\Ag\\Data\\henrys\\wood_10m_yldDat_with_sentinel.csv"
+reduced_agg_files = ["C:\\Users\\f24n127\\Documents\\Work\\Ag\\Data\\henrys\\wood_10m_yldDat_with_sentinel.csv" ,#I:/FieldData/sec35mid/broyles_sec35mid_2016_yl_aggreg_20181112.csv",
+                     "C:\\Users\\f24n127\\Documents\\Work\\Ag\\Data\\henrys\\reduced_wood_10m_yldDat_with_sentinel_spatial.csv",
+                     "C:\\Users\\f24n127\\Documents\\Work\\Ag\\Data\\henrys\\reduced_wood_10m_yldDat_with_sentinel_random.csv",
+                     "C:\\Users\\f24n127\\Documents\\Work\\Ag\\Data\\henrys\\reduced_wood_10m_yldDat_with_sentinel_aggregate.csv"]
 type_of_file = ['full', 'random', 'spatial', 'aggregate']
 # df = pd.read_csv(agg_file)
 # y_labels = df['yl_2016']  # yl18_bu_ac
-data_to_use = ['x', 'y', 'n_lbs_ac', 'elev_m', 'slope_deg', 'ndvi_2012', 'ndvi_2014', 'ndvi_2015', 'yl14_nn_bu_ac',
-               'n15_lbs_ac', 'n14_lbs_ac']
+data_to_use = ['x', 'y', 'n_lbs_ac', 'elev_m', 'slope_deg', 'ndvi15', 'ndvi16', 'ndvi17', 'yl16_nn_bu_ac','n16_lbs_ac']
 # HENRYS ['x', 'y', 'n_lbs_ac', 'elev_m', 'slope_deg', 'ndvi15', 'ndvi16', 'ndvi17', 'yl16_nn_bu_ac','n16_lbs_ac']
 # SEC35MID ['x', 'y', 'n_lbs_ac', 'elev_m', 'slope_deg', 'ndvi_2012', 'ndvi_2014', 'ndvi_2015', 'yl14_nn_bu_ac', 'n15_lbs_ac', 'n14_lbs_ac']
 
 """
 Initialize CNN model
 """
-cnn = YieldMapPredictor(filename='/home/amy/Documents/Work/OFPE/Data/broyles_10m_yldDat_with_sentinel.csv',
-                        field='sec35middle', pred_year=2020, training_years=[2016, 2018])
+cnn = YieldMapPredictor(filename= "C:\\Users\\f24n127\\Documents\\Work\\Ag\\Data\\henrys\\wood_10m_yldDat_with_sentinel.csv",
+                        field='henrys', pred_year=2020, training_years=[2016, 2018])
 # Load prediction data (it will be saved in cnn.data)
 cnn.load_pred_data(objective='yld')
 # Load model weights
 cnn.model = cnn.init_model(modelType='Hyper3DNet')
-path_weights = '/home/amy/projects/OFPETool-master/static/uploads/Model-Hyper3DNet-sec35middle--Objective-yld/Hyper3DNet' + "-sec35middle--Objective-yld"
+path_weights = 'C:\\Users\\f24n127\\Documents\\Work\\OFPETool-master\\static\\uploads\\Hyper3DNet-henrys--Objective-yld\\Hyper3DNet-henrys--Objective-yld'
 cnn.model.loadModel(path=path_weights)
 cnn.patches, centers = cnn.extract2DPatches()
 
@@ -84,12 +86,12 @@ for k in range(10):
         print(type_of_file[i])
         print('##################')
         print('yield for whole field: ', total_yield)
-        #print('cell specific predictions: ', yp.cell_predictions)
+        # print('cell specific predictions: ', cell_predictions[type_of_file[i]])
     combs = combinations(type_of_file, 2)
     for comb in combs:
         print(comb)
         diff = np.array(cell_predictions[comb[0]]) - np.array(cell_predictions[comb[1]])
-        print('avg difference: ', np.mean(diff))
+        print('avg difference: ', np.mean([x for x in diff if not np.isnan(x)]))
         print('total difference: ', total_predictions[comb[0]] - total_predictions[comb[1]])
-        
+
     print('\n')
