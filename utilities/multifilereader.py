@@ -2,15 +2,16 @@ import os.path
 from setup import ROOT_DIR
 
 import pandas as pd
-import numpy as np
 import re
-from ast import literal_eval
 
 
 class MultiFileReader(object):
+    """
+    Find all files adhering to specific regex within a specified directory or anywhere starting in your root folder.
+    """
     def __init__(self, file_regex="", dir=""):
         self.file_regex = file_regex
-        self.path_to_files = self.get_files_list(dir)  # array of all files and their path that match the regex or string
+        self.path_to_files = self.get_files_list(dir)  # array of all files and their path that match the regex or string TODO: change variable name
 
     def transform_files_to_df(self, header=True):
         li = []
@@ -46,20 +47,3 @@ class MultiFileReader(object):
                 if r.search(x):
                     result.append(os.path.join(root, x))
         return result
-
-    def import_factors(self, dim, epsilon=0):
-        frame = pd.read_csv(self.file_regex, header=0)
-        frame.columns = map(str.upper, frame.columns)
-        frame = frame.rename(columns={"DIM": "DIMENSION"}, errors="ignore")
-        dim_frame = frame.loc[frame['DIMENSION'] == int(dim)]
-        fion_name = frame['FUNCTION'].unique()
-        dim_array = np.array(dim_frame['FACTORS'])
-
-        if epsilon == 0:
-            home = dim_frame['NR_GROUPS'].argmax()
-            factors = literal_eval(dim_array[home])
-        else:
-            epsilon_row = dim_frame.loc[dim_frame['EPSILON'] == epsilon]
-            factors = literal_eval(np.array(epsilon_row['FACTORS'])[0])
-
-        return factors, fion_name[0]

@@ -1,6 +1,6 @@
 from pymoo.factory import get_problem
 from FEA.factorarchitecture import *
-from utilities.varinteraction import *
+from FEA.varinteraction import *
 import re
 
 current_working_dir = os.getcwd()

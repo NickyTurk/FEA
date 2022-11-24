@@ -9,6 +9,8 @@ import numpy as np
 import random
 from utilities.util import *
 
+#TODO: seperate out mutation and crossover functions and create switch statement to improve code readability.
+
 
 class GA:
     def __init__(self, dimensions=100, population_size=200, tournament_size=5, mutation_rate=0.1, crossover_rate=0.95,
@@ -51,6 +53,11 @@ class GA:
             self.population.append(PopulationMember(variables, self.calc_fitness(variables)))
 
     def calc_fitness(self, variables):
+        """
+        An empty function to fill in dynamically based on the problem.
+        @param variables: List of variables to evaluate.
+        @return: Tuple of fitness values. The number of fitness values depends on the number of objectives.
+        """
         pass
 
     def tournament_selection(self, population):

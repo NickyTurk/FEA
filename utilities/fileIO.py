@@ -1,6 +1,5 @@
 """
-Functionality to read and write WKT data.
- TODO: Needs to be made more generalizable.
+Functionality to read and write WKT data for field and prescription data.
 """
 
 import pickle

@@ -3,8 +3,7 @@ Contains different algorithm implementations of single population multi-objectiv
 MOOEA class -- Superclass for all Multi-objective Evolutionary Algorithms.
 NSGA2 class -- Inherits from MOOEA. Non-Dominated Sorting Genetic Algorithm II (Deb, et al.)
 SPEA2 class -- Strength Pareto Evolutionary Algorithm 2
-HypE class --
-MOEAD class --
+MOEAD class -- Multi-Objective Evolutionary Algorithm with Decomposition
 """
 import math
 
@@ -27,16 +26,31 @@ import random
 class MOEA:
     def __init__(self, evolutionary_algorithm=GA, ea_runs=100, population_size=100, dimensions=10,
                  combinatorial_options=None, value_range=None, reference_point=None,
+                 factor=None, global_solution=None,
                  crossover_rate=.9, crossover_type='',
-                 mutation_rate=.1, mutation_type='',
-                 factor=None, global_solution=None):
+                 mutation_rate=.1, mutation_type=''):
         """
-        Superclass for all MOO EAs.
+        Superclass for all MOEAs.
+        @param evolutionary_algorithm: base algorithm to use: genetic algorithm (GA) (default), PSO
+        @param ea_runs: how many runs:generations/iterations of the algorithm
+        @param population_size: Integer. Number of individuals to form the population in a single generation.
+        @param dimensions:  Integer. Number of variables in a single individual. When no combinatorial_options are
+                defined, these will be floating point numbers between 0.0 and 1.0]
         @param combinatorial_options: List of values, E.g. [0,1]. Set of values to create solutions from when dealing
                 with combinatorial optimization.
-        @param population_size: Integer. Number of individuals to form the population in a single generation.
-        @param dimensions: Integer. Number of variables in a single individual. When no combinatorial_options are
-                defined, these will be floating point numbers between 0.0 and 1.0]
+        @param value_range: List of two values: [min, max] for continuous optimization, variables must fall within this range.
+        @param reference_point: worst point in the objective space to calculate hypervolume.
+
+        FEA specific, i.e., when MOEA is used within FEA context.
+        @param factor: variables belonging to the factor represented by MOEA instance
+        @param global_solution: complete solution representing all variables which the factor variables are plugged into to evaluate the full solution.
+
+        TODO: pass through as extra params using kwargs
+        NEXT ARE GA SPECIFIC, since all MOEAS have been using GA's, but this should be changed to it can accept any keyword args for any base alg
+        @param crossover_rate: probability to perform crossover
+        crossover_type: what kind of crossover to perform
+        mutation_rate: probability to perform mutation
+        mutation_type: what kind of mutation to perform
         Contains methods initialize_population(gs, factor) and calc_fitness(variables, gs, factor).
         Where 'gs'(=global solution) and 'factor' are only used when using the MOEA's as a base-algorithm for FEA.
         """
@@ -67,6 +81,7 @@ class MOEA:
         if mutation_type:
             self.mutation_type = mutation_type
 
+        #TODO: send through kwargs instead of GA specific params
         if self.combinatorial_values is not None:
             self.ea = evolutionary_algorithm(dimensions=dimensions, population_size=population_size, tournament_size=2,
                                              offspring_size=population_size,
@@ -497,7 +512,7 @@ class SPEA2(MOEA):
 
     def remove_point_from_dist_mtx(self, distance_matrix, index):
         """
-        Code from Platypus library!
+        Code based on Platypus library!
         Removes the distance entries for the given solution.
         
         Parameters
@@ -511,7 +526,7 @@ class SPEA2(MOEA):
 
     def kth_distance(self, i, k, distance_matrix):
         """
-        Code from Platypus library!
+        Code based on  Platypus library!
         Returns the distance to the k-th nearest neighbor.
         
         Parameters

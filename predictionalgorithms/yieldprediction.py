@@ -12,6 +12,14 @@ from utilities.field.field_creation import GridCell
 
 
 class YieldPredictor:
+    """
+    Wrapper class to create yield predictions using different TRAINED machine learning models.
+
+    NOTE:
+    I definitely did some weird things here that should be cleaned up, specifically related to the datastructure generation.
+    I was having a lot of issues with the projections of the data, which all need to be in lat-lon to be processed,
+    but farmers often have their data projected in a specific coordinate system, which creates a lot of issues.
+    """
     def __init__(self, field, agg_data_file, trained_model, data_headers=None, nitrogen_header='n_lbs_ac', prescription=None,
                  cnn_bool=False, weeds_model=None, weeds_headers=None):
         df = pd.read_csv(agg_data_file)
@@ -133,7 +141,6 @@ def get_points_in_cell(gridcell, dps):
     # Get cell location information
     bl_x, bl_y = gridcell.bottomleft_x, gridcell.bottomleft_y
     ur_x, ur_y = gridcell.upperright_x, gridcell.upperright_y
-    # print(bl_x, bl_y, dps[1][1], dps[0][0])
     # Get all points in the cell
     try:
         datapoints = dps[(dps['y'] >= bl_x) &
