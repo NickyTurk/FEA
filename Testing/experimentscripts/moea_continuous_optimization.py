@@ -13,7 +13,7 @@ from pymoo.problems.many.dtlz import DTLZ1
 dimensions = 1000
 ga_run = 200
 population = 500
-nr_objs = [5, 10]
+nr_objs = [10]
 
 current_working_dir = os.getcwd()
 path = re.search(r'^(.*?[\\/]FEA)', current_working_dir)
@@ -23,7 +23,7 @@ path = path.group()
 # moea2 = partial(NSGA2, population_size=population, ea_runs=ga_run)
 # moea3 = partial(MOEAD, ea_runs=ga_run, weight_vector=ref_dirs, n_neighbors=10, problem_decomposition=Tchebicheff())
 
-names = ['MOEAD', 'SPEA2']
+names = ['NSGA2']
 problems = ['WFG8'] # ['DTLZ1', 'DTLZ2', 'DTLZ3', 'DTLZ4', 'DTLZ5', 'DTLZ6', 'DTLZ7'] # ['WFG1', 'WFG2', 'WFG3', 'WFG4', 'WFG5', 'WFG7', 'WFG8'] 
 for nr_obj in nr_objs:
     for problem in problems:

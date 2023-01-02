@@ -13,14 +13,16 @@ import os, re, time, pickle
 from pymoo.problems.many.dtlz import DTLZ1
 
 dimensions = 1000
-sizes = [100]  # , 200, 100]
-overlaps = [100]  # 100, 160, 80]  # , 10, 20]
+s = 100  # , 200, 100]
+o = 100  # 100, 160, 80]  # , 10, 20]
 fea_runs = [20]
 ga_run = 20
 population = 500
-nr_objs = [3,5,10]
+nr_objs = [3]
 problems = ['WFG3'] #DTLZ7 7with PBI for all obj. linear and random
 groupings = ["random"]
+overlap_bool=True
+iter = 5
 
 # pf = get_problem(problem, n_var=dimensions, n_obj=nr_obj).pareto_front(ref_dirs)
 # reference_point = np.max(f, axis=0)
@@ -39,18 +41,20 @@ for nr_obj in nr_objs:
     moea2 = partial(NSGA2, population_size=population, ea_runs=ga_run)
     moea3 = partial(MOEAD, ea_runs=ga_run, weight_vector=ref_dirs, n_neighbors=10, problem_decomposition=Tchebicheff()) # PBI(theta=5)
 
-    partial_methods = [moea3, moea2, moea1]
-    names=['MOEAD', 'NSGA2', 'SPEA2']  # 'SPEA2', 'NSGA2',
+    partial_methods = [moea1,moea2,moea3]
+    names=['SPEA2', 'NSGA2', 'MOEAD']  # 'SPEA2', 'NSGA2',
 
     FA = FactorArchitecture(dimensions)
     # FA.load_architecture(path_to_load=path+"/FEA/factor_architecture_files/MEET_MOO/MEET2_DG_random_DTLZ1_5")
     # FA.method = 'MEET2'
 
     for grouping in groupings:
-        #FA.linear_grouping(s, o)
-        FA.classic_random_grouping(100)
+        if grouping == "linear":
+            FA.linear_grouping(s, o)
+            FA.method = "linear_" + str(s) + '_' + str(o)
+        elif grouping == "random":
+            FA.classic_random_grouping(100, overlap=overlap_bool)
         FA.get_factor_topology_elements()
-        #FA.method = "linear_" + str(s) + '_' + str(o)
 
         for problem in problems:
             @add_method(MOEA)
@@ -65,14 +69,12 @@ for nr_obj in nr_objs:
                 objective_values = dtlz.evaluate(full_solution)
                 return tuple(objective_values)
 
-            iter = 5
             for i in range(iter):
                 for j,alg in enumerate(partial_methods):
-                    # if s == o:
-                    #     name = 'CC' + names[j]
-                    # else:
-                    #     name = 'F' + names[j]
-                    name = 'CC'+names[j]
+                    if not overlap_bool:
+                        name = 'CC' + names[j]
+                    else:
+                        name = 'F' + names[j]
                     print(name, FA.method, problem, str(nr_obj))
                     print('##############################################\n', i)
                     for fea_run in fea_runs:

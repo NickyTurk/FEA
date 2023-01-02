@@ -6,8 +6,9 @@ import numpy as np
 from itertools import combinations
 from scipy.stats import ttest_ind
 from pymoo.util.nds.non_dominated_sorting import find_non_dominated
-from pymoo.factory import get_performance_indicator
-from pymoo.factory import get_problem
+from pymoo.factory import get_problem, get_reference_directions
+
+from scipy.stats import kruskal, wilcoxon
 
 #TODO: make reusable and general
 

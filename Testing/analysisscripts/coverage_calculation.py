@@ -6,10 +6,11 @@ from itertools import combinations
 
 #TODO: make reusable and general
 
-algorithms = ['NSGA2'] #MOEAD, SPEA2
-objs = [5]
-problems = ['DTLZ1', 'DTLZ2', 'DTLZ3', 'DTLZ4'] #['DTLZ1', 'DTLZ2', 'DTLZ3', 'DTLZ4', 'DTLZ5', 'DTLZ6'] #, 'WFG1', 'WFG2', 'WFG3', 'WFG4', 'WFG5', 'WFG7']
-comparing = ['population_500', 'grouping_linear_100_100', 'classic_random_100']#, 'grouping_linear_100_100', 'grouping_linear_100_80', 'classic_random_100'] # 'grouping_200_200', 'grouping_200_160', 'grouping_MEET2', 'grouping_diff_grouping']
+algorithms = ['MOEAD'] #MOEAD, SPEA2
+objs = [3]
+problems = ['DTLZ7']#'DTLZ1', 'DTLZ2', 'DTLZ3', 'DTLZ4', 'DTLZ5', 'DTLZ6'] #, 'WFG1', 'WFG2', 'WFG3', 'WFG4', 'WFG5', 'WFG7']
+comparing = ['population_500', 'grouping_linear_100_100', 'classic_random_100']
+#,'grouping_classic_random_overlap_100_100', 'grouping_linear_100_100', 'grouping_linear_100_80', 'classic_random_100', 'grouping_MEET2', grouping_diff_grouping_MOO]
 
 for problem in problems:
     print(problem)
@@ -50,6 +51,7 @@ for problem in problems:
         lb = 0
         ub = 0
         for i, compare in enumerate(alg_list):
+            # print(compare)
             try:
                 ub += lengths[compare]
             except KeyError:
