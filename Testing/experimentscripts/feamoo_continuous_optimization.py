@@ -2,7 +2,8 @@ from datetime import timedelta
 
 from pymoo.decomposition.tchebicheff import Tchebicheff
 from pymoo.decomposition.pbi import PBI
-from pymoo.factory import get_problem, get_reference_directions
+from pymoo.problems import get_problem
+from pymoo.util.ref_dirs import get_reference_directions
 
 from MOO.MOEA import NSGA2, SPEA2, MOEAD, MOEA
 from FEA.factorarchitecture import FactorArchitecture
@@ -18,9 +19,10 @@ overlaps = [100]  # 100, 160, 80]  # , 10, 20]
 fea_runs = [20]
 ga_run = 20
 population = 500
-nr_objs = [3,5,10]
-problems = ['WFG3'] #DTLZ7 7with PBI for all obj. linear and random
+nr_objs = [10]
+problems = ['DTLZ6'] #DTLZ7 7with PBI for all obj. linear and random
 groupings = ["random"]
+iter = 2
 
 # pf = get_problem(problem, n_var=dimensions, n_obj=nr_obj).pareto_front(ref_dirs)
 # reference_point = np.max(f, axis=0)
@@ -39,18 +41,18 @@ for nr_obj in nr_objs:
     moea2 = partial(NSGA2, population_size=population, ea_runs=ga_run)
     moea3 = partial(MOEAD, ea_runs=ga_run, weight_vector=ref_dirs, n_neighbors=10, problem_decomposition=Tchebicheff()) # PBI(theta=5)
 
-    partial_methods = [moea3, moea2, moea1]
-    names=['MOEAD', 'NSGA2', 'SPEA2']  # 'SPEA2', 'NSGA2',
+    partial_methods = [moea2, moea1]
+    names=['NSGA2', 'SPEA2']  # 'SPEA2', 'NSGA2',
 
     FA = FactorArchitecture(dimensions)
     # FA.load_architecture(path_to_load=path+"/FEA/factor_architecture_files/MEET_MOO/MEET2_DG_random_DTLZ1_5")
     # FA.method = 'MEET2'
 
-    for grouping in groupings:
-        #FA.linear_grouping(s, o)
-        FA.classic_random_grouping(100)
+    for s,o in zip(sizes, overlaps):
+        # FA.linear_grouping(s, o)
+        FA.classic_random_grouping(100, overlap=True)
         FA.get_factor_topology_elements()
-        #FA.method = "linear_" + str(s) + '_' + str(o)
+        # FA.method = "linear_" + str(s) + '_' + str(o)
 
         for problem in problems:
             @add_method(MOEA)
@@ -62,12 +64,11 @@ for nr_obj in nr_objs:
                 else:
                     full_solution = variables
                 dtlz = get_problem(problem, n_var=dimensions, n_obj=nr_obj)
-                objective_values = dtlz.evaluate(full_solution)
+                objective_values = dtlz.evaluate(np.array(full_solution))
                 return tuple(objective_values)
 
-            iter = 5
             for i in range(iter):
-                for j,alg in enumerate(partial_methods):
+                for j, alg in enumerate(partial_methods):
                     # if s == o:
                     #     name = 'CC' + names[j]
                     # else:

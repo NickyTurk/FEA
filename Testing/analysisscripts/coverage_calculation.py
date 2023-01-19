@@ -4,49 +4,49 @@ import numpy as np
 from pymoo.util.nds.non_dominated_sorting import find_non_dominated
 from itertools import combinations
 
-#TODO: make reusable and general
-
-algorithms = ['NSGA2'] #MOEAD, SPEA2
+algorithms = ['NSGA2', 'NSGA3']  # MOEAD, SPEA2
 objs = [5]
-problems = ['DTLZ1', 'DTLZ2', 'DTLZ3', 'DTLZ4'] #['DTLZ1', 'DTLZ2', 'DTLZ3', 'DTLZ4', 'DTLZ5', 'DTLZ6'] #, 'WFG1', 'WFG2', 'WFG3', 'WFG4', 'WFG5', 'WFG7']
-comparing = ['population_500', 'grouping_linear_100_100', 'classic_random_100']#, 'grouping_linear_100_100', 'grouping_linear_100_80', 'classic_random_100'] # 'grouping_200_200', 'grouping_200_160', 'grouping_MEET2', 'grouping_diff_grouping']
+problems = ['DTLZ6']  # ['DTLZ1', 'DTLZ2', 'DTLZ3', 'DTLZ4', 'DTLZ5', 'DTLZ6'] #, 'WFG1', 'WFG2', 'WFG3', 'WFG4', 'WFG5', 'WFG7']
+comparing = [ ['NSGA2', 'FactorArchive_k_03_l_02'], ['NSGA3', '1000_population']]
+archive_overlap = 1
 
 for problem in problems:
     print(problem)
     for obj in objs:
         alg_list = []
-        file_regex = r'_'+problem+r'_(.*)'+str(obj)+r'_objectives_'
-        stored_files = MultiFileReader(file_regex, dir = "/media/amy/WD Drive/"+problem+"/")
+        file_regex = r'_' + problem + r'_(.*)' + str(obj) + r'_objectives_'
+        stored_files = MultiFileReader(file_regex, dir= "C:\\Users\\amy_l\\PycharmProjects\\FEA\\results\\factorarchive\\" + problem + "\\")
         experiment_filenames = stored_files.path_to_files
         total_front = []
-        nondom_solutions = dict()
         lengths = dict()
-        for alg in algorithms:
-            # print('************************************************')
-            # print('************************************************')
-            for compare in comparing:
-                full_compare = compare+'_'+alg
-                alg_list.append(full_compare)
-                experiment = [x for x in experiment_filenames if compare in x and alg in x]
-                if experiment:
-                    rand_int = random.randint(0, len(experiment)-1)
-                    experiment = experiment[rand_int]
-                else:
-                    break
-                try:
-                    feamoo = pickle.load(open(experiment, 'rb'))
-                except EOFError:
-                    print('issues with file: ', experiment)
-                solutions = np.array([np.array(x.fitness) for x in feamoo.nondom_archive])
-                total_front.extend(solutions)
-                nondom_solutions[full_compare] = solutions
-                lengths[full_compare] = len(solutions)
-                #print(compare, ' len of front', len(solutions))
+        for compare in comparing:
+            full_compare = compare[0] + '_' + compare[1]
+            alg_list.append(full_compare)
+            experiments = [x for x in experiment_filenames if compare[0] in x and compare[1] in x]  # and 'PBI' not in x
+            if experiments:
+                rand_int = random.randint(0, len(experiments) - 1)
+                experiment = experiments[rand_int]
+            else:
+                break
+            try:
+                results = pickle.load(open(experiment, 'rb'))
+            except EOFError:
+                print('issues with file: ', experiment)
+                continue
+            try:
+                if 'FactorArchive' in compare[1]:
+                    results = results.find_archive_overlap(nr_archives_overlapping=archive_overlap)
+                total_front.extend(np.array([np.array(x.fitness) for x in results]))
+            except AttributeError:
+                total_front.extend(np.array([np.array(x) for x in results]))
+            lengths[full_compare] = len(results)
+            print(len(results))
 
-        #print('total front length ', len(total_front))
+            # print(compare, ' len of front', len(solutions))
+
+        # print('total front length ', len(total_front))
         # total_front = np.vstack((nondom_solutions['CCEA'], nondom_solutions['FEA'], nondom_solutions['NSGA']))
         indeces = find_non_dominated(np.array(total_front))
-
         lb = 0
         ub = 0
         for i, compare in enumerate(alg_list):
@@ -56,10 +56,10 @@ for problem in problems:
                 print("no results for: ", compare)
             if i != 0:
                 try:
-                    lb += lengths[alg_list[i-1]]
+                    lb += lengths[alg_list[i - 1]]
                 except KeyError:
                     print("no results")
-            #print('upper and lower: ', ub, lb)
+            # print('upper and lower: ', ub, lb)
             print(len([x for x in indeces if lb <= x < ub]) / len(indeces))
 
             # pair_compare = [comb for comb in combinations(comparing, 2)]

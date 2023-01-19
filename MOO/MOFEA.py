@@ -4,7 +4,7 @@ from utilities.util import PopulationMember
 from MOO.paretofrontevaluation import ParetoOptimization
 from FEA.factorarchitecture import FactorArchitecture
 from pymoo.util.nds.non_dominated_sorting import find_non_dominated
-from pymoo.algorithms.nsga2 import calc_crowding_distance
+from pymoo.algorithms.moo.nsga2 import calc_crowding_distance
 
 import numpy as np
 import random, pickle, re, os
@@ -47,7 +47,7 @@ class MOFEA:
         if self.combinatorial_options:
             random_global_variables = random.choices(self.combinatorial_options, k=self.dim)
         else:
-            random_global_variables = [random.randrange(self.value_range[0], self.value_range[1]) for x in
+            random_global_variables = [random.uniform(self.value_range[0], self.value_range[1]) for x in
                                        range(self.dim)]
         objs = self.base_algorithm(dimensions=self.dim).calc_fitness(random_global_variables)
         random_global_solution = PopulationMember(random_global_variables, objs)
@@ -74,10 +74,11 @@ class MOFEA:
         fea_run = 0
         while fea_run != self.fea_runs:  # len(change_in_nondom_size) < 4 and
             for s, alg in enumerate(self.subpopulations):
-                #print('Subpopulation: ', s, alg.dimensions, type(alg))
+                print('Subpopulation: ', s, alg.dimensions, type(alg))
                 alg.run(fea_run=fea_run)
             self.compete()
-            self.share_solution()
+            if fea_run != self.fea_runs-1:
+                self.share_solution()
             if len(self.nondom_archive) == old_archive_length:
                 change_in_nondom_size.append(True)
             else:
@@ -108,6 +109,7 @@ class MOFEA:
         """
         new_solutions = []
         seen_populations = set()
+        print("start compete")
         for var_idx in range(self.dim):
             # randomly pick one of the global solutions to perform competition for this variable
             chosen_global_solution = random.choice(self.global_solutions)
@@ -143,6 +145,7 @@ class MOFEA:
                         vars[var_idx] = var_candidate_value
                         if vars not in new_solutions:
                             new_solutions.append(vars)
+        print("end compete")
         # Recalculate fitnesses for new solutions
         new_solutions = [PopulationMember(vars, self.base_algorithm(dimensions=self.dim).calc_fitness(vars)) for vars in
                          new_solutions]
@@ -160,6 +163,7 @@ class MOFEA:
         Each subpopulation is randomly assigned a non-dominated solution 
         (without replacement until all solutions have been assigned to at least one subpop).
         """
+        print("share")
         if len(self.global_solutions) != 0:
             to_pick = [s for s in self.global_solutions]
         else:
