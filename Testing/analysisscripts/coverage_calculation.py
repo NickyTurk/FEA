@@ -44,7 +44,7 @@ for problem in problems:
 
             # print(compare, ' len of front', len(solutions))
 
-        # print('total front length ', len(total_front))
+        #print('total front length ', len(total_front))
         # total_front = np.vstack((nondom_solutions['CCEA'], nondom_solutions['FEA'], nondom_solutions['NSGA']))
         indeces = find_non_dominated(np.array(total_front))
         lb = 0
@@ -59,7 +59,7 @@ for problem in problems:
                     lb += lengths[alg_list[i - 1]]
                 except KeyError:
                     print("no results")
-            # print('upper and lower: ', ub, lb)
+            #print('upper and lower: ', ub, lb)
             print(len([x for x in indeces if lb <= x < ub]) / len(indeces))
 
             # pair_compare = [comb for comb in combinations(comparing, 2)]

@@ -1,4 +1,5 @@
 from basealgorithms.ga import GA
+from utilities.multifilereader import MultiFileReader
 from utilities.util import PopulationMember, add_method
 
 import random
@@ -653,11 +654,23 @@ if __name__ == "__main__":
     path = re.search(r'^(.*?[\\/]FEA)', current_working_dir)
     path = path.group()
 
-    function_name = 'DTLZ1'
-    n_obj=5
+    problem="WFG5"
+
+
+
+    file_regex = r'_'+problem+r'_(.*)'+str(3)+r'_objectives_'
+    stored_files = MultiFileReader(file_regex, dir = "/media/amy/WD Drive/"+problem+"/")
+    experiment_filenames = stored_files.path_to_files
+    experiments = [x for x in experiment_filenames if "CCSPEA2" in x]
+    for experiment in experiments:
+        feamoo = pickle.load(open(experiment, 'rb'))
+        print(feamoo.factor_architecture.method)
+
+    # function_name = 'DTLZ1'
+    # n_obj=5
     # problem = get_problem(function_name, n_var=1000, n_obj=n_obj)
     # moofa = MooFactorArchitecture(dim=1000, problem=problem, n_obj=n_obj)
-    #factors = moofa.graph_based_MOO_dg()
+    # #factors = moofa.graph_based_MOO_dg()
     # factors = moofa.create_objective_factors()
-    # print(len(factors.factors))
+    # # print(len(factors.factors))
     # factors.save_architecture(path_to_save=path+"/FEA/factor_architecture_files/DG_MOO/DG_"+function_name+"_"+str(n_obj))
