@@ -1,4 +1,5 @@
 from basealgorithms.ga import GA
+from utilities.multifilereader import MultiFileReader
 from utilities.util import PopulationMember, add_method
 
 import random
@@ -102,7 +103,7 @@ class FactorArchitecture(object):
             pickle_object = pickle.load(open(path_to_load, 'rb'))
             self.__dict__.update(pickle_object)
 
-    def load_csv_architecture(self, file_regex, dim, method=""):
+    def load_csv_architecture(self, file_regex, dim, method="", epsilon=0):
         """
         Load architecture from csv file
         """
@@ -157,7 +158,10 @@ class FactorArchitecture(object):
         Uses pre-defined group size to create distinct groupings, where variables are randomly added to groups.
 
         """
-        self.method = "classic_random_"+str(group_size)
+        if overlap:
+            self.method = "classic_random_overlap_"+str(group_size)+"_"+str(group_size)
+        else:
+            self.method = "classic_random_" + str(group_size)
         number_of_groups = int(self.dim/group_size)
         indeces = list(range(0,self.dim))
         factors = []
@@ -246,7 +250,6 @@ class FactorArchitecture(object):
             population = ga.selection(total_population)
             VI_diff = population[0].fitness
             run += 1
-        print(population[0])
         self.factors = population[0].variables
 
     def diff_grouping(self, _function, epsilon, m=0, moo=False, n_obj=np.inf):
@@ -626,8 +629,6 @@ class MooFactorArchitecture:
             if save_files:
                 fa.save_architecture(
                     '../factor_architecture_files/n_obj_' + str(self.n_obj) + '_' + fa.method + '_dim_' + str(self.dim) + '_obj_' + str(i))
-            print(fa.factors)
-            print(len(fa.factors))
             for f in fa.factors:
                 all_factors.factors.append(f)
         # if disjoint:
@@ -653,11 +654,23 @@ if __name__ == "__main__":
     path = re.search(r'^(.*?[\\/]FEA)', current_working_dir)
     path = path.group()
 
-    function_name = 'DTLZ1'
-    n_obj=5
-    problem = get_problem(function_name, n_var=1000, n_obj=n_obj)
-    moofa = MooFactorArchitecture(dim=1000, problem=problem, n_obj=n_obj)
-    #factors = moofa.graph_based_MOO_dg()
-    factors = moofa.create_objective_factors()
-    # print(len(factors.factors))
-    factors.save_architecture(path_to_save=path+"/FEA/factor_architecture_files/DG_MOO/DG_"+function_name+"_"+str(n_obj))
+    problem="WFG5"
+
+
+
+    file_regex = r'_'+problem+r'_(.*)'+str(3)+r'_objectives_'
+    stored_files = MultiFileReader(file_regex, dir = "/media/amy/WD Drive/"+problem+"/")
+    experiment_filenames = stored_files.path_to_files
+    experiments = [x for x in experiment_filenames if "CCSPEA2" in x]
+    for experiment in experiments:
+        feamoo = pickle.load(open(experiment, 'rb'))
+        print(feamoo.factor_architecture.method)
+
+    # function_name = 'DTLZ1'
+    # n_obj=5
+    # problem = get_problem(function_name, n_var=1000, n_obj=n_obj)
+    # moofa = MooFactorArchitecture(dim=1000, problem=problem, n_obj=n_obj)
+    # #factors = moofa.graph_based_MOO_dg()
+    # factors = moofa.create_objective_factors()
+    # # print(len(factors.factors))
+    # factors.save_architecture(path_to_save=path+"/FEA/factor_architecture_files/DG_MOO/DG_"+function_name+"_"+str(n_obj))

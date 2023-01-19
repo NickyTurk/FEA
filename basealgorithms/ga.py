@@ -50,7 +50,7 @@ class GA:
                 variables = [random.uniform(self.value_range[0], self.value_range[1]) for x in range(self.dimensions)]
             else:
                 variables = random.choices(self.combinatorial_values, k=self.dimensions)
-            self.population.append(PopulationMember(variables, self.calc_fitness(variables)))
+            self.population.append(PopulationMember(variables, self.calc_fitness(variables), solid=uuid()))
 
     def calc_fitness(self, variables):
         """
@@ -423,6 +423,6 @@ class GA:
             children = self.create_offspring()
             offspring = []
             for child in children:
-                offspring.append(PopulationMember(child, self.calc_fitness(child)))
+                offspring.append(PopulationMember(child, self.calc_fitness(child), solid=uuid()))
             total_population = self.population + offspring
             self.population = self.selection(total_population)

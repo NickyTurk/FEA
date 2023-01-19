@@ -1,7 +1,6 @@
 import itertools
 
-from pymoo.factory import get_performance_indicator
-# from pymoo.indicators.hv import Hypervolume
+from hvwfg import wfg as HV
 import numpy as np
 import math
 from operator import attrgetter, itemgetter
@@ -9,30 +8,38 @@ from operator import attrgetter, itemgetter
 
 class ParetoOptimization:
 
-    def __init__(self, obj_size=3):
+    def __init__(self, obj_size=None):
         """
         @param obj_size: The number of objectives in the problem definition.
         """
         self.n_obj = obj_size
         self.approximate_pareto_front = []
 
-    def evaluate_solution(self, approx_pareto_set, reference_point):
+    def evaluate_solution(self, approx_pareto_set, reference_point, normalize=True):
         """
         @param approx_pareto_set: The discovered pareto set to calculate different evaluations for.
                                 -> format: List of PopulationMembers.
         @param reference_point: Which reference point (representing the worst possible solution) to use to calculate HV.
         """
         # reference_points = self.calculate_ref_points(h, self.obj_size)
+        if self.n_obj is None:
+            self.n_obj = len(reference_point)
+        if normalize:
+            try:
+                updated_pareto_set = [np.array(sol.fitness)/reference_point for sol in approx_pareto_set]
+            except AttributeError:
+                updated_pareto_set = [np.array(sol) / reference_point for sol in approx_pareto_set]
+            final_hv = HV(np.array(updated_pareto_set), np.ones(self.n_obj))
+        else:
+            try:
+                updated_pareto_set = [np.array(sol.fitness) for sol in approx_pareto_set]
+            except AttributeError:
+                updated_pareto_set = [np.array(sol) for sol in approx_pareto_set]
+            final_hv = HV(np.array(updated_pareto_set), np.array(reference_point))
+        diversity = self.calculate_diversity(updated_pareto_set, normalized=normalize)
+        return {'hypervolume': final_hv, 'diversity': diversity}
 
-        diversity = self.calculate_diversity(approx_pareto_set)
-
-        updated_pareto_set = [np.array(sol.fitness) for sol in approx_pareto_set]
-        # hv = Hypervolume(ref_point=np.array(reference_point))
-        hv = get_performance_indicator("hv",
-                                       ref_point=np.array(reference_point))  # hypervolume(np.array(updated_pareto_set))
-        return {'hypervolume': hv.calc(np.array(updated_pareto_set)), 'diversity': diversity}
-
-    def calculate_diversity(self, approx_pareto_set, minmax=None):
+    def calculate_diversity(self, approx_pareto_set, normalized=False, minmax=None):
         """
         Spread/delta indicator:
         estimate the extent of the spread of the obtained Pareto front,
@@ -45,25 +52,26 @@ class ParetoOptimization:
         Adra and Fleming, 2000. Coello Coello, Dhaenens, and Jordan, 2010. Ischubishi and shibata, 2004, GECCO
 
         @param approx_pareto_set: generated approximate pareto front to be evaluated.
-                                   -> format: List of PopulationMembers.
-        @param minmax: Dictionary of the minimum and maximum value of each objective to perform normalization.
-                       -> format: {i: [min, max]} where i is the objective index
+                                   -> format: List of fitness values, dimensions #ND solutions x #objectives
+        @param minmax: List of the minimum and maximum value of each objective to perform normalization.
+                       -> format: [[min_1, max_1], ..., [min_i, max_i]] where i is the objective index
+        @param normalized: are the objectives normalized already?
         @return float: spread indicator
         """
 
         spread_indicator = 0
         for i in range(self.n_obj):
-            try:
-                to_sort = [x.objective_values[i] for x in approx_pareto_set]
-            except AttributeError:
-                to_sort = [x.fitness[i] for x in approx_pareto_set]
-            if minmax:
-                min_ = minmax[i][0]
-                max_ = minmax[i][1]
+            if normalized:
+                to_sort = [x[i] for x in approx_pareto_set]
             else:
-                min_ = 0
-                max_ = max(to_sort)
-            sorted_set = [(x - min_) / (max_ - min_) for x in sorted(to_sort)]
+                if minmax:
+                    min_ = minmax[i][0]
+                    max_ = minmax[i][1]
+                else:
+                    min_ = 0
+                    max_ = max([x[i] for x in approx_pareto_set])
+                to_sort = [(x[i] - min_) / (max_ - min_) for x in approx_pareto_set]
+            sorted_set = sorted(to_sort)
             last = np.array(sorted_set[-1])
             first = np.array(sorted_set[0])
             spread_indicator += np.square(np.linalg.norm(last - first))

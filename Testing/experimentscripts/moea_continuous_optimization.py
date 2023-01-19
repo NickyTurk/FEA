@@ -2,7 +2,8 @@ from datetime import timedelta
 
 from pymoo.decomposition.tchebicheff import Tchebicheff
 from pymoo.decomposition.pbi import PBI
-from pymoo.factory import get_problem, get_reference_directions
+from pymoo.problems import get_problem
+from pymoo.util.ref_dirs import get_reference_directions
 
 from MOO.MOEA import MOEA, NSGA2, SPEA2, MOEAD
 from utilities.util import *
@@ -13,7 +14,7 @@ from pymoo.problems.many.dtlz import DTLZ1
 dimensions = 1000
 ga_run = 200
 population = 500
-nr_objs = [5, 10]
+nr_objs = [10]
 
 current_working_dir = os.getcwd()
 path = re.search(r'^(.*?[\\/]FEA)', current_working_dir)
@@ -23,7 +24,7 @@ path = path.group()
 # moea2 = partial(NSGA2, population_size=population, ea_runs=ga_run)
 # moea3 = partial(MOEAD, ea_runs=ga_run, weight_vector=ref_dirs, n_neighbors=10, problem_decomposition=Tchebicheff())
 
-names = ['MOEAD', 'SPEA2']
+names = ['NSGA2']
 problems = ['WFG8'] # ['DTLZ1', 'DTLZ2', 'DTLZ3', 'DTLZ4', 'DTLZ5', 'DTLZ6', 'DTLZ7'] # ['WFG1', 'WFG2', 'WFG3', 'WFG4', 'WFG5', 'WFG7', 'WFG8'] 
 for nr_obj in nr_objs:
     for problem in problems:
@@ -32,7 +33,7 @@ for nr_obj in nr_objs:
         @add_method(MOEA)
         def calc_fitness(variables, gs=None, factor=None):
             dtlz = get_problem(problem, n_var=dimensions, n_obj=nr_obj)
-            objective_values = dtlz.evaluate(variables)
+            objective_values = dtlz.evaluate(np.array(variables))
             return tuple(objective_values)
 
         for name in names:
