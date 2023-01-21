@@ -133,8 +133,11 @@ class MOEA:
             nd_archive = self.nondom_archive
         if isinstance(nd_archive, FactorArchive):
             nd_archive = nd_archive.flatten_archive()
-        po = ParetoOptimization()
-        eval_dict = po.evaluate_solution(nd_archive, self.worst_fitness_ref, normalize=normalize)
+        if self.worst_fitness_ref is not None:
+            po = ParetoOptimization()
+            eval_dict = po.evaluate_solution(nd_archive, self.worst_fitness_ref, normalize=normalize)
+        else:
+            eval_dict = dict()
         eval_dict['GA_run'] = iteration_idx
         eval_dict['ND_size'] = len(nd_archive)
         self.iteration_stats.append(eval_dict)
