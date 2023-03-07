@@ -21,7 +21,7 @@ population = 1000
 n_objs = [10]
 problem = 'WFG7'
 ks = [.5]
-ls = [.20, .30, .40, .5]
+ls = [.30]
 
 current_working_dir = os.getcwd()
 path = re.search(r'^(.*?[\\/]FEA)', current_working_dir)
@@ -39,7 +39,7 @@ for n_obj in n_objs:
     function = get_problem(problem, n_var=dimensions, n_obj=n_obj)
 
     reference_point = pickle.load(
-        open('E:\\' + problem + '_' + str(n_obj) + '_reference_point.pickle', 'rb'))
+        open('D:\\'+ problem+'\\'+ problem + '_' + str(n_obj) + '_reference_point.pickle', 'rb'))
     reference_point = np.array(reference_point)
 
     po = ParetoOptimization(n_obj)

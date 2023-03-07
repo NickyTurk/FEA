@@ -5,7 +5,6 @@ import string
 from functools import partial
 import numpy as np
 from collections import namedtuple
-import numba
 from shortuuid import uuid
 
 PopulationMember = namedtuple('PopulationMember', ['variables', 'fitness', 'solid'], defaults=[0])
@@ -28,7 +27,7 @@ def maxmin_indeces(idx1, idx2):
     return min_index, max_index
 
 
-@numba.jit(nopython=True)
+# @numba.jit(nopython=True)
 def euclidean_distance(a, b):
     return math.sqrt(np.sum((a - b) ** 2))
 

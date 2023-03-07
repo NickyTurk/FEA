@@ -133,8 +133,11 @@ class MOEA:
             nd_archive = self.nondom_archive
         if isinstance(nd_archive, FactorArchive):
             nd_archive = nd_archive.flatten_archive()
-        po = ParetoOptimization()
-        eval_dict = po.evaluate_solution(nd_archive, self.worst_fitness_ref, normalize=normalize)
+        if self.worst_fitness_ref is not None:
+            po = ParetoOptimization()
+            eval_dict = po.evaluate_solution(nd_archive, self.worst_fitness_ref, normalize=normalize)
+        else:
+            eval_dict = dict()
         eval_dict['GA_run'] = iteration_idx
         eval_dict['ND_size'] = len(nd_archive)
         self.iteration_stats.append(eval_dict)
@@ -155,7 +158,7 @@ class MOEA:
 
 
 class NSGA2(MOEA):
-    def __init__(self, evolutionary_algorithm=GA, dimensions=100, population_size=500, ea_runs=100,
+    def __init__(self, evolutionary_algorithm=GA, dimensions=100, population_size=50, ea_runs=20,
                  combinatorial_values=None, value_range=None, reference_point=None, archive=None,
                  factor=None, global_solution=None):
         """
@@ -220,7 +223,8 @@ class NSGA2(MOEA):
                 # else:
                 #     change_in_nondom_size = []
                 # old_archive_length = len(self.nondom_archive)
-
+            else:
+                self.set_iteration_stats(i)
             i += 1
             print(self.iteration_stats[-1])
 
@@ -256,7 +260,7 @@ class NSGA2(MOEA):
         """
         if nd_archive is None:
             nd_archive = self.nondom_archive
-            nondom_indeces = find_non_dominated(np.array([np.array(x.fitness) for x in nd_archive]))
+        nondom_indeces = find_non_dominated(np.array([np.array(x.fitness) for x in nd_archive]))
         old_nondom_archive = [nd_archive[i] for i in nondom_indeces]
         seen = set()
         nondom_archive = []

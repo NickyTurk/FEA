@@ -41,9 +41,12 @@ class MOFEA:
         Initialize subpopulations based on factor architecture.
         @param factors: Ability to send through factors if they were not available at initialization time.
         """
-        if factors:
-            self.factor_architecture = FactorArchitecture(factors=factors)
-            self.factor_architecture.get_factor_topology_elements()
+        if factors is not None:
+            if isinstance(factors, FactorArchitecture):
+                self.factor_architecture = factors
+            else:
+                self.factor_architecture = FactorArchitecture(factors=factors)
+                self.factor_architecture.get_factor_topology_elements()
         if self.combinatorial_options:
             random_global_variables = random.choices(self.combinatorial_options, k=self.dim)
         else:

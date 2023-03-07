@@ -106,7 +106,7 @@ class Prescription:
                 f.append(self.objectives[j](x))
             return f
 
-    def set_fitness(self, solution=None, global_solution=None, cont_bool=False):
+    def set_fitness(self, solution=None, global_solution=None, cont_bool=True):
         """
         depending on which map you are creating, select correct objective functions
         If part of FEA, create full solution using the global solution before sending to objective calculations.
@@ -168,7 +168,7 @@ class Prescription:
         rate = self.minimize_overall_fertilizer_rate(solution)
         return (jumps + strat + rate) / 3, jumps, strat, rate
 
-    def minimize_jumps(self, solution, continuous=False):
+    def minimize_jumps(self, solution, continuous=True):
         """
         minimize rate jumps between consecutive cells in grid
         Experimental maps: combinatorial problem, so we use indeces of fertilizer rates to calculate jump difference

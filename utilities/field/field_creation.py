@@ -16,7 +16,7 @@ from tkinter import Grid
 
 from shapely.geometry import Polygon, shape, Point, LineString, MultiPolygon, MultiLineString
 from shapely.ops import split
-import pysal as ps
+# import pysal as ps
 from shapely.ops import cascaded_union, transform, unary_union
 from shapely import wkb
 from shapely.affinity import rotate
@@ -207,7 +207,7 @@ class Field:
                 self.cell_list = self.create_basic_grid_for_field()
             elif self.strip_trial:
                 self.cell_length_min = 100
-                self.create_strip_trial()
+                self.cell_list = self.create_strip_trial()
             else:
                 # Create columns
                 if self.angle != 0:
@@ -622,7 +622,7 @@ class Field:
                 temp_cells.append(cell)
             final_cells = temp_cells
 
-        self.cell_list = final_cells
+        return final_cells
     
     def calculate_index_order(self, number_of_applications):
         '''
@@ -886,22 +886,23 @@ class Field:
                         self.num_pro_bins)]
                     self.protein_bounds[-1] = self.protein_bounds[-1] + 1
         elif data_to_bin_on == 'datapoints':
-            if self.binning_strategy == 'yld_pro':
-                self.yield_bounds = ps.esda.mapclassify.Equal_Interval(np.asarray(self.yield_points.datapoints),
-                                                                       k=self.num_yield_bins).bins.tolist()
-                self.yield_bounds[-1] = self.yield_bounds[-1] + .1
-                if isinstance(self.protein_points.datapoints, pandas.DataFrame):
-                    self.protein_bounds = ps.esda.mapclassify.Equal_Interval(np.asarray(self.protein_points.datapoints),
-                                                                             k=self.num_pro_bins).bins.tolist()
-                    self.protein_bounds[-1] = self.protein_bounds[-1] + .1
-            elif self.binning_strategy == 'distr':
-                self.yield_bounds = ps.esda.mapclassify.Quantiles(np.asarray(self.yield_points.datapoints),
-                                                                  k=self.num_yield_bins).bins.tolist()
-                self.yield_bounds[-1] = self.yield_bounds[-1] + 1
-                if isinstance(self.protein_points.datapoints, pandas.DataFrame):
-                    self.protein_bounds = ps.esda.mapclassify.Quantiles(np.asarray(self.protein_points.datapoints),
-                                                                        k=self.num_pro_bins).bins.tolist()
-                    self.protein_bounds[-1] = self.protein_bounds[-1] + .1
+            pass
+            # if self.binning_strategy == 'yld_pro':
+            #     self.yield_bounds = ps.esda.mapclassify.Equal_Interval(np.asarray(self.yield_points.datapoints),
+            #                                                            k=self.num_yield_bins).bins.tolist()
+            #     self.yield_bounds[-1] = self.yield_bounds[-1] + .1
+            #     if isinstance(self.protein_points.datapoints, pandas.DataFrame):
+            #         self.protein_bounds = ps.esda.mapclassify.Equal_Interval(np.asarray(self.protein_points.datapoints),
+            #                                                                  k=self.num_pro_bins).bins.tolist()
+            #         self.protein_bounds[-1] = self.protein_bounds[-1] + .1
+            # elif self.binning_strategy == 'distr':
+            #     self.yield_bounds = ps.esda.mapclassify.Quantiles(np.asarray(self.yield_points.datapoints),
+            #                                                       k=self.num_yield_bins).bins.tolist()
+            #     self.yield_bounds[-1] = self.yield_bounds[-1] + 1
+            #     if isinstance(self.protein_points.datapoints, pandas.DataFrame):
+            #         self.protein_bounds = ps.esda.mapclassify.Quantiles(np.asarray(self.protein_points.datapoints),
+            #                                                             k=self.num_pro_bins).bins.tolist()
+            #         self.protein_bounds[-1] = self.protein_bounds[-1] + .1
 
     def set_cell_bins(self):
         '''
@@ -991,9 +992,8 @@ class Field:
                             cells_in_curr_ylpro_combo.append(cell)
                     self.assign_random_binned_applicator(cells_in_curr_ylpro_combo, to_apply)
 
-    def create_strip_groups(self, overlap=False, overlap_ratio=0.1):
-        self.create_strip_trial()
-        cell_indeces = self.cell_list
+    def create_strip_groups(self, overlap=False, overlap_ratio=0.2):
+        cell_indeces = self.create_strip_trial()
         factors = []
         single_cells = []
         sum = 0
@@ -1014,10 +1014,9 @@ class Field:
                     for j in range(1, nr_of_cells[i]+1):
                         nf.append(f[-j])
                     for j in range(nr_of_cells[i+1]):
-                        nf.append(f[j])
+                        nf.append(factors[i+1][j])
                     new_factors.append(nf)
             factors.extend(new_factors)
-        print(len(factors))
         return factors
 
 class Column:
