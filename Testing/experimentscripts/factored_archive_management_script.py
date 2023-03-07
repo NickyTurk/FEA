@@ -21,7 +21,7 @@ population = 1000
 n_objs = [10]
 problem = 'WFG7'
 ks = [.5]
-ls = [.30]
+ls = [.3]
 
 current_working_dir = os.getcwd()
 path = re.search(r'^(.*?[\\/]FEA)', current_working_dir)
@@ -38,9 +38,9 @@ for n_obj in n_objs:
     print(problem, n_obj)
     function = get_problem(problem, n_var=dimensions, n_obj=n_obj)
 
-    reference_point = pickle.load(
-        open('D:\\'+ problem+'\\'+ problem + '_' + str(n_obj) + '_reference_point.pickle', 'rb'))
-    reference_point = np.array(reference_point)
+    # reference_point = pickle.load(
+    #     open('E:\\' + problem + '_' + str(n_obj) + '_reference_point.pickle', 'rb'))
+    # reference_point = np.array(reference_point)
 
     po = ParetoOptimization(n_obj)
     ref_dirs = get_reference_directions("das-dennis", n_obj, n_partitions=4)
@@ -57,7 +57,7 @@ for n_obj in n_objs:
             for l in ls:
                 print(k,l)
                 factorarch = FactorArchive(n_obj, dimensions, percent_best=k, percent_remaining=l)
-                moo = NSGA2(dimensions=dimensions, value_range=[0.0, 1.0], reference_point=reference_point,
+                moo = NSGA2(dimensions=dimensions, value_range=[0.0, 1.0], 
                                 ea_runs=ga_run, archive=factorarch)
                 moo.run()
                 filename = path + '/results/factorarchive/full_solution/'+problem+'/NSGA2/NSGA2_FactorArchive_k_'+str(k).replace('.','')+'_l_'+str(l).replace('.','')+'_'+problem+'_'+str(dimensions)+'_dim_' + str(n_obj) + \
