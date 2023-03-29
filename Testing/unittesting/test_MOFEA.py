@@ -24,10 +24,10 @@ class TestMOFEA(unittest.TestCase):
             ks.set_fitness_multi_knapsack(full_solution)
             return ks.objective_values
 
-        self.feamoo = MOFEA(10, 10, 10, base_alg=algorithm, dimensions=dim,
+        self.factors = FactorArchitecture(dim=dim, factors=[[0, 1, 2], [2, 3, 4], [4, 5, 6], [6, 7, 8], [8, 9, 0]])
+        self.feamoo = MOFEA(factor_architecture=self.factors, fea_iterations=10, base_alg=algorithm, dimensions=dim,
                             combinatorial_options=[0, 1], ref_point=ks.ref_point)
-        self.factors = [[0, 1, 2], [2, 3, 4], [4, 5, 6], [6, 7, 8], [8, 9, 0]]
-        self.feamoo.subpopulations = self.feamoo.initialize_moo_subpopulations(factors=self.factors)
+        self.feamoo.subpopulations = self.feamoo.initialize_moo_subpopulations()
 
     def test_compete(self):
         self.feamoo.compete()

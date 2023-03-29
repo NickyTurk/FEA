@@ -1,5 +1,9 @@
 from itertools import combinations
 
+from pymoo.core.result import Result
+
+from MOO.MOEA import MOEA
+from MOO.archivemanagement import FactorArchive
 from utilities.multifilereader import MultiFileReader
 import pickle, re, os
 from MOO.paretofrontevaluation import ParetoOptimization
@@ -8,11 +12,12 @@ from hvwfg import *
 from scipy.stats import kruskal, mannwhitneyu
 import numpy as np
 
-problems =  ['WFG7']
-algorithms = ['NSGA2', 'SPEA2', 'MOEAD']  # , 'SPEA2', 'MOEAD', 'MOEADPBI']
-nr_objs = [5, 10]
-decompositions = ['population_500', 'linear_100_100', 'linear_100_80', 'classic_random_100', 'classic_random_overlap_100_100', 'diff_grouping_MOO'] #, 'population_500', 'linear_100_100', 'linear_100_80', 'classic_random_100', 'classic_random_overlap_100_100','diff_grouping_MOO'
-
+problems =  ['sec35mid']
+algorithms = ['SNSGA2', 'CCNSGA2', 'FNSGA2']  # , 'SPEA2', 'MOEAD', 'MOEADPBI']
+nr_objs = [3]
+parameters = [''] #, 'population_500', 'linear_100_100', 'linear_100_80', 'classic_random_100', 'classic_random_overlap_100_100','diff_grouping_MOO'
+file_regex = 'sec35mid'
+directory_to_search = 'D:\\Prescriptions\\CNN_optimized\\'
 import csv
 
 # field names
@@ -24,36 +29,32 @@ for n_obj in nr_objs:
     po = ParetoOptimization(obj_size=n_obj)
     rows = []
     for problem in problems:
-        reference_point = pickle.load(
-            open('D:\\' + problem + '\\' + problem + '_' + str(n_obj) + '_reference_point.pickle', 'rb'))
-        reference_point = np.array(reference_point)
+        # reference_point = pickle.load(
+        #     open('E:\\' + problem + '_' + str(n_obj) + '_reference_point.pickle', 'rb'))
+        # reference_point = np.array(reference_point)
+        reference_point = None
         t_test_pop = dict()
         # t_test_pop["HV"] = []
-        t_test_pop["spread"] = []
+        # t_test_pop["spread"] = []
         total_nondom_pop = []
 
         for alg in algorithms:
             print('************************************************\n', alg, problem, n_obj)
-            for decomp in decompositions:
-                if decomp == "linear_100_100" or decomp == "classic_random_100":
-                    name = "CC" + alg
-                elif decomp == "population_500":
-                    name = alg
-                else:
-                    name = "F" + alg
-                algdecompname = name + '_' + decomp
-                algdecomp.append(algdecompname)
-                file_regex = name + r'_' + problem + r'_(.*)' + re.escape(str(n_obj)) + r'_objectives_(.*)' + decomp
-                stored_files = MultiFileReader(file_regex=file_regex, dir="D:/" + problem + "/" + name + "/")
+            for param in parameters:
+                full_alg_name = alg + '_' + param
+                algdecomp.append(full_alg_name)
+                # file_regex = alg + r'_(.*)' + problem + r'_(.*)' + re.escape(str(n_obj)) + r'_objectives_(.*)'
+                stored_files = MultiFileReader(file_regex=file_regex, dir=directory_to_search)
                 file_list = stored_files.path_to_files
+                experiments = [file for file in file_list if alg in file]
                 # t_test_pop[name] = dict()
-                t_test_pop[algdecompname] = dict()
-                t_test_pop[algdecompname]["HV"] = []
-                t_test_pop[algdecompname]["spread"] = []
+                t_test_pop[full_alg_name] = dict()
+                t_test_pop[full_alg_name]["HV"] = []
+                t_test_pop[full_alg_name]["spread"] = []
                 ND_size = 0
                 amount = 0
-                if len(file_list) != 0:
-                    for file in file_list:
+                if len(experiments) != 0:
+                    for file in experiments:
                         try:
                             object = pickle.load(open(file, 'rb'))
                         except EOFError:
@@ -64,27 +65,37 @@ for n_obj in nr_objs:
                             if np.any(arch < 0):
                                 continue
                         amount += 1
-                        normalized_archive = np.array(
-                            [np.array(sol.fitness) / reference_point for sol in object.nondom_archive])
-                        new_div = po.calculate_diversity(normalized_archive,
-                                                         normalized=True)  # , minmax=[[0, maxval] for maxval in reference_point])
-                        hv = HV(ref_point=np.ones(n_obj))
-                        #new_hv = hv(normalized_archive)
-                        new_hv = wfg(normalized_archive, np.ones(n_obj))
-                        #print('hv: ', new_hv)
-                        t_test_pop[algdecompname]["spread"].append(new_div)
-                        t_test_pop[algdecompname]["HV"].append(new_hv)
+                        if reference_point is not None:
+                            if isinstance(object, MOEA):
+                                print("MOEA")
+                                normalized_archive = np.array(
+                                    [np.array(sol.fitness) / reference_point for sol in object.nondom_archive])
+                            elif isinstance(object, FactorArchive):
+                                normalized_archive = np.array(
+                                    [np.array(sol.fitness) / reference_point for sol in object.flatten_archive()])
+                            elif isinstance(object, Result):
+                                normalized_archive = np.array(
+                                    [np.array(sol) / reference_point for sol in object.F])
+                            else:
+                                normalized_archive = np.array(
+                                    [np.array(sol) / reference_point for sol in object])
+                            new_div = po.calculate_diversity(normalized_archive,
+                                                             normalized=True)  # , minmax=[[0, maxval] for maxval in reference_point])
+                            new_hv = wfg(normalized_archive, np.ones(n_obj))
+                            ND_size = ND_size + len(normalized_archive)
+                        else:
+                            new_div = object.iteration_stats[-1]['diversity']
+                            new_hv = object.iteration_stats[-1]['hypervolume']
+                        t_test_pop[full_alg_name]["spread"].append(new_div)
+                        t_test_pop[full_alg_name]["HV"].append(new_hv)
                         ND_size = ND_size + object.iteration_stats[-1]['ND_size']
-                        # total_nondom_pop.extend(obj.nondom_archive)
-                    #t_test_pop["HV"].append(t_test_pop[algdecompname]["HV"])
-                    #t_test_pop["spread"].append(t_test_pop[algdecompname]["spread"])
-                    hv_value = np.sum(t_test_pop[algdecompname]["HV"])/amount
-                    hv_stddev = np.std(t_test_pop[algdecompname]["HV"])
+                    hv_value = np.sum(t_test_pop[full_alg_name]["HV"]) / amount
+                    hv_stddev = np.std(t_test_pop[full_alg_name]["HV"])
                     ND_size = ND_size/amount
-                    spread = np.sum(t_test_pop[algdecompname]["spread"])/amount
-                    sprd_stddev = np.std(t_test_pop[algdecompname]["spread"])
+                    spread = np.sum(t_test_pop[full_alg_name]["spread"]) / amount
+                    sprd_stddev = np.std(t_test_pop[full_alg_name]["spread"])
                     # rows.append([problem, str(n_obj), name, decomp, str(hv_value), str(hv_stddev), str(spread), str(sprd_stddev) ,str(ND_size), str(amount)])
-                    print('hv: ', hv_value, hv_stddev, 'nd: ', ND_size) #'hv: ', hv_value, hv_stddev, 'nd: ', ND_size, , 'spread: ', spread, sprd_stddev
+                    print('hv: ', hv_value, hv_stddev, 'nd: ', ND_size, 'spread: ', spread, sprd_stddev) #'hv: ', hv_value, hv_stddev, 'nd: ', ND_size, , 'spread: ', spread, sprd_stddev
             print('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
         # print(kruskal(*t_test_pop["spread"]))
         # print(kruskal(*t_test_pop["HV"]))

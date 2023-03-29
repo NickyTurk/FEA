@@ -238,6 +238,19 @@ class Prescription:
         net_return = predicted_yield * self.yield_price - (applicator * self.applicator_cost) - self.field.fixed_costs
         return -net_return
 
+    def select_experimental_plots(self, experiment_percentage, method="stdev"):
+        to_select = round(len(self.field.cell_list)*experiment_percentage)
+        if method == "stdev":
+            stdev_sorted = sorted(self.yield_predictor.cell_prediction["stdev"].items(), key=lambda x:x[1])
+            cell_ids = stdev_sorted[-to_select:][0]
+        elif method == "lowyield":
+            yield_sorted = sorted(self.yield_predictor.cell_prediction["average"].items(), key=lambda x:x[1])
+            cell_ids = yield_sorted[-to_select:][0]
+        elif method == "random":
+            cell_ids = random.sample(range(len(self.field.cell_list)), k=to_select)
+        return cell_ids
+
+
     def minimize_weeds(self):
         """
         for organic maps only.

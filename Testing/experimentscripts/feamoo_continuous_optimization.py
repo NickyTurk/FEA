@@ -2,7 +2,8 @@ from datetime import timedelta
 
 from pymoo.decomposition.tchebicheff import Tchebicheff
 from pymoo.decomposition.pbi import PBI
-from pymoo.factory import get_problem, get_reference_directions
+from pymoo.util.ref_dirs import get_reference_directions
+from pymoo.problems import get_problem
 
 from MOO.MOEA import NSGA2, SPEA2, MOEAD, MOEA
 from FEA.factorarchitecture import FactorArchitecture
@@ -19,7 +20,7 @@ fea_runs = [20]
 ga_run = 20
 population = 500
 nr_objs = [3]
-problems = ['WFG3'] #DTLZ7 7with PBI for all obj. linear and random
+problems = ['WFG4', 'WFG5','WFG7'] #DTLZ7 7with PBI for all obj. linear and random
 groupings = ["random"]
 overlap_bool=True
 iter = 5
@@ -41,12 +42,10 @@ for nr_obj in nr_objs:
     moea2 = partial(NSGA2, population_size=population, ea_runs=ga_run)
     moea3 = partial(MOEAD, ea_runs=ga_run, weight_vector=ref_dirs, n_neighbors=10, problem_decomposition=Tchebicheff()) # PBI(theta=5)
 
-    partial_methods = [moea1,moea2,moea3]
-    names=['SPEA2', 'NSGA2', 'MOEAD']  # 'SPEA2', 'NSGA2',
+    partial_methods = [moea1]
+    names=['SPEA2']  # 'SPEA2', 'NSGA2',
 
     FA = FactorArchitecture(dimensions)
-    # FA.load_architecture(path_to_load=path+"/FEA/factor_architecture_files/MEET_MOO/MEET2_DG_random_DTLZ1_5")
-    # FA.method = 'MEET2'
 
     for grouping in groupings:
         if grouping == "linear":
@@ -60,11 +59,11 @@ for nr_obj in nr_objs:
             @add_method(MOEA)
             def calc_fitness(variables, gs=None, factor=None):
                 if gs is not None and factor is not None:
-                    full_solution = [x for x in gs.variables]
+                    full_solution = np.array([x for x in gs.variables])
                     for i, x in zip(factor, variables):
                         full_solution[i] = x
                 else:
-                    full_solution = variables
+                    full_solution = np.array(variables)
                 dtlz = get_problem(problem, n_var=dimensions, n_obj=nr_obj)
                 objective_values = dtlz.evaluate(full_solution)
                 return tuple(objective_values)

@@ -74,7 +74,7 @@ class ParetoOptimization:
             sorted_set = sorted(to_sort)
             last = np.array(sorted_set[-1])
             first = np.array(sorted_set[0])
-            spread_indicator += np.square(np.linalg.norm(last - first))
+            spread_indicator += np.square(abs(last - first))
         return np.sqrt(spread_indicator)
 
     def calculate_ref_points(self, h: int):

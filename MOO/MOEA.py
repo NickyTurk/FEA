@@ -67,6 +67,7 @@ class MOEA:
         self.global_solution = global_solution
         self.ea_runs = ea_runs
         self.iteration_stats = []
+        self.calc_iter_stats = False
         self.worst_fitness_ref = reference_point
         if archive is None:
             self.nondom_archive = []
@@ -133,8 +134,8 @@ class MOEA:
             nd_archive = self.nondom_archive
         if isinstance(nd_archive, FactorArchive):
             nd_archive = nd_archive.flatten_archive()
-        if self.worst_fitness_ref is not None:
-            po = ParetoOptimization()
+        if self.worst_fitness_ref is not None and self.calc_iter_stats:
+            po = ParetoOptimization(obj_size=len(self.worst_fitness_ref))
             eval_dict = po.evaluate_solution(nd_archive, self.worst_fitness_ref, normalize=normalize)
         else:
             eval_dict = dict()
@@ -144,7 +145,7 @@ class MOEA:
 
     def calc_fitness(self, variables, gs=None, factor=None):
         """
-        An empty function to fill in dynamically based on the problem.
+        An empty function to fill in dynamically based on the problem: using @add_method(MOEA) decorator
         @param variables: List of variables to evaluate.
         @param gs: Global Solution. Only used for FEA base-algorithms. When implementing any MOOEA as the base-algorithm
                 for FEA, each algorithm instance will only be optimizing a subpopulation consisting of a subset of the
@@ -158,7 +159,7 @@ class MOEA:
 
 
 class NSGA2(MOEA):
-    def __init__(self, evolutionary_algorithm=GA, dimensions=100, population_size=50, ea_runs=20,
+    def __init__(self, evolutionary_algorithm=GA, dimensions=100, population_size=500, ea_runs=100,
                  combinatorial_values=None, value_range=None, reference_point=None, archive=None,
                  factor=None, global_solution=None):
         """
@@ -226,7 +227,7 @@ class NSGA2(MOEA):
             else:
                 self.set_iteration_stats(i)
             i += 1
-            print(self.iteration_stats[-1])
+            # print(self.iteration_stats[-1])
 
     def replace_worst_solution(self, gs):
         """
@@ -382,8 +383,6 @@ class SPEA2(MOEA):
             # set non-dominated archive keeping the original FITNESS score
             # TODO: change this for use with factorarchive. Make NONDOM POPULATION like NSGA
             self.nondom_archive = [y for x, y in zip(self.strength_pop, self.curr_population) if x.fitness < 1.0]
-            # update archive to have exact length set by algorithm parameter
-            # TODO: change this for use with factorarchive
             self.nondom_archive = self.update_archive()
             # find worst index
             if self.factor is not None:

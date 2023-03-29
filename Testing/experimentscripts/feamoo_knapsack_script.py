@@ -62,7 +62,7 @@ for s, o in zip(sizes, overlaps):
             filename = path + '/results/Knapsack/' + name + '/' + name + '_' + ks_type + '_knapsack_' + str(nr_obj) + \
                        '_objectives_fea_runs_' + str(fea_run) + '_grouping_' + str(s) + '_' + \
                        str(o) + time.strftime('_%d%m%H%M%S') + '.pickle'
-            feamoo = MOFEA(fea_run, alg_iterations=ga_run, pop_size=population, factor_architecture=FA, base_alg=ga, dimensions=nr_items,
+            feamoo = MOFEA(fea_run, factor_architecture=FA, base_alg=ga, dimensions=nr_items,
                            combinatorial_options=[0, 1], ref_point=ks.ref_point)
             feamoo.run()
             end = time.time()

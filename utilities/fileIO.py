@@ -4,7 +4,7 @@ Functionality to read and write WKT data for field and prescription data.
 
 import pickle
 import csv, os, re
-import osgeo, fiona
+import fiona
 from fiona.crs import from_epsg
 
 try:
@@ -64,43 +64,43 @@ class WKTFiles:
     def __init__(self, filename=None):
         self.filename = filename
 
-    def convert_to_shape(self, coordinatesystem):
-        """
-        Reads data from CSV file with a WKT column and converts it to a .shp file.
-        Below code adapted from:
-        https://stackoverflow.com/questions/31927726/converting-a-csv-with-a-wkt-column-to-a-shapefile
-        """
-        spatialref = osgeo.osr.SpatialReference()  # Spatial reference so the
-        spatialref.SetWellKnownGeogCS(coordinatesystem)  # 'EPSG:26912'
-
-        # Create shapefile to write to
-        filepath, file_extension = os.path.splitext(self.filename)
-        ogr_driver = ogr.GetDriverByName("ESRI Shapefile")
-        shapefile = ogr_driver.CreateDataSource(filepath + '.shp')
-        wktlayer = shapefile.CreateLayer("layer", spatialref, geom_type=ogr.wkbPolygon)
-
-        # Add the other attribute fields needed:
-        field_def = ogr.FieldDefn("ID", ogr.OFTInteger)
-        field_def.SetWidth(10)
-        wktlayer.CreateField(field_def)
-
-        # Read the feature in your csv file:
-        with open(self.filename) as file_input:
-            reader = csv.reader(file_input)
-            wktindex = 0
-            for i, row in enumerate(reader):
-                # Find index of wkt column
-                if i == 0:
-                    for j, cell in enumerate(row):
-                        if cell.upper() == "WKT":
-                            wktindex = j
-                # Transform WKT to ogr geometry to write to shapefile format
-                else:
-                    polygon = ogr.CreateGeometryFromWkt(str(row[wktindex]))
-                    feature = ogr.Feature(wktlayer.GetLayerDefn())
-                    feature.SetGeometry(polygon)
-                    feature.SetField("ID", i)
-                    wktlayer.CreateFeature(feature)
+    # def convert_to_shape(self, coordinatesystem):
+    #     """
+    #     Reads data from CSV file with a WKT column and converts it to a .shp file.
+    #     Below code adapted from:
+    #     https://stackoverflow.com/questions/31927726/converting-a-csv-with-a-wkt-column-to-a-shapefile
+    #     """
+    #     # spatialref = osgeo.osr.SpatialReference()  # Spatial reference so the
+    #     spatialref.SetWellKnownGeogCS(coordinatesystem)  # 'EPSG:26912'
+    #
+    #     # Create shapefile to write to
+    #     filepath, file_extension = os.path.splitext(self.filename)
+    #     ogr_driver = ogr.GetDriverByName("ESRI Shapefile")
+    #     shapefile = ogr_driver.CreateDataSource(filepath + '.shp')
+    #     wktlayer = shapefile.CreateLayer("layer", spatialref, geom_type=ogr.wkbPolygon)
+    #
+    #     # Add the other attribute fields needed:
+    #     field_def = ogr.FieldDefn("ID", ogr.OFTInteger)
+    #     field_def.SetWidth(10)
+    #     wktlayer.CreateField(field_def)
+    #
+    #     # Read the feature in your csv file:
+    #     with open(self.filename) as file_input:
+    #         reader = csv.reader(file_input)
+    #         wktindex = 0
+    #         for i, row in enumerate(reader):
+    #             # Find index of wkt column
+    #             if i == 0:
+    #                 for j, cell in enumerate(row):
+    #                     if cell.upper() == "WKT":
+    #                         wktindex = j
+    #             # Transform WKT to ogr geometry to write to shapefile format
+    #             else:
+    #                 polygon = ogr.CreateGeometryFromWkt(str(row[wktindex]))
+    #                 feature = ogr.Feature(wktlayer.GetLayerDefn())
+    #                 feature.SetGeometry(polygon)
+    #                 feature.SetField("ID", i)
+    #                 wktlayer.CreateFeature(feature)
 
     def grid_read(self):
         """

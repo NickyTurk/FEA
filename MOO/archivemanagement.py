@@ -4,12 +4,13 @@ import sys
 from operator import itemgetter
 
 import pandas as pd
+from pymoo.core.result import Result
 from scipy.spatial.distance import pdist, squareform
 from pymoo.util.nds.fast_non_dominated_sort import fast_non_dominated_sort
 from pymoo.algorithms.moo.nsga2 import calc_crowding_distance
 import numpy as np
 
-from utilities.util import delete_multiple_elements
+from utilities.util import delete_multiple_elements, PopulationMember
 
 
 class FactorArchive:
@@ -69,6 +70,8 @@ class FactorArchive:
                 k best solutions
                 2*k diversity
         """
+        if isinstance(found_nondom_solutions, Result):
+            found_nondom_solutions = [PopulationMember(variable, fitness) for variable,fitness in zip(found_nondom_solutions.X, found_nondom_solutions.F)]
         for obj_idx in range(self.nr_obj):
             if self.archive[obj_idx]:
                 objective_solutions = [x for x in self.archive[obj_idx]]

@@ -8,23 +8,25 @@ from utilities.multifilereader import *
 # TODO: Generalize
 
 
-field_names = ['millview']
-methods = ["NSGA2", "SPEA2"]
+field_names = ['sec35mid']
+methods = ["NSGA2", "CCNSGA2", "FNSGA2"]
 iterations = []
 alg_stats = dict()
 for field_name in field_names:
-    mf = MultiFileReader(field_name)
+    mf = MultiFileReader(dir="D:\\Prescriptions\\RF_optimized\\", file_regex=field_name)
     experiment_filenames = mf.path_to_files
+    print(experiment_filenames)
     alg_stats[field_name] = dict()
     for method in methods:
         print(method)
         alg_stats[field_name][method] = dict()
-        experiments = [x for x in experiment_filenames if method + '_' in x and field_name in x.lower()]
+        experiments = [x for x in experiment_filenames if '\\'+method + '_' in x and field_name in x.lower()]
+        print(experiments)
         if experiments:
             for experiment in experiments:
                 feamoo = pickle.load(open(experiment, 'rb'))
-                print(feamoo.iteration_stats[-1])
-                print(feamoo.nondom_archive[0].fitness)
+                # print(feamoo.iteration_stats[-1])
+                # print(feamoo.nondom_archive)
                 try:
                     alg_stats[field_name][method]['iterations'] = [stats['FEA_run'] for i, stats in
                                                                 enumerate(feamoo.iteration_stats) if i != 0]
@@ -46,22 +48,22 @@ stat_name = 'hv'
 # ccea = list(alg_stats['henrys']['CCEAMOO'][stat_name])
 # nsga = list(alg_stats['henrys']['NSGA2'][stat_name])
 # fea = list(alg_stats['henrys']['FEAMOO'][stat_name])
-# fig, axs = plt.subplots(1, 1, figsize=(15, 4.5), sharey=True)
+fig, axs = plt.subplots(1, 1, figsize=(15, 4.5), sharey=True)
 
 # axs[0].plot(alg_stats['henrys']['CCEAMOO']['iterations'], ccea, color='tab:blue', marker='.')
 # axs[0].plot(alg_stats['henrys']['NSGA2']['iterations'], nsga, color='#2ca02c', marker="^")
 # axs[0].plot(alg_stats['henrys']['FEAMOO']['iterations'], fea, color='tab:red', marker="*")
 # axs[0].set_title("Henrys")
 
-# ccea = list(alg_stats['sec35middle']['CCEAMOO'][stat_name])
-# nsga = list(alg_stats['sec35middle']['NSGA2'][stat_name])
-# fea = list(alg_stats['sec35middle']['FEAMOO'][stat_name])
+ccea = list(alg_stats['sec35mid']['CCNSGA2'][stat_name])
+nsga = list(alg_stats['sec35mid']['NSGA2'][stat_name])
+fea = list(alg_stats['sec35mid']['FNSGA2'][stat_name])
 
-# axs[0].plot(alg_stats['sec35middle']['CCEAMOO']['iterations'], ccea, color='tab:blue', marker='.')
-# axs[0].plot(alg_stats['sec35middle']['NSGA2']['iterations'], nsga, color='#2ca02c', marker="^")
-# axs[0].plot(alg_stats['sec35middle']['FEAMOO']['iterations'], fea, color='tab:red', marker="*")
-# axs[0].set_title("Sec35Mid")
-# axs[0].set_xlabel("Generations")
+axs.plot(alg_stats['sec35mid']['CCNSGA2']['iterations'], ccea, color='tab:blue', marker='.')
+axs.plot(alg_stats['sec35mid']['NSGA2']['iterations'], nsga, color='#2ca02c', marker="^")
+axs.plot(alg_stats['sec35mid']['FNSGA2']['iterations'], fea, color='tab:red', marker="*")
+axs.set_title("Sec35Mid")
+axs.set_xlabel("Generations")
 
 # ccea = list(alg_stats['sec35west']['CCEAMOO'][stat_name])
 # nsga = list(alg_stats['sec35west']['NSGA2'][stat_name])
@@ -73,18 +75,18 @@ stat_name = 'hv'
 # axs[2].set_title("Sec35West")
 # fig.suptitle('')
 
-# ccea = mlines.Line2D([], [], color='#1f77b4', marker='.',
-#                      markersize=12, label='CC-NSGA-II')
-# nsga = mlines.Line2D([], [], color='#2ca02c', marker='^',
-#                      markersize=12, label='NSGA-II')
-# fea = mlines.Line2D([], [], color='tab:red', marker='*',
-#                     markersize=12, label='F-NSGA-II')
-# axs[1].legend(handles=[nsga, ccea, fea], bbox_to_anchor=(0, 1.15, 1., .105), loc='center',
-#               ncol=3, mode="expand", borderaxespad=0.)
-# # plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
-# plt.suptitle('Hypervolume', size='18')
-# fig.tight_layout(pad=1)
-# plt.show()
+ccea = mlines.Line2D([], [], color='#1f77b4', marker='.',
+                     markersize=12, label='CC-NSGA-II')
+nsga = mlines.Line2D([], [], color='#2ca02c', marker='^',
+                     markersize=12, label='NSGA-II')
+fea = mlines.Line2D([], [], color='tab:red', marker='*',
+                    markersize=12, label='F-NSGA-II')
+axs.legend(handles=[nsga, ccea, fea], bbox_to_anchor=(0, 1.15, 1., .105), loc='center',
+              ncol=3, mode="expand", borderaxespad=0.)
+# plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
+plt.suptitle('Hypervolume', size='18')
+fig.tight_layout(pad=1)
+plt.show()
 
 # stat_name = 'diversity'
 # ccea = list(alg_stats['henrys']['CCEAMOO'][stat_name])
@@ -97,13 +99,13 @@ stat_name = 'hv'
 # axs[0].set_title("Henrys")
 # axs[0].set_xticklabels(['NSGA-II', 'CC-NSGA-II', 'F-NSGA-II'])
 #
-# ccea = list(alg_stats['sec35middle']['CCEAMOO'][stat_name])
-# nsga = list(alg_stats['sec35middle']['NSGA2'][stat_name])
-# fea = list(alg_stats['sec35middle']['FEAMOO'][stat_name])
-# data = [nsga, ccea, fea]
-# axs[1].boxplot(data)
-# axs[1].set_title("Sec35Mid")
-# axs[1].set_xticklabels(['NSGA-II', 'CC-NSGA-II', 'F-NSGA-II'])
+ccea = list(alg_stats['sec35mid']['CCNSGA2'][stat_name])
+nsga = list(alg_stats['sec35mid']['NSGA2'][stat_name])
+fea = list(alg_stats['sec35mid']['FNSGA2'][stat_name])
+data = [nsga, ccea, fea]
+axs.boxplot(data)
+axs.set_title("Sec35Mid")
+axs.set_xticklabels(['NSGA-II', 'CC-NSGA-II', 'F-NSGA-II'])
 #
 # ccea = list(alg_stats['sec35west']['CCEAMOO'][stat_name])
 # nsga = list(alg_stats['sec35west']['NSGA2'][stat_name])

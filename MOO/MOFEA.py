@@ -13,10 +13,10 @@ import random, pickle, re, os
 class MOFEA:
     """
     Multi-Objective Factored Evolutionary Algorithm.
-    Adjusts compete and share steps to create a set of non-dominated solutions, called the archive, which createsan approximate Pareto front.
+    Adjusts compete and share steps to create a set of non-dominated solutions, called the archive, which creates an approximate Pareto front.
     """
     def __init__(self, fea_iterations, dimensions, factor_architecture=None, base_alg=None,
-                 combinatorial_options=None, value_range=[0, 1], ref_point=[1, 1, 1]):
+                 combinatorial_options=None, value_range=[0, 1], ref_point=None):
         self.combinatorial_options = combinatorial_options
         self.value_range = value_range
         self.dim = dimensions
@@ -28,13 +28,22 @@ class MOFEA:
         self.current_iteration = 0
         self.global_solutions = []
         self.worst_fitness_ref = ref_point
-        self.po = ParetoOptimization(obj_size=len(ref_point))
         self.subpopulations = None
         self.iteration_stats = []
+        self.calc_iter_stats = False
 
         current_working_dir = os.getcwd()
         path = re.search(r'^(.*?[\\/]FEA)', current_working_dir)
         self.path = path.group()
+
+    def set_iteration_stats(self, fea_run):
+        eval_dict = dict()
+        if self.worst_fitness_ref is not None and self.calc_iter_stats:
+            po = ParetoOptimization(obj_size=len(self.worst_fitness_ref))
+            eval_dict = po.evaluate_solution(self.nondom_archive, self.worst_fitness_ref)
+        eval_dict['FEA_run'] = fea_run
+        eval_dict['ND_size'] = len(self.nondom_archive)
+        self.iteration_stats.append(eval_dict)
 
     def initialize_moo_subpopulations(self, factors=None):
         """
@@ -88,12 +97,8 @@ class MOFEA:
                 change_in_nondom_size = []
             # print("last nondom solution: ", self.nondom_archive[-1].fitness)
             old_archive_length = len(self.nondom_archive)
-            eval_dict = self.po.evaluate_solution(self.nondom_archive, self.worst_fitness_ref)
-            eval_dict['FEA_run'] = fea_run
-            eval_dict['ND_size'] = len(self.nondom_archive)
-            self.iteration_stats.append(eval_dict)
-            print('fitnesses: ', self.nondom_archive[0].fitness)
-            print("eval dict", eval_dict)
+            self.set_iteration_stats(fea_run)
+            print("eval dict", self.iteration_stats[-1])
             # [print(s.objective_values) for s in self.nondom_archive]
             # [print(i, ': ', s.objective_values) for i,s in enumerate(self.iteration_stats[fea_run+1]['global solutions'])]
             fea_run = fea_run+1
@@ -107,22 +112,20 @@ class MOFEA:
             - gather subpopulations with said variable
             - randomly select non-dominated solution from subpopulation
             - add randomly selected solution to temporary archive
+            - Select ''best'' solution based on sorting criteria
             - replace variable value in global solution with corresponding subpop value and add to temporary archive
+            - add full solution to archive
         Once this has been done for all variables and subpopulations: re-evaluate temporary archive for non-dominance to get new archive.
         """
         new_solutions = []
         seen_populations = set()
         print("start compete")
         for var_idx in range(self.dim):
-            # randomly pick one of the global solutions to perform competition for this variable
-            chosen_global_solution = random.choice(self.global_solutions)
-            vars = [x for x in chosen_global_solution.variables]
-            if not new_solutions:
-                new_solutions.append(vars)
             # for each population with said variable perform competition on this single randomly chosen global solution
             if len(self.factor_architecture.optimizers[var_idx]) > 1:
                 for pop_idx in self.factor_architecture.optimizers[var_idx]:
                     curr_pop = self.subpopulations[pop_idx]
+                    vars = [x for x in curr_pop.global_solution.variables]
                     if pop_idx not in seen_populations:
                         seen_populations.add(pop_idx)
                         new_solutions.append([x for x in curr_pop.random_nondom_solutions[-1]])
@@ -135,10 +138,16 @@ class MOFEA:
                     else:
                         sorted = curr_pop.sorting_mechanism(curr_pop.nondom_archive)
                         random_sol = sorted[0]
+                    # replace specific variable in global solution and add to archive
                     var_candidate_value = random_sol.variables[pop_var_idx[0][0]]
                     vars[var_idx] = var_candidate_value
                     if vars not in new_solutions:
                         new_solutions.append(vars)
+                    # Save entire solution in archive (all variables injected into global solution)
+                    full_solution = [x for x in vars]
+                    for i, x in zip(curr_pop.factor, random_sol.variables):
+                        full_solution[i] = x
+                    new_solutions.append(full_solution)
             elif len(self.factor_architecture.optimizers[var_idx]) == 1:
                 curr_pop = self.subpopulations[self.factor_architecture.optimizers[var_idx][0]]
                 pop_var_idx = np.where(np.array(curr_pop.factor) == var_idx)
@@ -213,9 +222,9 @@ class MOFEA:
                 seen.add(s.fitness)
                 nondom_archive.append(s)
         #ADD-ON to reduce non-dom archive size
-        if reduce_archive and len(nondom_archive) > 1000:
-            fitnesses = np.array([np.array(x.fitness) for x in population])
-            distances = calc_crowding_distance(fitnesses)
-            sorted_arch = [x for y, x in sorted(zip(distances, population))]
-            nondom_archive = sorted_arch[:self.population_size]
+        # if reduce_archive and len(nondom_archive) > 1000:
+        #     fitnesses = np.array([np.array(x.fitness) for x in population])
+        #     distances = calc_crowding_distance(fitnesses)
+        #     sorted_arch = [x for y, x in sorted(zip(distances, population))]
+        #     nondom_archive = sorted_arch[:self.population_size]
         return nondom_archive

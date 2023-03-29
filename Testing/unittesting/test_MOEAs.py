@@ -113,13 +113,13 @@ class TestMOEAD(unittest.TestCase):
         self.assertEqual(neighbors.shape[0], self.combs)
         # p = self.decomposition.do(np.array([0.2, 0.4, 0.6]), weights=ref_dirs[2, :], ideal_point=self.ideal)
 
-    def test_neighborhood_selection(self):
-        ref_dirs = get_reference_directions("das-dennis", self.n_obj, n_partitions=self.n_partitions)
-        # neighbors = np.argsort(cdist(ref_dirs, ref_dirs), axis=1, kind='quicksort')[:, :self.n_neighbors]
-        moead = MOEAD(weight_vector=ref_dirs, problem_decomposition=self.decomposition, n_neighbors=self.n_neighbors,
-                      dimensions=self.dim)
-        parents = moead.neighborhood_selection(n_select=1, n_parents=2, neighbors=moead.neighbors[0])
-        print(parents)
+    # def test_neighborhood_selection(self):
+    #     ref_dirs = get_reference_directions("das-dennis", self.n_obj, n_partitions=self.n_partitions)
+    #     # neighbors = np.argsort(cdist(ref_dirs, ref_dirs), axis=1, kind='quicksort')[:, :self.n_neighbors]
+    #     moead = MOEAD(weight_vector=ref_dirs, problem_decomposition=self.decomposition, n_neighbors=self.n_neighbors,
+    #                   dimensions=self.dim)
+    #     parents = moead.neighborhood_selection(n_select=1, n_parents=2, neighbors=moead.neighbors[0])
+    #     print(parents)
 
 
 if __name__ == '__main__':

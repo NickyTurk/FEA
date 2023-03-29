@@ -4,21 +4,14 @@ import itertools, random
 #from pygmo.core import hypervolume
 from pymoo.util.nds.non_dominated_sorting import find_non_dominated
 from MOO.paretofrontevaluation import ParetoOptimization
+from utilities.multifilereader import MultiFileReader
 
 # TODO: generalize
 
-experiment_filenames = ["/media/amy/WD Drive/Prescriptions/optimal/rf/NSGA_Sec35Mid_strip_trial_3_objectives_ga_runs_500_population_500_1904081644.pickle",
-"/media/amy/WD Drive/Prescriptions/optimal/rf/NSGA_Sec35Mid_strip_trial_3_objectives_ga_runs_500_population_500_2104073638.pickle",
-"/media/amy/WD Drive/Prescriptions/optimal/rf/NSGA_Sec35Mid_strip_trial_3_objectives_ga_runs_500_population_500_2304064012.pickle",
-"/media/amy/WD Drive/Prescriptions/optimal/rf/FEAMOO_Sec35Mid_strip_trial_3_objectives_ga_runs_20_population_25_1.pickle",
-"/media/amy/WD Drive/Prescriptions/optimal/rf/FEAMOO_Sec35Mid_strip_trial_3_objectives_ga_runs_20_population_25_2.pickle",
-"/media/amy/WD Drive/Prescriptions/optimal/rf/FEAMOO_Sec35Mid_strip_trial_3_objectives_ga_runs_20_population_25_3.pickle",
- "/media/amy/WD Drive/Prescriptions/optimal/rf/CCEAMOO_Sec35Mid_strip_trial_3_objectives_ga_runs_20_population_50_1.pickle",
-"/media/amy/WD Drive/Prescriptions/optimal/rf/CCEAMOO_Sec35Mid_strip_trial_3_objectives_ga_runs_20_population_50_2.pickle",
- "/media/amy/WD Drive/Prescriptions/optimal/rf/CCEAMOO_Sec35Mid_strip_trial_3_objectives_ga_runs_20_population_50_3.pickle"
-]
+mf = MultiFileReader(dir="D:\\Prescriptions\\RF_optimized\\", file_regex="sec35mid")
+experiment_filenames = mf.path_to_files
 
-methods = ["CCEAMOO", "NSGA", "FEAMOO"]
+methods = ["SNSGA2", "CCNSGA2", "FNSGA2"]
 fea_sum = 0
 nsga_sum = 0
 for i in range(5):
@@ -27,17 +20,21 @@ for i in range(5):
     for method in methods:
         experiment = [x for x in experiment_filenames if method in x.upper()]
         if experiment:
-            experiment = experiment[random.randint(0,2)]
+            experiment = experiment[random.randint(0,len(experiment)-1)]
         else:
             break
         feamoo = pickle.load(open(experiment, 'rb'))
-        nondom_solutions[method] = np.array([np.array(x.fitness) for x in feamoo.nondom_archive])
-        full_solutions.extend([x for x in feamoo.nondom_archive])
-    ccea_len = len(nondom_solutions['CCEAMOO'])
-    nsga_len = len(nondom_solutions['NSGA'])
-    fea_len = len(nondom_solutions['FEAMOO'])
+        if feamoo.nondom_archive:
+            nondom_solutions[method] = np.array([np.array(x.fitness) for x in feamoo.nondom_archive])
+            full_solutions.extend([x for x in feamoo.nondom_archive])
+        else:
+            nondom_solutions[method] = np.array([np.array(x.fitness) for x in feamoo.nondom_pop])
+            full_solutions.extend([x for x in feamoo.nondom_pop])
+    ccea_len = len(nondom_solutions['CCNSGA2'])
+    nsga_len = len(nondom_solutions['SNSGA2'])
+    fea_len = len(nondom_solutions['FNSGA2'])
 
-    total_front = np.vstack((nondom_solutions['CCEAMOO'], nondom_solutions['FEAMOO'], nondom_solutions['NSGA']))
+    total_front = np.vstack((nondom_solutions['CCNSGA2'], nondom_solutions['FNSGA2'], nondom_solutions['SNSGA2']))
     indeces = find_non_dominated(total_front)
     global_solutions = [total_front[i] for i in indeces]
     all_solutions = [full_solutions[i] for i in indeces]

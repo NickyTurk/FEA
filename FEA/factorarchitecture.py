@@ -55,17 +55,17 @@ class FactorArchitecture(object):
         @param dim: number of dimensions, i.e., variables of a problem
         @param factors: if factors are generated externally, they can be initialized using this parameter
         """
-        if factors is not None:
-            self.factors = factors
-            self.get_factor_topology_elements()
-        else:
-            self.factors = []
         self.arbiters = []
         self.optimizers = []
         self.neighbors = []
         self.dim = dim
         self.method = ""
         self.function_evaluations = 0
+        if factors is not None:
+            self.factors = factors
+            self.get_factor_topology_elements()
+        else:
+            self.factors = []
 
     def save_architecture(self, path_to_save=""):
         """
