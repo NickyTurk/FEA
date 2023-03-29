@@ -13,12 +13,12 @@ from utilities.util import *
 import os, re, time, pickle
 from pymoo.problems.many.dtlz import DTLZ1
 
-dimensions = 1000
-s = 100  # , 200, 100]
-o = 100  # 100, 160, 80]  # , 10, 20]
-fea_runs = [20]
-ga_run = 20
-population = 500
+dimensions = 100
+s = 10 # , 200, 100]
+o = 10  # 100, 160, 80]  # , 10, 20]
+fea_runs = [10]
+ga_run = 10
+population = 100
 nr_objs = [3]
 problems = ['WFG4', 'WFG5','WFG7'] #DTLZ7 7with PBI for all obj. linear and random
 groupings = ["random"]

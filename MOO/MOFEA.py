@@ -150,6 +150,7 @@ class MOFEA:
                     new_solutions.append(full_solution)
             elif len(self.factor_architecture.optimizers[var_idx]) == 1:
                 curr_pop = self.subpopulations[self.factor_architecture.optimizers[var_idx][0]]
+                vars = [x for x in curr_pop.global_solution.variables]
                 pop_var_idx = np.where(np.array(curr_pop.factor) == var_idx)
                 if len(curr_pop.nondom_archive) != 0:
                     for solution in curr_pop.nondom_archive:
