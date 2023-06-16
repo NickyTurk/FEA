@@ -92,28 +92,32 @@ class YieldPredictor:
         2. How many cells should we use for experimental rates?
         """
         if cnn:
-            stats_path = '/home/amy/projects/OFPETool-master/static/uploads/Model-Hyper3DNet-sec35middle--Objective-yld/' + self.field.field_name + '_statistics.npy'
+            stats_path = 'C:\\Users\\f24n127\\Documents\\Work\\OFPETool-master\\static\\uploads\\stats\\' + self.field.field_name + '_statistics.npy'
             [maxs, mins, maxY, minY] = np.load(stats_path, allow_pickle=True)
 
             yield_predictions = self.model.model.predictSamples(datasample=self.model.patches, maxs=maxs, mins=mins,
                                                                 batch_size=256)
 
             actual_yield = 0
-            for i in range(len(self.field.cell_list)):
-                center_ids = self.model.centers.loc[self.model.centers['cell_index'] == i]['point_index']
-                cell_pred = np.take(yield_predictions, center_ids, axis=0)
-                avg = np.mean(np.array(cell_pred))
-                stdev = np.std(np.array(cell_pred))
-                self.cell_predictions["average"][i] = avg
-                self.cell_predictions["stdev"][i] = stdev
-                if not np.isnan(avg):
+            if len(yield_predictions) > len(self.field.cell_list):
+                for i in range(len(self.field.cell_list)):
+                    center_ids = self.model.centers.loc[self.model.centers['cell_index'] == i]['point_index']
+                    cell_pred = np.take(yield_predictions, center_ids, axis=0)
+                    cell_pred = cell_pred[~(np.isnan(cell_pred))]
+                    if len(cell_pred) > 0:
+                        avg = np.mean(np.array(cell_pred))
+                        stdev = np.std(np.array(cell_pred))
+                        self.cell_predictions["average"][i] = avg
+                        self.cell_predictions["stdev"][i] = stdev
+                        if not np.isnan(avg):
+                            actual_yield += avg * self.gridcell_size
+            else:
+                for pred in yield_predictions:
+                    avg = np.mean(np.array(pred))
+                    stdev = np.std(np.array(pred))
+                    self.cell_predictions["average"] = avg
+                    self.cell_predictions["stdev"] = stdev
                     actual_yield += avg * self.gridcell_size
-                cell_pred = cell_pred[~(np.isnan(cell_pred))]
-                if len(cell_pred) > 0:
-                    avg = np.mean(cell_pred)
-                    self.cell_predictions.append(avg)
-                    if not np.isnan(avg):
-                        actual_yield += avg * self.gridcell_size
         elif isinstance(self.model, list):
             actual_yield = 0
             for i in range(len(self.field.cell_list)):

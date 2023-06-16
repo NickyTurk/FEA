@@ -11,6 +11,7 @@ import shortuuid
 from pymoo.util.dominator import Dominator
 from scipy.spatial.distance import cdist
 from shortuuid import uuid
+from operator import itemgetter
 
 from MOO.archivemanagement import ObjectiveArchive
 from MOO.paretofrontevaluation import *
@@ -182,6 +183,7 @@ class NSGA2(MOEA):
                          population_size=population_size, reference_point=reference_point,
                          dimensions=dimensions, combinatorial_options=combinatorial_values, value_range=value_range,
                          factor=factor, global_solution=global_solution, archive=archive)
+        print('init dim: ', self.dimensions)
         self.curr_population = []
         self.initial_solution = []
         self.worst_index = None
@@ -280,7 +282,8 @@ class NSGA2(MOEA):
         """
         fitnesses = np.array([np.array(x.fitness) for x in population])
         distances = calc_crowding_distance(fitnesses)
-        return [x for y, x in sorted(zip(distances, population))]
+        first = itemgetter(0)
+        return [x for y, x in sorted(zip(distances, population), key=first)]
 
     def select_new_generation(self, generation_idx=0):
         """

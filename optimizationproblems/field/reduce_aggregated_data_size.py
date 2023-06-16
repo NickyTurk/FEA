@@ -120,7 +120,7 @@ if __name__ == '__main__':
     path_ = re.search(r'^(.*?[\\/]FEA)', current_working_dir)
     path_ = path_.group()
 
-    agg_file = "C:\\Users\\f24n127\\Documents\\Work\\Ag\\Data\\henrys\\wood_10m_yldDat_with_sentinel.csv"
+    agg_file = "C:\\Users\\f24n127\\Documents\\Work\\Ag\\Data\\aggregated_data\\wood_henrys_yl18_aggreg_20181203.csv"
 
     df = pd.read_csv(agg_file)
     df20 = df.loc[(df['field']=='henrys')] # (df['year']==2020) &
@@ -130,7 +130,7 @@ if __name__ == '__main__':
 
     field = pickle.load(open(path_+'/utilities/saved_fields/Henrys.pickle', 'rb'))
     reduced = reduce_dataframe(field, df, transform_to_latlon=True, sampling_type='aggregate', epsg_string='epsg:32612') # Canada: 'EPSG:6657'
-    reduced.to_csv("C:\\Users\\f24n127\\Documents\\Work\\Ag\\Data\\henrys\\reduced_wood_10m_yldDat_with_sentinel_aggregate.csv")
+    reduced.to_csv("C:\\Users\\f24n127\\Documents\\Work\\Ag\\Data\\reduced_wood_henrys_aggregate.csv")
 
     # reduced = reduce_dataframe(field, agg_file, transform_to_latlon=True, spatial_sampling=False)
     # reduced.to_csv("/home/amy/Documents/Work/OFPE/Data/Sec35Mid/reduced_broyles_sec35mid_cnn_random.csv")
