@@ -12,7 +12,7 @@ from pymoo.util.dominator import Dominator
 from scipy.spatial.distance import cdist
 from shortuuid import uuid
 
-from MOO.archivemanagement import FactorArchive
+from MOO.archivemanagement import ObjectiveArchive
 from MOO.paretofrontevaluation import *
 from basealgorithms.ga import GA
 from utilities.util import PopulationMember, compare_solutions, euclidean_distance
@@ -132,7 +132,7 @@ class MOEA:
         '''
         if nd_archive is None:
             nd_archive = self.nondom_archive
-        if isinstance(nd_archive, FactorArchive):
+        if isinstance(nd_archive, ObjectiveArchive):
             nd_archive = nd_archive.flatten_archive()
         if self.worst_fitness_ref is not None and self.calc_iter_stats:
             po = ParetoOptimization(obj_size=len(self.worst_fitness_ref))
@@ -212,7 +212,7 @@ class NSGA2(MOEA):
             I.e. when NSGA2 is NOT used as the base-algorithm for FEA.
             '''
             if self.factor is None:
-                if isinstance(self.nondom_archive, FactorArchive):
+                if isinstance(self.nondom_archive, ObjectiveArchive):
                     self.nondom_archive.update_archive(self.nondom_pop)
                     #self.nondom_pop = self.nondom_archive.flatten_archive()
                     self.set_iteration_stats(i, self.nondom_archive.flatten_archive())
@@ -393,7 +393,7 @@ class SPEA2(MOEA):
             self.curr_population = [PopulationMember(c, self.calc_fitness(c, self.global_solution, self.factor), uuid()) for c
                                     in children]
             if self.factor is None:
-                if isinstance(self.nondom_archive, FactorArchive):
+                if isinstance(self.nondom_archive, ObjectiveArchive):
                     self.nondom_archive.update_archive()
                     self.set_iteration_stats(i, self.nondom_archive)
                     # self.curr_population.re

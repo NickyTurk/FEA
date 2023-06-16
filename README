@@ -1,0 +1,115 @@
+This code base consists of seven "packages"/folders that define the structure of the code:
+general population based base-algorithms, factored evolutionary algorithm, multi-objective algorithms,
+problem definitions, prediction algorithms (used for prescription map optimization), utilities,
+and "Testing" which consists of three different types of "tests" (results analysis scripts, experiment scripts, and unittests).
+
+To see how single-objective FEA works:
+    * FEA_PSO_continuous.py
+To see how the MO-FEA code works:
+    * feamoo_continuous_optimization.py
+    * feamoo_knapsack_script.py
+    * feamoo_optimal_maps_with_experimental_plots.py
+To see how the Objective Archive Management code works:
+    * objective_archive_management_script.py
+
+This list gives a short overview of the folder structure and the classes contained in each file:
+1. "basealgorithms": population-based algorithms that are used in the FEA and MOEA classes.
+    ga.py : GA(dimensions, population_size, tournament_size, mutation_rate, crossover_rate,
+                 ga_runs, mutation_type, crossover_type, parent_selection, offspring_size,
+                 continuous_var_space, value_range, combinatorial_options, eta)
+             --> most of these parameters have default settings
+    pso.py: Particle(function, dim)
+            PSO(omega, phi, global_best_position, v_max, global_solution)
+2. "FEA": The factored evolutionary algorithm. Consists of factor architecture, the algorithm, and variable interaction
+    factorarchitecture.py : FactorArchitecture(dim, factors)
+                            MooFactorArchitecture(dim, n_obj, problem, decomp_approach='diff_grouping')
+    varinteraction.py : RandomTree(dim, measure:Measure)
+                        Measure(): Entropic(Measure)
+                                   DGInteraction(Measure)
+    factorevolution.py : FEA(function, fea_runs, generations, pop_size, factor_architecture, base_algorithm)
+3. "MOO": Multi-objective optimization. Contains multi-objective evolutionary algorithms and the objective archive management strategy
+    archivemanagement.py : ObjectiveArchive(nr_obj, dimensions, percent_best, percent_diversity)
+    MOEA.py : MOEA(evolutionary_algorithm=GA, ea_runs=100, population_size=100, dimensions=10, combinatorial_options=None,
+                    value_range=None, reference_point=None, factor=None, global_solution=None, archive=None)
+                    NSGA2(MOEA)(evolutionary_algorithm=GA, dimensions=100, population_size=500, ea_runs=100,
+                                combinatorial_values=None, value_range=None, reference_point=None, archive=None,
+                                factor=None, global_solution=None)
+                    MOEA/D(MOEA)(evolutionary_algorithm=GA, dimensions=100, ea_runs=100,
+                                 combinatorial_values=None, value_range=None, reference_point=None,
+                                 factor=None, global_solution=None, archive=None,
+                                 problem_decomposition=None, n_neighbors=10, weight_vector=None, prob_neighbor_mating=0.9)
+                    SPEA2(MOEA)(evolutionary_algorithm=GA, dimensions=100, population_size=200, ea_runs=100,
+                                 combinatorial_values=None, value_range=None, reference_point=None,
+                                 factor=None, global_solution=None, archive=None,
+                                 archive_size=200)
+    MOFEA.py : MOFEA(fea_iterations, dimensions, factor_architecture=None, base_alg=None,
+                    combinatorial_options=None, value_range=[0, 1], ref_point=None)
+    paretofrontevaluation.py : ParetoOptimization(obj_size)
+4. "optimizationproblems": contains combinatorial and continuous benchmark functions, as well as a prescription wrapper
+    benchmarks.py : classic benchmarks sped up using numba just-in-time compilation
+                    (sphere, elliptic, rastrigin, ackley, schwefel, rosenbrock)
+    continuous_functions.py : wrapper class for CEC 2010 benchmarks from the opfunu library to speed up the functions
+    knapsack.py : multi-objective knapsack problem can be either classic (type="multi") or balanced (type="single")
+                  Knapsack(number_of_items=100, max_bag_weight=1250, max_nr_items=100, max_bag_volume=2500, nr_objectives=3,
+                  nr_constraints=1, knapsack_type='multi')
+    prescription.py : Defines objectives related to the fertilizer prescription problem, uses 'Field' and 'YieldPredictor'.
+                      Prescription(variables=None, field=None, factor=None, index=-1, normalize_objectives=False, optimized=False,
+                      organic=False, yield_predictor=None, applicator_cost=1, yield_price=5.40)
+    "field": field_creation.py contains all necessary functions to create a Field object, which represents a farming field
+            and overlays a grid of cells on top of the field, where each grid cell is a plot that is assigned a
+            fertilizer rate (or seeding rate) when creating prescription maps.
+            Ideally, we have a known grid structure for the field we are creating a prescription for
+            and we can just read in the grid file to create the Field object.
+5. "predictionalgorithms": Only used for prescription map optimization, CNN_yieldpredictor code comes from external source
+    yieldprediction.py : YieldPredictor(field, agg_data_file, trained_model, data_headers=None,
+                        nitrogen_header='n_lbs_ac', prescription=None, cnn_bool=False,
+                        weeds_model=None, weeds_headers=None)
+6. "testing":
+    I. analysisscripts: contains all the scripts used to analyse different results. This is quite the mess...
+    II. experimentscripts: scripts used to run experiments, see above for list of starting points for different algs.
+    III. unittesting: testing of class functionalities (UNFINISHED: SPEA2, MOFEA, pareto_evaluation. Nothing for OAM.)
+7. "utilities": general use functions, most noteable:
+    fileIO.py : ShapeFiles and WKTFiles : read and write Shape and WKT files for farm prescriptions
+    multifilereader.py : MultiFileReader(file_regex, dir) finds list of files based on regex in a specific directory
+
+#################
+# GENERAL NOTES #
+#################
+
+Precision Ag Thoughts and To-Do List
+-------------------------------------
+The Field and GridCell objects (field_creation.py) should really just be an intermediary to the database,
+    i.e. all information to create a field should be gathered from the database,
+    and this information should be gathered through a different tool, such as the experimental prescription tool.
+    However, the current Field object has a lot of functionality to gather or calculate this data, making it more complex.
+
+To order the cells for jump minimization, we are currently using the ass aplied file, but this has potential issues.
+    For example, if there is an outlier point it could mess up the ordering.
+    It would be better to get the direction from the farmer (e.g. ab-line or through a form), store that information
+    in the database and just have it available.
+
+To create an optimal prescription map for a user,
+    I believe the front-end should be a simple "select the field you wish to optimize" interface.
+    We then calculate the optimized map on our own time and send an e-mail with the final shapefile or shapefile options
+    (for example, provide a file for the different objectives as well as the center objective).
+
+The YIELDPREDICTOR wrapper class:
+    The datastructure generation is messy because of the projections of the data, which all need to be in lat-lon,
+    but farmers often have their data projected in a specific coordinate system, which creates a lot of issues.
+    On top of that, the CNN uses patches and specific data structs which need a specific approach.
+
+PSO - Particle Swarm Optimization
+---------------------------------
+    Note:
+    Currently only used with single-objective FEA.
+    In order to work with the MOEA algorithms, it needs to be edited.
+    Most notably: currently the function to calculate the fitness is being passed through directly, we don't do this for MOO
+
+GA - Genetic Algorithm
+----------------------
+    Note:
+    Mutation and Crossover operations are all in a single function, and these functions need to be edited directly to
+    add more functionality. It would be beneficial to seperate out mutation and crossover functions and create
+    a general function for each that selects the correct operator function to use.
+
+

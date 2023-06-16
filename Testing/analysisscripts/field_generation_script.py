@@ -1,6 +1,11 @@
-from utilities.field.field_creation import Field
+from optimizationproblems.field import Field
 import pandas as pd
 import pickle, os, re
+
+"""
+Create a field object to save.
+Generates (or loads) the grid and calculates information for each of the grid cells.
+"""
 
 current_working_dir = os.getcwd()
 path_ = re.search(r'^(.*?[\\/]FEA)', current_working_dir)

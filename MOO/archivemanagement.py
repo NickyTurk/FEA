@@ -13,8 +13,8 @@ import numpy as np
 from utilities.util import delete_multiple_elements, PopulationMember
 
 
-class FactorArchive:
-    def __init__(self, nr_obj, dimensions, max_archive_size=100, per_objective_size=True, percent_best=.25, percent_remaining=.5):
+class ObjectiveArchive:
+    def __init__(self, nr_obj, dimensions, percent_best=.25, percent_diversity=.5, max_archive_size=100, per_objective_size=True):
         """
 
         :param nr_obj:
@@ -22,7 +22,7 @@ class FactorArchive:
         :param max_archive_size:
         :param per_objective_size:
         :param percent_best: top k percentage of solutions to keep per objective, default is 25%
-        :param percent_remaining: l percent of diversity solutions to select from second k% of original solutions, default=50%
+        :param percent_diversity: l percent of diversity solutions to select from second k% of original solutions, default=50%
 
         For example:
             100 non-dominated solutions
@@ -46,7 +46,7 @@ class FactorArchive:
             self.max_archive_size = max_archive_size / nr_obj
         self.per_objective_size = per_objective_size
         self.k = percent_best
-        self.l = percent_remaining
+        self.l = percent_diversity
         self.archive = []
         for i in range(self.nr_obj):
             self.archive.append([])
@@ -71,7 +71,7 @@ class FactorArchive:
                 2*k diversity
         """
         if isinstance(found_nondom_solutions, Result):
-            found_nondom_solutions = [PopulationMember(variable, fitness) for variable,fitness in zip(found_nondom_solutions.X, found_nondom_solutions.F)]
+            found_nondom_solutions = [PopulationMember(variable, fitness, solid=index) for index, (variable, fitness) in enumerate(zip(found_nondom_solutions.X, found_nondom_solutions.F))]
         for obj_idx in range(self.nr_obj):
             if self.archive[obj_idx]:
                 objective_solutions = [x for x in self.archive[obj_idx]]
@@ -173,19 +173,23 @@ class FactorArchive:
         :param nr_to_select: k "top" diversity solutions to select
         :return: indeces of most dissimilar solutions in the provided solution set
         """
-        # create mapping from condensed matrix to solution indeces
-        condensed_matrix_indeces = list(itertools.combinations(list(range(0, len(solutions))), 2))
-        # use scipy pdist function to get dissimilarity matrix, scipy returns a "reduced matrix"
-        dissim_matrix_fitness = pdist(solutions, 'cosine')
-        # get indeces of max values from reduced matrix
-        max_indeces = np.argpartition(dissim_matrix_fitness, -nr_to_select)[-nr_to_select:]
-        # map the max indeces to the solution indeces, this returns a list of pairs of indeces
-        sol_pairs = list(itemgetter(*max_indeces)(condensed_matrix_indeces))
-        # flatten the list of pairs
-        sol_indeces = []
-        for pair in sol_pairs:
-            sol_indeces += pair
-        # only return unique indeces
+        if len(solutions) > nr_to_select:
+            # create mapping from condensed matrix to solution indeces
+            condensed_matrix_indeces = list(itertools.combinations(list(range(0, len(solutions))), 2))
+            # use scipy pdist function to get dissimilarity matrix, scipy returns a "reduced matrix"
+            dissim_matrix_fitness = pdist(solutions, 'cosine')
+            # get indeces of max values from reduced matrix
+            max_indeces = np.argpartition(dissim_matrix_fitness, -nr_to_select)[-nr_to_select:]
+            # map the max indeces to the solution indeces, this returns a list of pairs of indeces
+            sol_pairs = list(itemgetter(*max_indeces)(condensed_matrix_indeces))
+            # flatten the list of pairs
+            sol_indeces = []
+            for pair in sol_pairs:
+                sol_indeces += pair
+            # only return unique indeces
+        else:
+            print("CHECK THIS OUT:", len(solutions), nr_to_select)
+            sol_indeces = [i for i, sol in enumerate(solutions)]
         return set(sol_indeces)
 
     def get_idx_from_pair_ids(self, i, j, sol_length) -> int:
@@ -207,11 +211,13 @@ def environmental_solution_selection_nsga2(archive, sol_size):
     fitnesses = np.array([np.array(x.fitness) for x in archive])
     fronts = fast_non_dominated_sort(fitnesses)
     solution_set = []
-    i=0
+    i = 0
     for front in fronts:
         if len(front) + len(solution_set) < sol_size:
             solution_set.extend([x for x in front])
             i=i+1
+        else:
+            break
     if len(solution_set) < sol_size:
         front_fitness = np.array([np.array(archive[idx].fitness) for idx in fronts[i]])
         size_to_add = sol_size-len(solution_set)

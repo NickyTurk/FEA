@@ -1,7 +1,7 @@
 from pymoo.core.result import Result
 
 from MOO.MOEA import MOEA
-from MOO.archivemanagement import FactorArchive
+from MOO.archivemanagement import ObjectiveArchive
 from utilities.multifilereader import MultiFileReader
 import pickle, random
 import numpy as np
@@ -48,7 +48,7 @@ for problem in problems:
                     except EOFError:
                         print('issues with file: ', experiment)
                         continue
-                    if isinstance(results, FactorArchive):
+                    if isinstance(results, ObjectiveArchive):
                         archive = results.find_archive_overlap(nr_archives_overlapping=archive_overlap)
                         total_front.extend(np.array([np.array(x.fitness) for x in archive]))
                     elif isinstance(results, MOEA):

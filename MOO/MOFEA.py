@@ -37,6 +37,15 @@ class MOFEA:
         self.path = path.group()
 
     def set_iteration_stats(self, fea_run):
+        """
+        Keep track of statistics for each iteration by saving them in a dictionary.
+        The actual iteration_stats object is a list of dictionaries, each entry in the list represents an iteration.
+        Each dictionary contains at least the iteration number "FEA_run" and the size of the solution set "ND_size".
+        Additionally, if we are tracking statistics, we use the ParetoOptimization class to calculate HV and spread,
+        creating two more dictionary entries: "hypervolume" and "diversity"
+        :param fea_run:
+        :return:
+        """
         eval_dict = dict()
         if self.worst_fitness_ref is not None and self.calc_iter_stats:
             po = ParetoOptimization(obj_size=len(self.worst_fitness_ref))

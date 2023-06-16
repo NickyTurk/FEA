@@ -4,6 +4,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 
+
+"""
+Create hypervolume and spread convergence graphs for OAM with different k and l parameters
+"""
+
 algorithms = ['NSGA2', 'NSGA3']  # MOEAD, SPEA2
 obj = 5
 problems = ['DTLZ5', 'DTLZ6', 'WFG3', 'WFG7']  # ['DTLZ1', 'DTLZ2', 'DTLZ3', 'DTLZ4', 'DTLZ5', 'DTLZ6'] #, 'WFG1', 'WFG2', 'WFG3', 'WFG4', 'WFG5', 'WFG7']

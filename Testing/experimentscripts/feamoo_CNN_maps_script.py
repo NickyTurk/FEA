@@ -8,7 +8,7 @@ from MOO.MOFEA import MOFEA
 import pandas as pd
 import numpy as np
 from datetime import timedelta
-import pickle, random, re, os, time, utm
+import pickle, random, re, os, time
 
 np.set_printoptions(suppress=True)
 

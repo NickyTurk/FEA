@@ -1,6 +1,9 @@
 import numba
 from numpy import cos, sqrt, pi, e, exp, sum
 
+"""
+Continuous benchmark functions wrappers to speed up calculations
+"""
 
 @numba.jit
 def sphere__(solution=None):

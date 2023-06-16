@@ -38,7 +38,7 @@ class MultiFileReader(object):
         if dir:
             search_path = dir
         else:
-            search_path = os.path.dirname(ROOT_DIR)#os.path.abspath('FunctionTesting.py'))
+            search_path = os.path.dirname(ROOT_DIR)
         regex = r'(.*)' + self.file_regex + r'(.*)'
         #regex = self.file_regex
         r = re.compile(regex)

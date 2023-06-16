@@ -5,10 +5,10 @@ from copy import deepcopy, copy
 
 
 class Particle(object):
-    def __init__(self, f, size, position=None, factor=None, global_solution=None, lbest_pos=None):
-        self.f = f
+    def __init__(self, function, dim, position=None, factor=None, global_solution=None, lbest_pos=None):
+        self.f = function
         self.lbest_fitness = float('inf')
-        self.dim = size
+        self.dim = dim
         self.factor = factor
         if position is None:
             self.position = np.random.uniform(f.lbound, f.ubound, size=size)
@@ -17,7 +17,7 @@ class Particle(object):
             self.position = position
             self.lbest_position = lbest_pos
             self.lbest_fitness = self.calculate_fitness(global_solution, lbest_pos)
-        self.velocity = np.zeros(size)
+        self.velocity = np.zeros(dim)
         self.fitness = self.calculate_fitness(global_solution)
 
     def __le__(self, other):

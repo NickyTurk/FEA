@@ -1,4 +1,3 @@
-from numpy import var
 from sklearn.ensemble import RandomForestRegressor
 from pyproj import Transformer
 from optimizationproblems.prescription import Prescription
@@ -6,7 +5,7 @@ import pandas as pd
 import numpy as np
 import pickle, random, copy
 
-from utilities.field.field_creation import GridCell
+from optimizationproblems.field.field_creation import GridCell
 
 
 class YieldPredictor:

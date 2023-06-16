@@ -1,5 +1,9 @@
 """
-
+The Multi-Objective Knapsack (MO-KS).
+Classic or "multi" MO-KS creates 'm' knapsacks, where each knapsack has its own profit and weight values,
+i.e., each knapsack is an objective.
+Balanced or "single" MO-KS optimizes a single knapsack with 3-5 objectives: maximize profit (1), minimize weight(2)
+and volume (3), and minimize the difference in weight (4) and the difference in volume (5) of the items.
 """
 
 import random
