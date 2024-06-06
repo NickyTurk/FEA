@@ -1,8 +1,8 @@
-from optimizationproblems.continuous_functions import Function
-from FEA.varinteraction import MEE, RandomTree
-from FEA.factorevolution import FEA
-from FEA.factorarchitecture import FactorArchitecture
-from basealgorithms.pso import PSO
+from FEA.optimizationproblems.continuous_functions import Function
+from FEA.FEA.varinteraction import MEE, RandomTree
+from FEA.FEA.factorevolution import FEA
+from FEA.FEA.factorarchitecture import FactorArchitecture
+from FEA.basealgorithms.pso import PSO
 import random
 import time
 
