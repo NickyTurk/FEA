@@ -1,6 +1,6 @@
-from basealgorithms.ga import GA
-from utilities.multifilereader import MultiFileReader
-from utilities.util import PopulationMember, add_method
+from FEA.basealgorithms.ga import GA
+from FEA.utilities.multifilereader import MultiFileReader
+from FEA.utilities.util import PopulationMember, add_method
 
 import random
 from tokenize import group
