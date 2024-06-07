@@ -13,7 +13,12 @@ class TestGeneral(unittest.TestCase):
         population_size = 10
         dimensions = 10
         upper_value_limit = 50
-        self.moea = MOEA(population_size=population_size, dimensions=dimensions, combinatorial_options=[], value_range=[0, upper_value_limit])
+        self.moea = MOEA(
+            population_size=population_size,
+            dimensions=dimensions,
+            combinatorial_options=[],
+            value_range=[0, upper_value_limit],
+        )
 
     def test_initialize_population(self):
         curr_population, initial_solution = self.moea.initialize_population()
@@ -21,7 +26,7 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(self.moea.population_size, len(curr_population))
         self.assertEqual(curr_population[0].variables, initial_solution)
 
-        random_member_to_check = random.randint(1, self.moea.population_size-1)
+        random_member_to_check = random.randint(1, self.moea.population_size - 1)
         self.assertNotEqual(curr_population[random_member_to_check].variables, initial_solution)
 
     def test_initialize_combinatorial_population(self):
@@ -29,22 +34,28 @@ class TestGeneral(unittest.TestCase):
         self.moea.combinatorial_values = combinatorial_options
         curr_population, initial_solution = self.moea.initialize_population()
 
-        random_variable_to_check = random.randint(0, self.moea.dimensions-1)
+        random_variable_to_check = random.randint(0, self.moea.dimensions - 1)
         self.assertIn(initial_solution[random_variable_to_check], combinatorial_options)
 
-        random_member_to_check = random.randint(0, self.moea.population_size-1)
-        random_variable_to_check = random.randint(0, self.moea.dimensions-1)
-        self.assertIn(curr_population[random_member_to_check].variables[random_variable_to_check], combinatorial_options)
+        random_member_to_check = random.randint(0, self.moea.population_size - 1)
+        random_variable_to_check = random.randint(0, self.moea.dimensions - 1)
+        self.assertIn(
+            curr_population[random_member_to_check].variables[random_variable_to_check],
+            combinatorial_options,
+        )
 
     def test_initialize_continuous_population(self):
         curr_population, initial_solution = self.moea.initialize_population()
 
-        random_variable_to_check = random.randint(0, self.moea.dimensions-1)
+        random_variable_to_check = random.randint(0, self.moea.dimensions - 1)
         self.assertLessEqual(initial_solution[random_variable_to_check], self.moea.value_range[1])
 
-        random_member_to_check = random.randint(0, self.moea.population_size-1)
-        random_variable_to_check = random.randint(0, self.moea.dimensions-1)
-        self.assertLessEqual(curr_population[random_member_to_check].variables[random_variable_to_check], self.moea.value_range[1])
+        random_member_to_check = random.randint(0, self.moea.population_size - 1)
+        random_variable_to_check = random.randint(0, self.moea.dimensions - 1)
+        self.assertLessEqual(
+            curr_population[random_member_to_check].variables[random_variable_to_check],
+            self.moea.value_range[1],
+        )
 
 
 class TestNSGA2(unittest.TestCase):
@@ -62,9 +73,10 @@ class TestNSGA2(unittest.TestCase):
             else:
                 full_solution = variables
             for i in range(objectives):
-                adjusted_variables = full_solution[i:len(full_solution):objectives]
+                adjusted_variables = full_solution[i : len(full_solution) : objectives]
                 fitnesses.append(sum(adjusted_variables))
             return fitnesses
+
         self.nsga = NSGA2(dimensions=dimensions, population_size=10, ea_runs=10)
         self.curr_population, self.initial_solution = self.nsga.initialize_population()
 
@@ -77,7 +89,8 @@ class TestNSGA2(unittest.TestCase):
     def test_generation_selection(self):
         children = self.nsga.ea.create_offspring(self.curr_population)
         self.nsga.curr_population.extend(
-            [PopulationMember(c, self.nsga.calc_fitness(c)) for c in children])
+            [PopulationMember(c, self.nsga.calc_fitness(c)) for c in children]
+        )
         self.nsga.select_new_generation()
         self.assertEqual(len(self.curr_population), self.nsga.population_size)
 
@@ -102,13 +115,19 @@ class TestMOEAD(unittest.TestCase):
         self.ideal = np.array([0.1, 0.1, 0.1])
 
     def test_reference_weights(self):
-        ref_dirs = get_reference_directions("das-dennis", self.n_obj, n_partitions=self.n_partitions)
+        ref_dirs = get_reference_directions(
+            "das-dennis", self.n_obj, n_partitions=self.n_partitions
+        )
         self.assertEqual(ref_dirs.shape[1], self.n_obj)
         self.assertEqual(ref_dirs.shape[0], self.combs)
 
     def test_neighbors(self):
-        ref_dirs = get_reference_directions("das-dennis", self.n_obj, n_partitions=self.n_partitions)
-        neighbors = np.argsort(cdist(ref_dirs, ref_dirs), axis=1, kind='quicksort')[:, :self.n_neighbors]
+        ref_dirs = get_reference_directions(
+            "das-dennis", self.n_obj, n_partitions=self.n_partitions
+        )
+        neighbors = np.argsort(cdist(ref_dirs, ref_dirs), axis=1, kind="quicksort")[
+            :, : self.n_neighbors
+        ]
         self.assertEqual(neighbors.shape[1], self.n_neighbors)
         self.assertEqual(neighbors.shape[0], self.combs)
         # p = self.decomposition.do(np.array([0.2, 0.4, 0.6]), weights=ref_dirs[2, :], ideal_point=self.ideal)
@@ -122,5 +141,5 @@ class TestMOEAD(unittest.TestCase):
     #     print(parents)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

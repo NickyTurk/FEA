@@ -17,19 +17,22 @@ population = 500
 nr_objs = [10]
 
 current_working_dir = os.getcwd()
-path = re.search(r'^(.*?[\\/]FEA)', current_working_dir)
+path = re.search(r"^(.*?[\\/]FEA)", current_working_dir)
 path = path.group()
 
 # moea1 = partial(SPEA2, population_size=population, ea_runs=ga_run)
 # moea2 = partial(NSGA2, population_size=population, ea_runs=ga_run)
 # moea3 = partial(MOEAD, ea_runs=ga_run, weight_vector=ref_dirs, n_neighbors=10, problem_decomposition=Tchebicheff())
 
-names = ['NSGA2']
-problems = ['WFG8'] # ['DTLZ1', 'DTLZ2', 'DTLZ3', 'DTLZ4', 'DTLZ5', 'DTLZ6', 'DTLZ7'] # ['WFG1', 'WFG2', 'WFG3', 'WFG4', 'WFG5', 'WFG7', 'WFG8'] 
+names = ["NSGA2"]
+problems = [
+    "WFG8"
+]  # ['DTLZ1', 'DTLZ2', 'DTLZ3', 'DTLZ4', 'DTLZ5', 'DTLZ6', 'DTLZ7'] # ['WFG1', 'WFG2', 'WFG3', 'WFG4', 'WFG5', 'WFG7', 'WFG8']
 for nr_obj in nr_objs:
     for problem in problems:
         print(problem)
         print(nr_obj)
+
         @add_method(MOEA)
         def calc_fitness(variables, gs=None, factor=None):
             dtlz = get_problem(problem, n_var=dimensions, n_obj=nr_obj)
@@ -39,15 +42,37 @@ for nr_obj in nr_objs:
         for name in names:
             print(name)
             for i in range(5):
-                print('##############################################\n', i)
+                print("##############################################\n", i)
                 start = time.time()
-                filename = path + '/results/' + problem.upper() + '/' + name + '/' + name + '_' + problem.upper() + '_' + str(dimensions) + '_dimensions_' + str(nr_obj) + \
-                    '_objectives_ea_runs_' + str(ga_run) + '_population_' + str(population) + time.strftime(
-                    '_%d%m%H%M%S') + '.pickle'
-                if name == 'SPEA2':
-                    moo = SPEA2(dimensions=dimensions, value_range=[0.0, 1.0], reference_point=list(np.ones(nr_obj)),
-                               ea_runs=ga_run)
-                elif 'MOEAD' in name:
+                filename = (
+                    path
+                    + "/results/"
+                    + problem.upper()
+                    + "/"
+                    + name
+                    + "/"
+                    + name
+                    + "_"
+                    + problem.upper()
+                    + "_"
+                    + str(dimensions)
+                    + "_dimensions_"
+                    + str(nr_obj)
+                    + "_objectives_ea_runs_"
+                    + str(ga_run)
+                    + "_population_"
+                    + str(population)
+                    + time.strftime("_%d%m%H%M%S")
+                    + ".pickle"
+                )
+                if name == "SPEA2":
+                    moo = SPEA2(
+                        dimensions=dimensions,
+                        value_range=[0.0, 1.0],
+                        reference_point=list(np.ones(nr_obj)),
+                        ea_runs=ga_run,
+                    )
+                elif "MOEAD" in name:
                     if nr_obj > 3:
                         n_part = 4
                     else:
@@ -55,27 +80,40 @@ for nr_obj in nr_objs:
                     ref_dirs = get_reference_directions("das-dennis", nr_obj, n_partitions=n_part)
                     # pf = get_problem("dtlz1", n_var=dimensions, n_obj=nr_obj).pareto_front(ref_dirs)
                     # reference_point = np.max(pf, axis=0)
-                    moo = MOEAD(dimensions=dimensions, value_range=[0.0, 1.0], reference_point=list(np.ones(nr_obj)),
-                                ea_runs=ga_run, weight_vector=ref_dirs, n_neighbors=10, problem_decomposition=Tchebicheff())
+                    moo = MOEAD(
+                        dimensions=dimensions,
+                        value_range=[0.0, 1.0],
+                        reference_point=list(np.ones(nr_obj)),
+                        ea_runs=ga_run,
+                        weight_vector=ref_dirs,
+                        n_neighbors=10,
+                        problem_decomposition=Tchebicheff(),
+                    )
                 else:
-                    moo = NSGA2(dimensions=dimensions, value_range=[0.0, 1.0], reference_point=list(np.ones(nr_obj)),
-                                ea_runs=ga_run)
+                    moo = NSGA2(
+                        dimensions=dimensions,
+                        value_range=[0.0, 1.0],
+                        reference_point=list(np.ones(nr_obj)),
+                        ea_runs=ga_run,
+                    )
                 moo.run()
                 end = time.time()
                 try:
                     file = open(filename, "wb")
                 except FileNotFoundError:
-                    if not os.path.isdir(path + '/results/' + problem.upper() + '/' + name + '/'):
+                    if not os.path.isdir(path + "/results/" + problem.upper() + "/" + name + "/"):
                         try:
-                            os.mkdir(path + '/results/' + problem.upper() + '/' + name + '/')
+                            os.mkdir(path + "/results/" + problem.upper() + "/" + name + "/")
                         except FileNotFoundError:
-                            if not os.path.isdir(path + '/results/' + problem.upper() + '/'):
-                                os.mkdir(path + '/results/' + problem.upper() + '/')
-                                os.mkdir(path + '/results/' + problem.upper() + '/' + name + '/')
+                            if not os.path.isdir(path + "/results/" + problem.upper() + "/"):
+                                os.mkdir(path + "/results/" + problem.upper() + "/")
+                                os.mkdir(path + "/results/" + problem.upper() + "/" + name + "/")
                             file = open(filename, "wb")
 
                     file = open(filename, "wb")
                 pickle.dump(moo, file)
                 elapsed = end - start
                 print(
-                    "Alg with %d runs and population %d took %s" % (ga_run, population, str(timedelta(seconds=elapsed))))
+                    "Alg with %d runs and population %d took %s"
+                    % (ga_run, population, str(timedelta(seconds=elapsed)))
+                )

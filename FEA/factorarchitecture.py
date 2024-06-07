@@ -14,6 +14,7 @@ try:
 except:
     import pickle
 import os
+
 # from utilities.clustering import FuzzyKmeans
 
 
@@ -77,7 +78,15 @@ class FactorArchitecture(object):
                 os.mkdir("factor_architecture_files/")
             if not os.path.isdir("factor_architecture_files/" + self.method):
                 os.mkdir("factor_architecture_files/" + self.method)
-            file = open("factor_architecture_files/" + self.method + "/" + self.method + "_" + str(self.dim), "wb")
+            file = open(
+                "factor_architecture_files/"
+                + self.method
+                + "/"
+                + self.method
+                + "_"
+                + str(self.dim),
+                "wb",
+            )
         else:
             folder = os.path.dirname(path_to_save)
             if not os.path.isdir(folder):
@@ -91,16 +100,18 @@ class FactorArchitecture(object):
         Can either send through full filepath, OR method name and dimensions to find existing file
         """
         from utilities.exceptions import PickleException
+
         if path_to_load == "" and (method == "" or dim == 0):
             raise PickleException()
         elif path_to_load != "" and os.path.isdir(path_to_load):
             raise PickleException()
         elif path_to_load == "" and method != "" and dim != 0:
             pickle_object = pickle.load(
-                open("factor_architecture_files/" + method + "/" + method + "_" + str(dim), 'rb'))
+                open("factor_architecture_files/" + method + "/" + method + "_" + str(dim), "rb")
+            )
             self.__dict__.update(pickle_object)
         elif path_to_load != "" and not os.path.isdir(path_to_load):
-            pickle_object = pickle.load(open(path_to_load, 'rb'))
+            pickle_object = pickle.load(open(path_to_load, "rb"))
             self.__dict__.update(pickle_object)
 
     def load_csv_architecture(self, file_regex, dim, method="", epsilon=0):
@@ -110,24 +121,23 @@ class FactorArchitecture(object):
         frame = pd.read_csv(file_regex, header=0)
         frame.columns = map(str.upper, frame.columns)
         frame = frame.rename(columns={"DIM": "DIMENSION"}, errors="ignore")
-        dim_frame = frame.loc[frame['DIMENSION'] == int(dim)]
-        f = frame['FUNCTION'].unique()
-        dim_array = np.array(dim_frame['FACTORS'])
+        dim_frame = frame.loc[frame["DIMENSION"] == int(dim)]
+        f = frame["FUNCTION"].unique()
+        dim_array = np.array(dim_frame["FACTORS"])
 
         if epsilon == 0:
-            home = dim_frame['NR_GROUPS'].argmax()
+            home = dim_frame["NR_GROUPS"].argmax()
             factors = literal_eval(dim_array[home])
         else:
-            epsilon_row = dim_frame.loc[dim_frame['EPSILON'] == epsilon]
-            factors = literal_eval(np.array(epsilon_row['FACTORS'])[0])
+            epsilon_row = dim_frame.loc[dim_frame["EPSILON"] == epsilon]
+            factors = literal_eval(np.array(epsilon_row["FACTORS"])[0])
         self.factors = factors
         self.dim = dim
         self.get_factor_topology_elements()
 
-
     def linear_grouping(self, group_size, offset):
         """
-        create a linear grouping with specified group_size and offset, 
+        create a linear grouping with specified group_size and offset,
         e.g.: 10 variables, group_size = 5, offset = 3: factor 1 = [0,1,2,3,4], factor 2 = [3,4,5,6,7], factor 3 = [6,7,8,9]
         @param group_size: variables per factor
         @param offset: where to start the next factor group
@@ -137,7 +147,7 @@ class FactorArchitecture(object):
         if offset == group_size:
             print("WARNING - offset and width are equal; the factors will not overlap.")
         self.factors = list(zip(*[range(i, self.dim, offset) for i in range(0, group_size)]))
-        if self.factors[-1][-1] != self.dim-1:
+        if self.factors[-1][-1] != self.dim - 1:
             step_back = group_size - offset
             new_group = tuple(range(self.factors[-1][-step_back], self.dim, 1))
             self.factors.append(new_group)
@@ -159,13 +169,13 @@ class FactorArchitecture(object):
 
         """
         if overlap:
-            self.method = "classic_random_overlap_"+str(group_size)+"_"+str(group_size)
+            self.method = "classic_random_overlap_" + str(group_size) + "_" + str(group_size)
         else:
             self.method = "classic_random_" + str(group_size)
-        number_of_groups = int(self.dim/group_size)
-        indeces = list(range(0,self.dim))
+        number_of_groups = int(self.dim / group_size)
+        indeces = list(range(0, self.dim))
         factors = []
-        for n in range(number_of_groups-1):
+        for n in range(number_of_groups - 1):
             grp = random.sample(indeces, k=group_size)
             factors.append(grp)
             for grpidx in grp:
@@ -173,20 +183,26 @@ class FactorArchitecture(object):
         factors.append(indeces)
         if overlap:
             disjoint_length = len(factors)  # number of factors after disjoint grouping
-            halfsize = int(group_size/2)  # how many variables need to be selected from each factor to create overlap
+            halfsize = int(
+                group_size / 2
+            )  # how many variables need to be selected from each factor to create overlap
             for i in range(disjoint_length):
-                if i < disjoint_length-1: # stop before getting to last disjoint group, since this will be included already
+                if (
+                    i < disjoint_length - 1
+                ):  # stop before getting to last disjoint group, since this will be included already
                     new_factor = random.sample(factors[i], k=halfsize)
-                    new_factor.extend(random.sample(factors[i+1], k=group_size-halfsize)) # if group size is odd, make sure overlapping groups have the same size
-                    factors.append(new_factor)           
+                    new_factor.extend(
+                        random.sample(factors[i + 1], k=group_size - halfsize)
+                    )  # if group size is odd, make sure overlapping groups have the same size
+                    factors.append(new_factor)
         self.factors = factors
 
     def random_grouping(self, min_groups=5, max_groups=15, overlap=False):
         self.method = "random"
-        number_of_groups = random.randint(min_groups,max_groups)
+        number_of_groups = random.randint(min_groups, max_groups)
         while True:
             # make sure each group has at least one variable
-            assigned_groups = random.choices(range(0,number_of_groups), k=self.dim)
+            assigned_groups = random.choices(range(0, number_of_groups), k=self.dim)
             if len(set(assigned_groups)) == number_of_groups:
                 break
         factors = []
@@ -195,9 +211,11 @@ class FactorArchitecture(object):
             factor = [idx for idx, grp in enumerate(assigned_groups) if grp == i]
             factors.append(factor)
         if overlap:
-            for i in range(0,number_of_groups-1):
-                factor = random.sample(self.factors[i],k=int(np.ceil(len(self.factors[i])/4)))
-                factor.extend(random.sample(self.factors[i+1],k=int(np.ceil(len(self.factors[i+1])/4))))
+            for i in range(0, number_of_groups - 1):
+                factor = random.sample(self.factors[i], k=int(np.ceil(len(self.factors[i]) / 4)))
+                factor.extend(
+                    random.sample(self.factors[i + 1], k=int(np.ceil(len(self.factors[i + 1]) / 4)))
+                )
                 factors.append(factor)
         return factors
 
@@ -206,22 +224,28 @@ class FactorArchitecture(object):
         Genetic grouping strategy to group variables in combinatorial problems without pre-defining group sizes.
         """
         # initialize GA to perform optimization
-        ga = GA(dimensions=self.dim, population_size=population_size, mutation_type="grouping", crossover_type="grouping", parent_selection="grouping")
+        ga = GA(
+            dimensions=self.dim,
+            population_size=population_size,
+            mutation_type="grouping",
+            crossover_type="grouping",
+            parent_selection="grouping",
+        )
         # define fitness function to check difference between full evaluation and group evaluations
-        full_c1 = np.ones(self.dim)*c1
-        full_c2 = np.ones(self.dim)*c2
+        full_c1 = np.ones(self.dim) * c1
+        full_c2 = np.ones(self.dim) * c2
         full_c1_fitness = np.sum(problem.evaluate(full_c1))
         full_c2_fitness = np.sum(problem.evaluate(full_c2))
-        
+
         def calc_fitness(variables):
             # variables here are the genes in the chromosome, which can have different lengths
             chromosome_length = len(variables)
-            full_fitness = chromosome_length * (full_c1_fitness+full_c2_fitness)
+            full_fitness = chromosome_length * (full_c1_fitness + full_c2_fitness)
             print("fitness for c1/c2 combined", full_fitness)
             per_group_fitness = 0
             for gene in variables:
-                group_solution_c1 = np.ones(self.dim)*c2
-                group_solution_c2 = np.ones(self.dim)*c1
+                group_solution_c1 = np.ones(self.dim) * c2
+                group_solution_c2 = np.ones(self.dim) * c1
                 for var_idx in gene:
                     group_solution_c1[var_idx] = c1
                     group_solution_c2[var_idx] = c2
@@ -229,8 +253,8 @@ class FactorArchitecture(object):
                 print("c1 group added: ", per_group_fitness)
                 per_group_fitness += np.sum(problem.evaluate(group_solution_c2))
                 print("c2 group added: ", per_group_fitness)
-            return abs(full_fitness-per_group_fitness)
-                
+            return abs(full_fitness - per_group_fitness)
+
         # generate population: each chromosome consists of genes representing a group of variables
         population = []
         for i in range(population_size):
@@ -270,7 +294,9 @@ class FactorArchitecture(object):
             # initialize for current iteration
             curr_factor = [dimensions[0]]
 
-            curr_factor = self.check_delta(_function, m, 1, size, dimensions, epsilon, curr_factor, moo, n_obj)
+            curr_factor = self.check_delta(
+                _function, m, 1, size, dimensions, epsilon, curr_factor, moo, n_obj
+            )
 
             if len(curr_factor) == 1:
                 separate_variables.extend(curr_factor)
@@ -319,7 +345,9 @@ class FactorArchitecture(object):
         factors.append(tuple(separate_variables))
         self.factors = factors
 
-    def check_delta(self, _function, m, i, size, dimensions, eps, curr_factor, moo=False, n_obj=np.inf):
+    def check_delta(
+        self, _function, m, i, size, dimensions, eps, curr_factor, moo=False, n_obj=np.inf
+    ):
         """
         Helper function for the two differential grouping approaches.
         Compares function fitnesses to determine whether there is a difference in results larger than 'epsilon'.
@@ -334,7 +362,7 @@ class FactorArchitecture(object):
         """
         p1 = [random.random() for x in range(self.dim)]
         p2 = [x for x in p1]
-        p2[i] = p1[i]+.1
+        p2[i] = p1[i] + 0.1
         if not moo:
             if m == 0:
                 delta1 = _function.run(p1) - _function.run(p2)
@@ -342,7 +370,7 @@ class FactorArchitecture(object):
                 delta1 = _function.run(p1, m_group=m) - _function.run(p2, m_group=m)
         elif moo:
             delta1 = _function.evaluate(p1)[n_obj] - _function.evaluate(p2)[n_obj]
-            #print("obj: ", n_obj, "D1: ", delta1)
+            # print("obj: ", n_obj, "D1: ", delta1)
         self.function_evaluations += 2
 
         for j in range(i + 1, size):
@@ -359,7 +387,7 @@ class FactorArchitecture(object):
                     delta2 = _function.run(p3, m_group=m) - _function.run(p4, m_group=m)
             elif moo:
                 delta2 = _function.evaluate(p3)[n_obj] - _function.evaluate(p4)[n_obj]
-                #print("obj: ", n_obj, "D2: ", delta2, _function.evaluate(p3)[n_obj], _function.evaluate(p4)[n_obj])
+                # print("obj: ", n_obj, "D2: ", delta2, _function.evaluate(p3)[n_obj], _function.evaluate(p4)[n_obj])
             self.function_evaluations += 2
 
             if abs(delta1 - delta2) > eps:
@@ -403,7 +431,8 @@ class FactorArchitecture(object):
         """
 
         if isinstance(T, np.ndarray):  # convert np array to tree
-            from networkx import  from_numpy_array, maximum_spanning_tree
+            from networkx import from_numpy_array, maximum_spanning_tree
+
             G = from_numpy_array(T)
             T = maximum_spanning_tree(G)
 
@@ -429,7 +458,8 @@ class FactorArchitecture(object):
         """
 
         if isinstance(T, np.ndarray):  # convert np array to tree
-            from networkx import  from_numpy_array, maximum_spanning_tree
+            from networkx import from_numpy_array, maximum_spanning_tree
+
             G = from_numpy_array(T)
             T = maximum_spanning_tree(G)
 
@@ -523,7 +553,8 @@ class MooFactorArchitecture:
     Create factor architecture along different objective axes.
     Need to be generalized a bit more.
     """
-    def __init__(self, dim, n_obj, problem=None, decomp_approach='diff_grouping'):
+
+    def __init__(self, dim, n_obj, problem=None, decomp_approach="diff_grouping"):
         self.dim = dim
         self.problem = problem
         self.n_obj = n_obj
@@ -538,9 +569,13 @@ class MooFactorArchitecture:
             ubound_vars = ubound
             lbound_vars = lbound
         # Property analysis
-        diversity_variables, convergence_variables = self.variable_property_analysis(ubound_vars, lbound_vars, shift_param, nr_samples)
+        diversity_variables, convergence_variables = self.variable_property_analysis(
+            ubound_vars, lbound_vars, shift_param, nr_samples
+        )
         # Interaction learning
-        interaction_matrix = self.graph_DG_interaction_learning(convergence_variables, ubound_vars, lbound_vars, shift_param, omega=1e-08)
+        interaction_matrix = self.graph_DG_interaction_learning(
+            convergence_variables, ubound_vars, lbound_vars, shift_param, omega=1e-08
+        )
         # Graph grouping
         G = from_numpy_array(interaction_matrix)
         components = [list(g) for g in connected_components(G)]
@@ -554,16 +589,18 @@ class MooFactorArchitecture:
             solutions = []
             for j in range(nr_samples):
                 solution = []
-                shift_value = j-1 + (1/shift_param)
+                shift_value = j - 1 + (1 / shift_param)
                 for k in range(self.dim):
                     if i == k:
-                        solution.append((shift_value/nr_samples) * (ubound[k]-lbound[k]) + lbound[k])
+                        solution.append(
+                            (shift_value / nr_samples) * (ubound[k] - lbound[k]) + lbound[k]
+                        )
                     else:
-                        solution.append(.5 * (ubound[k]+lbound[k]) + shift_value)
+                        solution.append(0.5 * (ubound[k] + lbound[k]) + shift_value)
                 solutions.append(solution)
             flag = False
             for j in range(nr_samples):
-                for k in range(j+1, nr_samples):
+                for k in range(j + 1, nr_samples):
                     if compare_solutions(solutions[j], solutions[k]) == 0:
                         flag = True
             if flag:
@@ -578,15 +615,17 @@ class MooFactorArchitecture:
         fitnesses = []
         fitness_matrix = np.zeros((len(convergence_vars), len(convergence_vars), self.n_obj))
         shift_vector = (ubound - lbound) / shift_param
-        x0 = lbound+shift_vector
+        x0 = lbound + shift_vector
         f0 = self.problem.evaluate(x0)
         for i, convergence_idx in enumerate(convergence_vars):
             x1 = [x for x in x0]
             x1[convergence_idx] = ubound[convergence_idx] - shift_vector[convergence_idx]
             fitnesses.append(self.problem.evaluate(x1))
-            for j in range(i+1, len(convergence_vars)):
+            for j in range(i + 1, len(convergence_vars)):
                 x2 = [x for x in x1]
-                x2[convergence_vars[j]] = ubound[convergence_vars[j]] - shift_vector[convergence_vars[j]]
+                x2[convergence_vars[j]] = (
+                    ubound[convergence_vars[j]] - shift_vector[convergence_vars[j]]
+                )
                 fitness_matrix[i, j] = self.problem.evaluate(x2)
         delta_matrix = np.zeros((self.n_obj, len(convergence_vars), len(convergence_vars)))
         for i, convergence_idx in enumerate(convergence_vars):
@@ -606,9 +645,12 @@ class MooFactorArchitecture:
             for j in range(i + 1, len(convergence_vars)):
                 for l in range(self.n_obj):
                     # perform normalization if weights are larger than threshold omega
-                    if (max_weights[l]-min_weights[l]) > omega:
-                        delta_matrix[l,i,j] = min_weights[l] + ((delta_matrix[l,i,j]-min_weights[l])/(max_weights[l]-min_weights[l]))
-                    if delta_matrix[l,i,j] > omega:
+                    if (max_weights[l] - min_weights[l]) > omega:
+                        delta_matrix[l, i, j] = min_weights[l] + (
+                            (delta_matrix[l, i, j] - min_weights[l])
+                            / (max_weights[l] - min_weights[l])
+                        )
+                    if delta_matrix[l, i, j] > omega:
                         IM[i, j] = 1
                         IM[j, i] = 1
         return IM
@@ -620,15 +662,23 @@ class MooFactorArchitecture:
         :returns FactorArchitecture object: with all the factors generated
         """
         all_factors = FactorArchitecture(self.dim)
-        all_factors.method = self.decomp + '_MOO'
+        all_factors.method = self.decomp + "_MOO"
         eps = 3
         for i in range(self.n_obj):
             fa = FactorArchitecture(self.dim)
-            if self.decomp == 'diff_grouping':
+            if self.decomp == "diff_grouping":
                 getattr(fa, self.decomp)(self.problem, eps, moo=True, n_obj=i)
             if save_files:
                 fa.save_architecture(
-                    '../factor_architecture_files/n_obj_' + str(self.n_obj) + '_' + fa.method + '_dim_' + str(self.dim) + '_obj_' + str(i))
+                    "../factor_architecture_files/n_obj_"
+                    + str(self.n_obj)
+                    + "_"
+                    + fa.method
+                    + "_dim_"
+                    + str(self.dim)
+                    + "_obj_"
+                    + str(i)
+                )
             for f in fa.factors:
                 all_factors.factors.append(f)
         # if disjoint:
@@ -641,29 +691,36 @@ class MooFactorArchitecture:
         for i, obj in enumerate(self.n_obj):
             fa = FactorArchitecture(self.dim)
             fa.load_architecture(
-                '../factor_architecture_files/n_obj_' + str(self.n_obj) + '_' + method_name + '_dim_' + str(self.dim) + '_obj_' + str(i))
+                "../factor_architecture_files/n_obj_"
+                + str(self.n_obj)
+                + "_"
+                + method_name
+                + "_dim_"
+                + str(self.dim)
+                + "_obj_"
+                + str(i)
+            )
             all_factors.factors.extend(fa.factors)
         all_factors.get_factor_topology_elements()
         return all_factors
+
 
 if __name__ == "__main__":
     from pymoo.factory import get_problem
     import re
 
     current_working_dir = os.getcwd()
-    path = re.search(r'^(.*?[\\/]FEA)', current_working_dir)
+    path = re.search(r"^(.*?[\\/]FEA)", current_working_dir)
     path = path.group()
 
-    problem="WFG5"
+    problem = "WFG5"
 
-
-
-    file_regex = r'_'+problem+r'_(.*)'+str(3)+r'_objectives_'
-    stored_files = MultiFileReader(file_regex, dir = "/media/amy/WD Drive/"+problem+"/")
+    file_regex = r"_" + problem + r"_(.*)" + str(3) + r"_objectives_"
+    stored_files = MultiFileReader(file_regex, dir="/media/amy/WD Drive/" + problem + "/")
     experiment_filenames = stored_files.path_to_files
     experiments = [x for x in experiment_filenames if "CCSPEA2" in x]
     for experiment in experiments:
-        feamoo = pickle.load(open(experiment, 'rb'))
+        feamoo = pickle.load(open(experiment, "rb"))
         print(feamoo.factor_architecture.method)
 
     # function_name = 'DTLZ1'

@@ -12,5 +12,5 @@ class TestFactorArchitecture(unittest.TestCase):
         h = 2
         dtlz = MOOFunctions(dim, n_obj, h)
         # param decomp_approach = string of the function name to call for decomposition, e.g.: diff_grouping, MEET, etc.
-        MFA = MooFactorArchitecture(dim, dtlz, decomp_approach='overlapping_diff_grouping')
+        MFA = MooFactorArchitecture(dim, dtlz, decomp_approach="overlapping_diff_grouping")
         fa = MFA.create_objective_factors()  # returns regular FactorArchitecture class instance

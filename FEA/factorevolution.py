@@ -6,8 +6,17 @@ import numpy as np
 
 
 class FEA:
-    def __init__(self, function, fea_runs, generations, pop_size, factor_architecture, base_algorithm, continuous=True,
-                 seed=None):
+    def __init__(
+        self,
+        function,
+        fea_runs,
+        generations,
+        pop_size,
+        factor_architecture,
+        base_algorithm,
+        continuous=True,
+        seed=None,
+    ):
         if seed is not None:
             np.random.seed(seed)
 
@@ -31,11 +40,13 @@ class FEA:
                 alg.run(fea_run)
             self.compete()
             self.share_solution()
-            print('fea run ', fea_run, self.global_fitness)
+            print("fea run ", fea_run, self.global_fitness)
 
     def set_global_solution(self, continuous):
         if continuous:
-            self.global_solution = np.random.uniform(self.function.lbound, self.function.ubound, size=self.factor_architecture.dim)
+            self.global_solution = np.random.uniform(
+                self.function.lbound, self.function.ubound, size=self.factor_architecture.dim
+            )
             self.global_fitness = self.function.run(self.global_solution)
             self.solution_history = [self.global_solution]
 
@@ -43,16 +54,24 @@ class FEA:
         fa = self.factor_architecture
         alg = self.base_algorithm
         return [
-            alg(function=self.function, dim=len(factor), generations=self.base_alg_iterations, population_size=self.pop_size, factor=factor, global_solution=self.global_solution)
-            for factor in fa.factors]
+            alg(
+                function=self.function,
+                dim=len(factor),
+                generations=self.base_alg_iterations,
+                population_size=self.pop_size,
+                factor=factor,
+                global_solution=self.global_solution,
+            )
+            for factor in fa.factors
+        ]
 
     def share_solution(self):
         """
         Construct new global solution based on best shared variables from all swarms
         """
         gs = [x for x in self.global_solution]
-        print('global fitness found: ', self.global_fitness)
-        print('===================================================')
+        print("global fitness found: ", self.global_fitness)
+        print("===================================================")
         for alg in self.subpopulations:
             # update fitnesses
             alg.pop = [individual.update_individual_after_compete(gs) for individual in alg.pop]
@@ -81,7 +100,7 @@ class FEA:
                 sol[var_idx] = var_candidate_value
                 new_fitness = f.run(sol)
                 if new_fitness < curr_fitness:
-                    print('smaller fitness found')
+                    print("smaller fitness found")
                     curr_fitness = new_fitness
                     best_value_for_var = var_candidate_value
             sol[var_idx] = best_value_for_var
@@ -90,7 +109,7 @@ class FEA:
         self.solution_history.append(sol)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from basealgorithms.pso import PSO
     from optimizationproblems.continuous_functions import Function
     from FEA.factorarchitecture import FactorArchitecture
@@ -98,5 +117,12 @@ if __name__ == '__main__':
     fa = FactorArchitecture()
     fa.load_csv_architecture(file="../../results/factors/F1_m4_diff_grouping.csv", dim=50)
     func = Function(function_number=1, shift_data_file="f01_o.txt")
-    fea = FEA(func, fea_runs=100, generations=1000, pop_size=500, factor_architecture=fa, base_algorithm=PSO)
+    fea = FEA(
+        func,
+        fea_runs=100,
+        generations=1000,
+        pop_size=500,
+        factor_architecture=fa,
+        base_algorithm=PSO,
+    )
     fea.run()

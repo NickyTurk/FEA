@@ -5,7 +5,9 @@ import random
 
 
 class MEE(object):
-    def __init__(self, func, dim, samples, mic_thresh, de_thresh, delta, measure = None, use_mic_value=True):
+    def __init__(
+        self, func, dim, samples, mic_thresh, de_thresh, delta, measure=None, use_mic_value=True
+    ):
         self.f = func
         self.d = dim
         rand = random.random()
@@ -20,7 +22,7 @@ class MEE(object):
         self.measure = measure
         # Define measure
         # self.measure = Entropic(self.f, self.d, self.lb, self.ub, self.samples, self.delta, self.de_thresh)
-        #self.measure = DGInteraction(self.f, self.d, 0.001, m=4)
+        # self.measure = DGInteraction(self.f, self.d, 0.001, m=4)
 
     def get_IM(self):
         self.direct_IM()
@@ -29,18 +31,23 @@ class MEE(object):
         return self.IM
 
     def direct_IM(self):
-
         """
         Calculates the Direct Interaction Matrix based on MIC
         :return: direct_IM
         """
-        f, dim, lb, ub, sample_size, delta = self.f, self.d, self.lb, self.ub, self.samples, self.delta
+        f, dim, lb, ub, sample_size, delta = (
+            self.f,
+            self.d,
+            self.lb,
+            self.ub,
+            self.samples,
+            self.delta,
+        )
         # for each dimension
         for i in range(dim):
             print("dim: ", i)
             # compare to consecutive variable (/dimension)
             for j in range(i + 1, dim):
-
                 mic = self.measure.compute(i, j)
 
                 if self.use_mic_value:
@@ -57,7 +64,7 @@ class MEE(object):
         """
         Sets strongly connected components in the Interaction Matrix
         """
-        IM_graph = to_networkx_graph(self.IM, create_using= DiGraph)
+        IM_graph = to_networkx_graph(self.IM, create_using=DiGraph)
         strongly_connected_components = strongly_connected_components(IM_graph)
         for component in strongly_connected_components:
             component = list(component)
@@ -78,8 +85,12 @@ class RandomTree(object):
         self.iteration_ctr = 0
 
         # Init tree and graph
-        self.G = from_numpy_array(self.IM)  # We don't technically need this in self, but might as well have it
-        self.T = maximum_spanning_tree(self.G)  # just make a tree (they're all -1 so it is a boring tree)
+        self.G = from_numpy_array(
+            self.IM
+        )  # We don't technically need this in self, but might as well have it
+        self.T = maximum_spanning_tree(
+            self.G
+        )  # just make a tree (they're all -1 so it is a boring tree)
 
         self.measure = measure
 
@@ -92,7 +103,9 @@ class RandomTree(object):
         """
         summary = ""
         for i in range(trials):
-            self.iteration_ctr += 1  # keep track of global counter to allow for multiple, sequential run calls
+            self.iteration_ctr += (
+                1  # keep track of global counter to allow for multiple, sequential run calls
+            )
 
             edges = list(self.T.edges(data="weight"))
             remove = random.choice(edges)  # remove a random edge
@@ -106,7 +119,9 @@ class RandomTree(object):
 
             interact = self.compute_interaction(node1, node2)
             summary += f"\t|\t{remove[2]} --> {interact} "
-            if interact > remove[2]:  # if the new random edge is more expensive then the previous one, add it
+            if (
+                interact > remove[2]
+            ):  # if the new random edge is more expensive then the previous one, add it
                 self.T.add_edge(node1, node2, weight=interact)
                 summary += "Accepted"
             else:  # otherwise add the original one back
@@ -123,7 +138,7 @@ class RandomTree(object):
         :return: MIC value
         """
         if self.IM[i][j] > 0:
-            print('IM larger')
+            print("IM larger")
             return self.IM[i][j]
 
         mic = self.measure.compute(i, j)
@@ -131,6 +146,7 @@ class RandomTree(object):
         self.IM[i, j] = mic
         self.IM[j, i] = mic
         return mic
+
 
 class Measure(object):
     """
@@ -142,7 +158,7 @@ class Measure(object):
 
 
 class Entropic(Measure):
-    def __init__(self, f, d, samples, delta, de_thresh,moo=False, n_obj=0):
+    def __init__(self, f, d, samples, delta, de_thresh, moo=False, n_obj=0):
         """
         Uses MEE to compute interaction
         :param f: function
@@ -158,7 +174,7 @@ class Entropic(Measure):
         self.f = f
         rand = random.random()
         self.ub = np.ones(self.d) * rand
-        self.lb = np.ones(self.d) * (rand-.25)
+        self.lb = np.ones(self.d) * (rand - 0.25)
         self.moo = moo
         self.n_obj = n_obj
 
@@ -235,9 +251,9 @@ class DGInteraction(Measure):
         return abs(delta1 - delta2)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pass
-    #f = Function(function_number=1, shift_data_file="f01_o.txt")
-    #mee = MEE(f, 5, 5, 0.1, 0.0001, 0.000001)
-    #MEE(func=f, dim=5, samples=5, mic_thresh=0.1, de_thresh=0.0001, delta=0.000001)
-    #mee.get_IM()
+    # f = Function(function_number=1, shift_data_file="f01_o.txt")
+    # mee = MEE(f, 5, 5, 0.1, 0.0001, 0.000001)
+    # MEE(func=f, dim=5, samples=5, mic_thresh=0.1, de_thresh=0.0001, delta=0.000001)
+    # mee.get_IM()

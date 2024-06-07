@@ -1,13 +1,18 @@
 import sys
 from predictionalgorithms.CNN_yieldpredictor.PredictorStrategy.RFStrategy import RFStrategy
 from predictionalgorithms.CNN_yieldpredictor.PredictorStrategy.GAMStrategy import GAMStrategy
-from predictionalgorithms.CNN_yieldpredictor.PredictorStrategy.SpatialCNNStrategy import SpatialCNNStrategy
-from predictionalgorithms.CNN_yieldpredictor.PredictorStrategy.MLRegressionStrategy import MLRegressionStrategy
-from predictionalgorithms.CNN_yieldpredictor.PredictorStrategy.BayesRegressionStrategy import BayesRegressionStrategy
+from predictionalgorithms.CNN_yieldpredictor.PredictorStrategy.SpatialCNNStrategy import (
+    SpatialCNNStrategy,
+)
+from predictionalgorithms.CNN_yieldpredictor.PredictorStrategy.MLRegressionStrategy import (
+    MLRegressionStrategy,
+)
+from predictionalgorithms.CNN_yieldpredictor.PredictorStrategy.BayesRegressionStrategy import (
+    BayesRegressionStrategy,
+)
 
 
 class PredictorModel:
-
     def __init__(self, model, device, nbands, window_size, output_size):
         """Create a ML object used to predict yield maps.
         @param model: Type of regression model. Options: 'Hyper3DNet', 'Hyper3DNetSSIM',
@@ -24,24 +29,30 @@ class PredictorModel:
         self.output_size = output_size
 
         # Set the CrossValStrategy that the model will use
-        if model in ['Hyper3DNet', 'Hyper3DNetQD', 'Russello', 'CNNLF']:
+        if model in ["Hyper3DNet", "Hyper3DNetQD", "Russello", "CNNLF"]:
             self.strategy = SpatialCNNStrategy()
-        elif model == 'RF':
+        elif model == "RF":
             self.strategy = RFStrategy()
-        elif model == 'GAM':
+        elif model == "GAM":
             self.strategy = GAMStrategy()
-        elif model == 'MLRegression':
+        elif model == "MLRegression":
             self.strategy = MLRegressionStrategy()
-        elif model == 'BayesianRegression':
+        elif model == "BayesianRegression":
             self.strategy = BayesRegressionStrategy()
         else:
-            sys.exit('The only available models are: "Hyper3DNet", "Hyper3DNetQD", "BayesianRegression"'
-                     '"Russello", "CNNLF", "AdaBoost", "SAE", "RF", "GAM", and "MLRegression".')
+            sys.exit(
+                'The only available models are: "Hyper3DNet", "Hyper3DNetQD", "BayesianRegression"'
+                '"Russello", "CNNLF", "AdaBoost", "SAE", "RF", "GAM", and "MLRegression".'
+            )
 
         # Define the model using the selected CrossValStrategy
-        self.strategy.defineModel(self.device, self.nbands, self.window_size, self.output_size, method=model)
+        self.strategy.defineModel(
+            self.device, self.nbands, self.window_size, self.output_size, method=model
+        )
 
-    def trainPrevious(self, trainx, train_y, batch_size, epochs, filepath, printProcess, beta_, yscale):
+    def trainPrevious(
+        self, trainx, train_y, batch_size, epochs, filepath, printProcess, beta_, yscale
+    ):
         """Train a model using information collected from previous years.
         @param trainx: Batches of samples that will be used as inputs for yield prediction.
         @param train_y: Labels corresponding to trainx.
@@ -52,8 +63,9 @@ class PredictorModel:
         @param beta_: Parameter used for the Hyper3DNetQD loss function.
         @param yscale: Statistics that were used to normalize the output. Used to revert normalization.
         """
-        return self.strategy.trainModel(trainx, train_y, batch_size, self.device, epochs, filepath, printProcess,
-                                        beta_, yscale)
+        return self.strategy.trainModel(
+            trainx, train_y, batch_size, self.device, epochs, filepath, printProcess, beta_, yscale
+        )
 
     def predictSamples(self, datasample, maxs, mins, batch_size):
         """Return the predicted vectors as numpy vectors.
@@ -72,8 +84,9 @@ class PredictorModel:
         @param batch_size: Size of the mini-batch (Used for the CNN).
         @param MC_samples: Number of random samples used for MCDropout.
         """
-        return self.strategy.predictSamplesUncertainty(datasample, maxs, mins, batch_size, self.device,
-                                                       MC_samples)
+        return self.strategy.predictSamplesUncertainty(
+            datasample, maxs, mins, batch_size, self.device, MC_samples
+        )
 
     def loadModel(self, path):
         """Load a saved model

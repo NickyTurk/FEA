@@ -17,15 +17,15 @@ from pymoo.problems.many.dtlz import DTLZ1
 PARAMETERS
 """
 dimensions = 100
-s = 10 # , 200, 100]
+s = 10  # , 200, 100]
 o = 10  # 100, 160, 80]  # , 10, 20]
 fea_runs = [10]
 ga_run = 10
 population = 100
 nr_objs = [3]
-problems = ['WFG4', 'WFG5','WFG7'] #DTLZ7 7with PBI for all obj. linear and random
+problems = ["WFG4", "WFG5", "WFG7"]  # DTLZ7 7with PBI for all obj. linear and random
 groupings = ["random"]
-overlap_bool=True
+overlap_bool = True
 iter = 5
 
 # pf = get_problem(problem, n_var=dimensions, n_obj=nr_obj).pareto_front(ref_dirs)
@@ -33,7 +33,7 @@ iter = 5
 
 # Get path to local working directory
 current_working_dir = os.getcwd()
-path = re.search(r'^(.*?[\\/]FEA)', current_working_dir)
+path = re.search(r"^(.*?[\\/]FEA)", current_working_dir)
 path = path.group()
 
 """
@@ -49,11 +49,17 @@ for nr_obj in nr_objs:
     # Initialize base algorithms for use in MOFEA
     moea1 = partial(SPEA2, population_size=population, ea_runs=ga_run)
     moea2 = partial(NSGA2, population_size=population, ea_runs=ga_run)
-    moea3 = partial(MOEAD, ea_runs=ga_run, weight_vector=ref_dirs, n_neighbors=10, problem_decomposition=Tchebicheff()) # PBI(theta=5)
+    moea3 = partial(
+        MOEAD,
+        ea_runs=ga_run,
+        weight_vector=ref_dirs,
+        n_neighbors=10,
+        problem_decomposition=Tchebicheff(),
+    )  # PBI(theta=5)
 
     # Set the base algorithms and their names
     partial_methods = [moea1]
-    names=['SPEA2']  # 'SPEA2', 'NSGA2',
+    names = ["SPEA2"]  # 'SPEA2', 'NSGA2',
 
     """
     Create appropriate factor architecture for MOFEA
@@ -63,7 +69,7 @@ for nr_obj in nr_objs:
     for grouping in groupings:
         if grouping == "linear":
             FA.linear_grouping(s, o)
-            FA.method = "linear_" + str(s) + '_' + str(o)
+            FA.method = "linear_" + str(s) + "_" + str(o)
         elif grouping == "random":
             FA.classic_random_grouping(100, overlap=overlap_bool)
         FA.get_factor_topology_elements()
@@ -73,6 +79,7 @@ for nr_obj in nr_objs:
             This creates the appropriate fitness function.
             @add_method is a decorator function that allows you to overwrite the fitness function.
             """
+
             @add_method(MOEA)
             def calc_fitness(variables, gs=None, factor=None):
                 if gs is not None and factor is not None:
@@ -88,19 +95,42 @@ for nr_obj in nr_objs:
 
             # Start of iterations
             for i in range(iter):
-                for j,alg in enumerate(partial_methods):
+                for j, alg in enumerate(partial_methods):
                     if not overlap_bool:
-                        name = 'CC' + names[j]
+                        name = "CC" + names[j]
                     else:
-                        name = 'F' + names[j]
+                        name = "F" + names[j]
                     print(name, FA.method, problem, str(nr_obj))
-                    print('##############################################\n', i)
+                    print("##############################################\n", i)
                     for fea_run in fea_runs:
                         start = time.time()
-                        filename = path + '/results/'+problem+'/' + name + '/' + name + '_'+problem+'_' + str(nr_obj) + \
-                                '_objectives_fea_runs_' + str(fea_run) + '_grouping_' + FA.method + time.strftime('_%d%m%H%M%S') + '.pickle'
-                        feamoo = MOFEA(fea_run, factor_architecture=FA, base_alg=alg, dimensions=dimensions,
-                                    value_range=[0.0, 1.0], ref_point=np.ones(nr_obj))
+                        filename = (
+                            path
+                            + "/results/"
+                            + problem
+                            + "/"
+                            + name
+                            + "/"
+                            + name
+                            + "_"
+                            + problem
+                            + "_"
+                            + str(nr_obj)
+                            + "_objectives_fea_runs_"
+                            + str(fea_run)
+                            + "_grouping_"
+                            + FA.method
+                            + time.strftime("_%d%m%H%M%S")
+                            + ".pickle"
+                        )
+                        feamoo = MOFEA(
+                            fea_run,
+                            factor_architecture=FA,
+                            base_alg=alg,
+                            dimensions=dimensions,
+                            value_range=[0.0, 1.0],
+                            ref_point=np.ones(nr_obj),
+                        )
                         feamoo.run()
                         end = time.time()
                         """
@@ -111,17 +141,27 @@ for nr_obj in nr_objs:
                             file = open(filename, "wb")
                             pickle.dump(feamoo, file)
                         except OSError:
-                            if not os.path.isdir(path + '/results/' + problem.upper() + '/' + name + '/'):
+                            if not os.path.isdir(
+                                path + "/results/" + problem.upper() + "/" + name + "/"
+                            ):
                                 try:
-                                    os.mkdir(path + '/results/' + problem.upper() + '/' + name + '/')
+                                    os.mkdir(
+                                        path + "/results/" + problem.upper() + "/" + name + "/"
+                                    )
                                     file = open(filename, "wb")
                                     pickle.dump(feamoo, file)
                                 except OSError:
-                                    if not os.path.isdir(path + '/results/' + problem.upper() + '/'):
-                                        os.mkdir(path + '/results/' + problem.upper() + '/')
-                                        os.mkdir(path + '/results/' + problem.upper() + '/' + name + '/')
+                                    if not os.path.isdir(
+                                        path + "/results/" + problem.upper() + "/"
+                                    ):
+                                        os.mkdir(path + "/results/" + problem.upper() + "/")
+                                        os.mkdir(
+                                            path + "/results/" + problem.upper() + "/" + name + "/"
+                                        )
                                     file = open(filename, "wb")
                                     pickle.dump(feamoo, file)
                         elapsed = end - start
                         print(
-                            "FEA with ga runs %d and population %s took %s" % (fea_run, FA.method, str(timedelta(seconds=elapsed))))
+                            "FEA with ga runs %d and population %s took %s"
+                            % (fea_run, FA.method, str(timedelta(seconds=elapsed)))
+                        )

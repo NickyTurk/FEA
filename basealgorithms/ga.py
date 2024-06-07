@@ -9,13 +9,27 @@ import numpy as np
 import random
 from utilities.util import *
 
-#TODO: seperate out mutation and crossover functions and create switch statement to improve code readability.
+# TODO: seperate out mutation and crossover functions and create switch statement to improve code readability.
 
 
 class GA:
-    def __init__(self, dimensions=100, population_size=200, tournament_size=5, mutation_rate=0.1, crossover_rate=0.95,
-                 ga_runs=100, mutation_type="scramble", crossover_type="multi", parent_selection = "tournament", offspring_size=100,
-                 continuous_var_space=False, value_range=[0, 1], combinatorial_options=[], eta=20):
+    def __init__(
+        self,
+        dimensions=100,
+        population_size=200,
+        tournament_size=5,
+        mutation_rate=0.1,
+        crossover_rate=0.95,
+        ga_runs=100,
+        mutation_type="scramble",
+        crossover_type="multi",
+        parent_selection="tournament",
+        offspring_size=100,
+        continuous_var_space=False,
+        value_range=[0, 1],
+        combinatorial_options=[],
+        eta=20,
+    ):
         """
         @param dimensions: Integer. Number of variables in a single individual.
         @param population_size: Integer. Number of individuals to form the population in a single generation.
@@ -27,7 +41,7 @@ class GA:
         @param crossover_type: String 'single', 'uniform', or 'multi'. Which type of crossover to perform.
         @param offspring_size: Integer. How many children do you wish to create each generation.
         """
-        self.name = 'genetic algorithm'
+        self.name = "genetic algorithm"
         self.population_size = population_size
         self.offspring_size = offspring_size
         self.dimensions = dimensions
@@ -47,10 +61,15 @@ class GA:
     def initialize_population(self):
         for i in range(self.population_size):
             if self.continuous_bool:
-                variables = [random.uniform(self.value_range[0], self.value_range[1]) for x in range(self.dimensions)]
+                variables = [
+                    random.uniform(self.value_range[0], self.value_range[1])
+                    for x in range(self.dimensions)
+                ]
             else:
                 variables = random.choices(self.combinatorial_values, k=self.dimensions)
-            self.population.append(PopulationMember(variables, self.calc_fitness(variables), solid=uuid()))
+            self.population.append(
+                PopulationMember(variables, self.calc_fitness(variables), solid=uuid())
+            )
 
     def calc_fitness(self, variables):
         """
@@ -83,7 +102,7 @@ class GA:
                 idx = rand
             i += 1
         return chosen_solution, idx
-    
+
     def dominance_based_tournament(self, individuals, k):
         def tourn(ind1, ind2):
             if ind1.fitness.dominates(ind2.fitness):
@@ -105,10 +124,10 @@ class GA:
 
         chosen = []
         for i in range(0, k, 4):
-            chosen.append(tourn(individuals_1[i],   individuals_1[i+1]))
-            chosen.append(tourn(individuals_1[i+2], individuals_1[i+3]))
-            chosen.append(tourn(individuals_2[i],   individuals_2[i+1]))
-            chosen.append(tourn(individuals_2[i+2], individuals_2[i+3]))
+            chosen.append(tourn(individuals_1[i], individuals_1[i + 1]))
+            chosen.append(tourn(individuals_1[i + 2], individuals_1[i + 3]))
+            chosen.append(tourn(individuals_2[i], individuals_2[i + 1]))
+            chosen.append(tourn(individuals_2[i + 2], individuals_2[i + 3]))
 
     def mutate(self, original_solution, mutation_rate=None, eta=20, lbound=None, ubound=None):
         """
@@ -136,16 +155,16 @@ class GA:
                         delta_1 = (x - lbound) / (ubound - lbound)
                         delta_2 = (ubound - x) / (ubound - lbound)
                         rand = random.random()
-                        mut_pow = 1.0 / (eta + 1.)
+                        mut_pow = 1.0 / (eta + 1.0)
 
                         if rand < 0.5:
                             xy = 1.0 - delta_1
                             val = 2.0 * rand + (1.0 - 2.0 * rand) * xy ** (eta + 1)
-                            delta_q = val ** mut_pow - 1.0
+                            delta_q = val**mut_pow - 1.0
                         else:
                             xy = 1.0 - delta_2
                             val = 2.0 * (1.0 - rand) + 2.0 * (rand - 0.5) * xy ** (eta + 1)
-                            delta_q = 1.0 - val ** mut_pow
+                            delta_q = 1.0 - val**mut_pow
                         if isinstance(delta_q, complex):
                             delta_q = delta_q.real
                         x = x + delta_q * (ubound - lbound)
@@ -167,12 +186,12 @@ class GA:
                     _solution[index_2] = original_solution[index_1]
 
                 elif self.mutation_type == "scramble":
-                    index_1 = random.choice(list(range(0, self.dimensions-1)))
+                    index_1 = random.choice(list(range(0, self.dimensions - 1)))
                     numbers = list(range(0, self.dimensions))  # numbers to choose next index from
                     numbers.remove(index_1)  # remove already chosen index from these numbers
                     while True:
                         index_2 = random.choice(numbers)
-                        if abs(index_2-index_1) <= 2:
+                        if abs(index_2 - index_1) <= 2:
                             index_2 = random.choice(numbers)
                         else:
                             min_index, max_index = maxmin_indeces(index_1, index_2)
@@ -195,7 +214,7 @@ class GA:
                     temp = _solution[index_1]
                     if temp == 0:
                         _solution[index_1] = 1
-                    elif temp ==1:
+                    elif temp == 1:
                         _solution[index_1] = 0
 
                 elif self.mutation_type == "multi bitflip":
@@ -205,7 +224,7 @@ class GA:
                                 _solution[i] = 1
                             elif x == 1:
                                 _solution[i] = 0
-                
+
                 elif self.mutation_type == "grouping":
                     print(_solution)
                     # randomly select a gene to mutate
@@ -214,18 +233,18 @@ class GA:
                     # get variables in this gene's group
                     selected_group = [x for x in _solution[index_1]]
                     # remove gene from chromosome
-                    del(_solution[index_1])
+                    del _solution[index_1]
                     # create new groups
-                    new_nr_groups = random.randint(1,len(selected_group))
+                    new_nr_groups = random.randint(1, len(selected_group))
                     random.shuffle(selected_group)
                     new_groups = [[selected_group[grp_idx]] for grp_idx in range(new_nr_groups)]
-                    del(selected_group[:len(new_nr_groups)])
+                    del selected_group[: len(new_nr_groups)]
                     while len(selected_group) != 0:
                         for grp in new_groups:
                             if len(selected_group) != 0:
-                                chosen_var_idx = random.randrange(0,len(selected_group))
+                                chosen_var_idx = random.randrange(0, len(selected_group))
                                 grp.append(selected_group[chosen_var_idx])
-                                del(selected_group[chosen_var_idx])
+                                del selected_group[chosen_var_idx]
                             else:
                                 break
                     for grp in new_groups:
@@ -234,7 +253,9 @@ class GA:
 
         return _solution
 
-    def crossover(self, first_solution, second_solution, crossover_rate=None, eta=20, number_of_genes=0):
+    def crossover(
+        self, first_solution, second_solution, crossover_rate=None, eta=20, number_of_genes=0
+    ):
         """
         @param first_solution: The first parent selected.
         @param second_solution: The second parent selected.
@@ -258,7 +279,7 @@ class GA:
         if random.random() < crossover_rate:
             _first_solution = [x for x in first_solution]
             _second_solution = [x for x in second_solution]
-            if self.crossover_type == 'multi':
+            if self.crossover_type == "multi":
                 index_1 = random.randint(1, self.dimensions - 1)
                 index_2 = random.randint(1, self.dimensions - 1)
                 while abs(index_2 - index_1) <= 2:
@@ -266,43 +287,52 @@ class GA:
                     index_2 = random.randint(1, self.dimensions - 1)
                 min_index, max_index = maxmin_indeces(index_1, index_2)
                 if self.continuous_bool:
-                    third_solution = [min(max((x + y)/2, lbound), ubound) for (x, y) in zip(first_solution, second_solution)]
+                    third_solution = [
+                        min(max((x + y) / 2, lbound), ubound)
+                        for (x, y) in zip(first_solution, second_solution)
+                    ]
                     _first_solution[min_index:max_index] = third_solution[min_index:max_index]
                     _second_solution[0:min_index] = third_solution[0:min_index]
                     _second_solution[max_index:] = third_solution[max_index:]
                 else:
                     _first_solution[min_index:max_index] = second_solution[min_index:max_index]
                     _second_solution[min_index:max_index] = first_solution[min_index:max_index]
-            elif self.crossover_type == 'single':
+            elif self.crossover_type == "single":
                 index_1 = random.randint(1, self.dimensions - 1)
                 if self.continuous_bool:
-                    third_solution = [min(max((x + y)/2, lbound), ubound) for (x, y) in zip(first_solution, second_solution)]
+                    third_solution = [
+                        min(max((x + y) / 2, lbound), ubound)
+                        for (x, y) in zip(first_solution, second_solution)
+                    ]
                     _first_solution[0:index_1] = third_solution[0:index_1]
                     _second_solution[index_1:] = third_solution[index_1:]
                 else:
                     _first_solution[0:index_1] = second_solution[0:index_1]
                     _second_solution[index_1:] = first_solution[index_1:]
-            elif self.crossover_type == 'uniform':
+            elif self.crossover_type == "uniform":
                 for i in range(len(first_solution)):
                     if random.random() < crossover_rate:
                         if self.continuous_bool:
-                            third_solution = [min(max((x + y)/2, lbound), ubound) for (x, y) in zip(first_solution, second_solution)]
+                            third_solution = [
+                                min(max((x + y) / 2, lbound), ubound)
+                                for (x, y) in zip(first_solution, second_solution)
+                            ]
                             _first_solution[i] = third_solution[i]
                             _second_solution[i] = third_solution[i]
                         else:
                             _first_solution[i] = second_solution[i]
                             _second_solution[i] = first_solution[i]
-            elif self.crossover_type == 'simulated binary':
+            elif self.crossover_type == "simulated binary":
                 for i, (x1, x2) in enumerate(zip(first_solution, second_solution)):
                     rand = random.random()
                     if rand <= 0.5:
-                        beta = 2. * rand
+                        beta = 2.0 * rand
                     else:
-                        beta = 1. / (2. * (1. - rand))
-                    beta **= 1. / (eta + 1.)
+                        beta = 1.0 / (2.0 * (1.0 - rand))
+                    beta **= 1.0 / (eta + 1.0)
                     _first_solution[i] = 0.5 * (((1 + beta) * x1) + ((1 - beta) * x2))
                     _second_solution[i] = 0.5 * (((1 - beta) * x1) + ((1 + beta) * x2))
-            elif self.crossover_type == 'grouping':
+            elif self.crossover_type == "grouping":
                 index_1 = random.randint(1, number_of_genes - 1)
                 index_2 = random.randint(1, number_of_genes - 1)
                 while abs(index_2 - index_1) <= 2:
@@ -323,29 +353,35 @@ class GA:
                     print(gene)
                     print(first_sol_vars)
                     if any(gene) in first_sol_vars:
-                        print('duplicate')
+                        print("duplicate")
                         duplicate_vars_first.extend(gene)
-                        del(_first_solution[idx])
+                        del _first_solution[idx]
                         print(duplicate_vars_first)
                     if any(_second_solution[idx]) in second_sol_vars:
                         duplicate_vars_second.extend(_second_solution[idx])
-                        del(_second_solution[idx])
+                        del _second_solution[idx]
                 for idx, gene in enumerate(_first_solution[max_index:]):
                     if any(gene) in first_sol_vars:
-                        print('duplicate')
+                        print("duplicate")
                         duplicate_vars_first.extend(gene)
-                        del(_first_solution[idx])
+                        del _first_solution[idx]
                         print(duplicate_vars_first)
                 for idx, gene in enumerate(_second_solution[max_index:]):
                     if any(gene) in second_sol_vars:
-                        print('duplicate')
+                        print("duplicate")
                         duplicate_vars_second.extend(gene)
-                        del(_second_solution[idx])
+                        del _second_solution[idx]
                         print(duplicate_vars_second)
                 _first_solution.append([x for x in duplicate_vars_first if x not in first_sol_vars])
-                _second_solution.append([x for x in duplicate_vars_second if x not in second_sol_vars])
-                _first_solution.append([x for x in range(0, self.dimensions) if x not in _first_solution.flatten()])
-                _second_solution.append([x for x in range(0, self.dimensions) if x not in _second_solution.flatten()])
+                _second_solution.append(
+                    [x for x in duplicate_vars_second if x not in second_sol_vars]
+                )
+                _first_solution.append(
+                    [x for x in range(0, self.dimensions) if x not in _first_solution.flatten()]
+                )
+                _second_solution.append(
+                    [x for x in range(0, self.dimensions) if x not in _second_solution.flatten()]
+                )
 
             return [_first_solution, _second_solution]
         else:
@@ -364,15 +400,15 @@ class GA:
         children = []
         if curr_population:
             self.population = [x for x in curr_population]
-        if len(self.population[0].variables) <= 6 and self.crossover_type == 'multi':
-            self.crossover_type = 'single'
+        if len(self.population[0].variables) <= 6 and self.crossover_type == "multi":
+            self.crossover_type = "single"
         offspring_iter = 0
         if self.parent_selection == "grouping":
             random.shuffle(self.population)
         while len(children) < self.offspring_size:
             if len(self.population[0].variables) == 1:
                 first_solution, idx1 = self.tournament_selection(self.population)
-                child1 = self.mutate([x for x in first_solution.variables], mutation_rate = 0.99)
+                child1 = self.mutate([x for x in first_solution.variables], mutation_rate=0.99)
                 children.append(child1)
             else:
                 if self.parent_selection == "grouping":
@@ -397,7 +433,7 @@ class GA:
                 child1 = self.mutate(child1)
                 child2 = self.mutate(child2)
                 children.append(child1)
-                children.append(child2)         
+                children.append(child2)
         return children
 
     def selection(self, total_population):
@@ -410,7 +446,11 @@ class GA:
         fitnesses = []
         for sol in total_population:
             fitnesses.append(sol.fitness)
-        new_population = [x for i, y, x in enumerate(sorted(zip(fitnesses, total_population))) if i < self.population_size]
+        new_population = [
+            x
+            for i, y, x in enumerate(sorted(zip(fitnesses, total_population)))
+            if i < self.population_size
+        ]
         return new_population
 
     def run(self, generations):
@@ -418,7 +458,7 @@ class GA:
         run a basic GA for i generations
         """
         self.initialize_population()
-        i=0
+        i = 0
         while i < generations:
             children = self.create_offspring()
             offspring = []

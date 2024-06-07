@@ -7,7 +7,6 @@ from operator import attrgetter, itemgetter
 
 
 class ParetoOptimization:
-
     def __init__(self, obj_size=None):
         """
         @param obj_size: The number of objectives in the problem definition.
@@ -26,7 +25,9 @@ class ParetoOptimization:
             self.n_obj = len(reference_point)
         if normalize:
             try:
-                updated_pareto_set = [np.array(sol.fitness)/reference_point for sol in approx_pareto_set]
+                updated_pareto_set = [
+                    np.array(sol.fitness) / reference_point for sol in approx_pareto_set
+                ]
             except AttributeError:
                 updated_pareto_set = [np.array(sol) / reference_point for sol in approx_pareto_set]
             final_hv = HV(np.array(updated_pareto_set), np.ones(self.n_obj))
@@ -37,7 +38,7 @@ class ParetoOptimization:
                 updated_pareto_set = [np.array(sol) for sol in approx_pareto_set]
             final_hv = HV(np.array(updated_pareto_set), np.array(reference_point))
         diversity = self.calculate_diversity(updated_pareto_set, normalized=normalize)
-        return {'hypervolume': final_hv, 'diversity': diversity}
+        return {"hypervolume": final_hv, "diversity": diversity}
 
     def calculate_diversity(self, approx_pareto_set, normalized=False, minmax=None):
         """
@@ -94,7 +95,7 @@ class ParetoOptimization:
          OR
 
          use the solution with the worst found fitness values for each of the objectives: keep track of this while optimizing
-         """
+        """
         ref_value = 1 + 1 / h
         ref_points = np.full(self.n_obj, ref_value)
         return ref_points

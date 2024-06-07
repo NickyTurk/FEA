@@ -33,8 +33,10 @@ def add_replace_column_CSV(path, column_name, column_data, coords, year=None, fi
     print("Saving predicted yield values to CSV file...")
     for c in range(len(coords)):
         if coords[c] is not None:
-            df.loc[((df.cell_id == coords[c]) & (df.field == field) & (df.year == int(year))), column_name] = \
-                column_data[c]
+            df.loc[
+                ((df.cell_id == coords[c]) & (df.field == field) & (df.year == int(year))),
+                column_name,
+            ] = column_data[c]
 
     df.to_csv(path, index=False)
 
@@ -51,15 +53,17 @@ def createShapefile(coords, columns, filepath, obj):
 
     # Create a spatial reference
     spatialReference = osgeo.osr.SpatialReference()
-    spatialReference.ImportFromProj4('+proj=utm +zone=12N +ellps=WGS84 +datum=WGS84 +units=m')
-    driver = osgeo.ogr.GetDriverByName('ESRI Shapefile')  # Select the driver for our shp-file creation.
+    spatialReference.ImportFromProj4("+proj=utm +zone=12N +ellps=WGS84 +datum=WGS84 +units=m")
+    driver = osgeo.ogr.GetDriverByName(
+        "ESRI Shapefile"
+    )  # Select the driver for our shp-file creation.
     # Create file where the data will be stored
     shapeData = driver.CreateDataSource(filepath)
     if shapeData.GetLayer() is not None:  # If a previous shapefile exists, remove it first
         shapeData.Destroy()
         shutil.rmtree(filepath)
         shapeData = driver.CreateDataSource(filepath)
-    layer = shapeData.CreateLayer('predictions', spatialReference, osgeo.ogr.wkbPoint)
+    layer = shapeData.CreateLayer("predictions", spatialReference, osgeo.ogr.wkbPoint)
     # Create layer fields
     new_field = ogr.FieldDefn(obj + "-Pred", ogr.OFTReal)
     layer.CreateField(new_field)
@@ -106,9 +110,9 @@ def normalize(trainx):
     means = np.zeros((trainx.shape[2], 1))
     stds = np.zeros((trainx.shape[2], 1))
     for n in range(trainx.shape[2]):
-        means[n, ] = np.mean(trainxn[:, :, n, :, :])
-        stds[n, ] = np.std(trainxn[:, :, n, :, :])
-        trainxn[:, :, n, :, :] = (trainxn[:, :, n, :, :] - means[n, ]) / (stds[n, ])
+        means[n,] = np.mean(trainxn[:, :, n, :, :])
+        stds[n,] = np.std(trainxn[:, :, n, :, :])
+        trainxn[:, :, n, :, :] = (trainxn[:, :, n, :, :] - means[n,]) / (stds[n,])
     return trainxn, means, stds
 
 
@@ -116,7 +120,7 @@ def applynormalize(testx, means, stds):
     """Apply normalization based on previous calculated means and stds"""
     testxn = testx.copy()
     for n in range(testx.shape[2]):
-        testxn[:, :, n, :, :] = (testxn[:, :, n, :, :] - means[n, ]) / (stds[n, ])
+        testxn[:, :, n, :, :] = (testxn[:, :, n, :, :] - means[n,]) / (stds[n,])
     return testxn
 
 
@@ -128,12 +132,12 @@ def minMaxScale(trainx):
     if trainx.ndim > 4:
         for n in range(trainx.shape[2]):
             if n == 5:  # If the covariate is precipitation, use specific minimum and maximum values
-                maxs[n, ] = 250
-                mins[n, ] = 50
+                maxs[n,] = 250
+                mins[n,] = 50
             else:
-                maxs[n, ] = np.max(trainxn[:, :, n, :, :])
-                mins[n, ] = np.min(trainxn[:, :, n, :, :])
-            trainxn[:, :, n, :, :] = (trainxn[:, :, n, :, :] - mins[n, ]) / (maxs[n, ] - mins[n, ])
+                maxs[n,] = np.max(trainxn[:, :, n, :, :])
+                mins[n,] = np.min(trainxn[:, :, n, :, :])
+            trainxn[:, :, n, :, :] = (trainxn[:, :, n, :, :] - mins[n,]) / (maxs[n,] - mins[n,])
     else:
         maxs = np.max(trainxn)
         mins = np.min(trainxn)
@@ -146,7 +150,7 @@ def applyMinMaxScale(testx, maxs, mins):
     testxn = testx.copy()
     if testxn.ndim > 4:
         for n in range(testx.shape[2]):
-            testxn[:, :, n, :, :] = (testxn[:, :, n, :, :] - mins[n, ]) / (maxs[n, ] - mins[n, ])
+            testxn[:, :, n, :, :] = (testxn[:, :, n, :, :] - mins[n,]) / (maxs[n,] - mins[n,])
     else:
         testxn = (testxn - mins) / (maxs - mins) * 150
     return testxn
@@ -156,7 +160,7 @@ def reversenormalize(testx, means, stds):
     """Reverse normalization based on previous calculated means and stds"""
     testxn = testx.copy()
     for n in range(testx.shape[2]):
-        testxn[:, :, n, :, :] = (testxn[:, :, n, :, :] * stds[n, ]) + means[n, ]
+        testxn[:, :, n, :, :] = (testxn[:, :, n, :, :] * stds[n,]) + means[n,]
     return testxn
 
 
@@ -165,7 +169,7 @@ def reverseMinMaxScale(testx, maxs, mins):
     testxn = testx.copy()
     if testxn.ndim > 4:
         for n in range(testx.shape[2]):
-            testxn[:, :, n, :, :] = (testxn[:, :, n, :, :] * (maxs[n, ] - mins[n, ])) - mins[n, ]
+            testxn[:, :, n, :, :] = (testxn[:, :, n, :, :] * (maxs[n,] - mins[n,])) - mins[n,]
     else:
         testxn = (testxn * (maxs - mins) / 150) + mins
 
@@ -184,7 +188,7 @@ def mse(imageA, imageB, removeZeros=False):
     if removeZeros:
         differences = np.array([d for d in differences if d != 0])
         newdim = len(differences)
-    MSE = np.sum(differences ** 2) / float(newdim)
+    MSE = np.sum(differences**2) / float(newdim)
     return MSE
 
 
@@ -195,7 +199,9 @@ def rmsespatial(imageA, imageB):
     count = 0
     for i in range(imageA.shape[1]):
         for j in range(imageA.shape[2]):
-            RMSE[count] = np.sqrt(np.sum((imageA[:, i, j] - imageB[:, i, j]) ** 2) / float(imageA.shape[0]))
+            RMSE[count] = np.sqrt(
+                np.sum((imageA[:, i, j] - imageB[:, i, j]) ** 2) / float(imageA.shape[0])
+            )
             count += 1
     return RMSE
 

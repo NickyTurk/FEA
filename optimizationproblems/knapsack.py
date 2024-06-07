@@ -9,12 +9,20 @@ and volume (3), and minimize the difference in weight (4) and the difference in 
 import random
 from collections import namedtuple
 
-SingleKsItem = namedtuple('Item', ('weight', 'value', 'volume'))
+SingleKsItem = namedtuple("Item", ("weight", "value", "volume"))
 
 
 class Knapsack:
-    def __init__(self, number_of_items=100, max_bag_weight=1250, max_nr_items=100, max_bag_volume=2500, nr_objectives=3,
-                 nr_constraints=1, knapsack_type='multi'):
+    def __init__(
+        self,
+        number_of_items=100,
+        max_bag_weight=1250,
+        max_nr_items=100,
+        max_bag_volume=2500,
+        nr_objectives=3,
+        nr_constraints=1,
+        knapsack_type="multi",
+    ):
         """
         The Multi-Objective Knapsack base problem.
         @param number_of_items: Items in a single knapsack.
@@ -40,10 +48,10 @@ class Knapsack:
         self.total_items = None
         self.constraints = None
         self.knapsack_type = knapsack_type
-        if knapsack_type == 'single':
+        if knapsack_type == "single":
             self.initialize_single_knapsack()
-            self.constraints = {0: 1250, 1:100*self.max_nr_items, 2: 2500}
-        elif knapsack_type == 'multi':
+            self.constraints = {0: 1250, 1: 100 * self.max_nr_items, 2: 2500}
+        elif knapsack_type == "multi":
             self.initialize_n_knapsacks()
             self.initialize_constraints(nr_constraints)
 
@@ -53,7 +61,9 @@ class Knapsack:
         """
         self.total_items = []
         for i in range(self.number_of_items):
-            item = SingleKsItem(random.uniform(0.1, 5), random.uniform(0.1, 100), random.uniform(0.1, 10))
+            item = SingleKsItem(
+                random.uniform(0.1, 5), random.uniform(0.1, 100), random.uniform(0.1, 10)
+            )
             self.total_items.append(item)
 
     def initialize_n_knapsacks(self):
@@ -78,13 +88,13 @@ class Knapsack:
             for j in range(self.number_of_items):
                 items_in_knapsack.append(random.uniform(0.1, 5))
             total_weight = sum(items_in_knapsack)
-            print('max weight %d with constraint %f.' % (total_weight, total_weight/2))
-            self.constraints[i] = [items_in_knapsack, total_weight/2]
-    
+            print("max weight %d with constraint %f." % (total_weight, total_weight / 2))
+            self.constraints[i] = [items_in_knapsack, total_weight / 2]
+
     def evaluate(self, variables):
-        if self.knapsack_type == 'multi':
+        if self.knapsack_type == "multi":
             self.set_fitness_multi_knapsack(variables)
-        elif self.knapsack_type == 'single':
+        elif self.knapsack_type == "single":
             self.set_fitness_single_knapsack(variables)
         return self.objective_values
 
@@ -100,11 +110,13 @@ class Knapsack:
                 total_weight = sum([x for i, x in enumerate(c[0]) if variables[i] == 1])
                 if total_weight < c[1]:
                     # print('total weight for current knapsack below constraint: ', total_weight)
-                    objective_values.append(-sum([x for i, x in enumerate(ks) if variables[i] == 1]))
+                    objective_values.append(
+                        -sum([x for i, x in enumerate(ks) if variables[i] == 1])
+                    )
                 else:
                     # print(' TOO HEAVY: ', total_weight)
                     objective_values.append(1e4)
-        #print('found objective values: ', objective_values)
+        # print('found objective values: ', objective_values)
         self.objective_values = tuple(objective_values)
 
     def set_fitness_single_knapsack(self, variables):

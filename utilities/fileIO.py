@@ -18,46 +18,50 @@ class ShapeFiles:
     def __init__(self, filename=None):
         self.filename = filename
 
-    def read_shape_file(self, datatype=''):
+    def read_shape_file(self, datatype=""):
         datapoints = []
-        match_on = ''
-        if datatype == 'yld':
-            match_on = re.compile('.*(yl|yield).*')
-        elif datatype == 'pro':
-            match_on = re.compile('.*pro.*')
+        match_on = ""
+        if datatype == "yld":
+            match_on = re.compile(".*(yl|yield).*")
+        elif datatype == "pro":
+            match_on = re.compile(".*pro.*")
 
         with fiona.open(self.filename) as data:
             print(data.crs)
-            column_to_get = ''
+            column_to_get = ""
             for i, pt in enumerate(data):
-                datapoint = [pt['geometry']['coordinates'][0], pt['geometry']['coordinates'][1]]
+                datapoint = [pt["geometry"]["coordinates"][0], pt["geometry"]["coordinates"][1]]
                 if i == 0:
-                    for prop in pt['properties']:
+                    for prop in pt["properties"]:
                         matched = match_on.match(prop.lower())
                         if matched:
-                            if 200 > float(pt['properties'][prop]) >= 0:
+                            if 200 > float(pt["properties"][prop]) >= 0:
                                 column_to_get = prop
                                 break
-                datapoint.append(pt['properties'][column_to_get])
+                datapoint.append(pt["properties"][column_to_get])
                 datapoints.append(datapoint)
         return datapoints
 
-    def write_field_to_shape_file(self, geometries, field_, shapefile_schema=dict, filename=''):
+    def write_field_to_shape_file(self, geometries, field_, shapefile_schema=dict, filename=""):
         # schema of the shapefile: {'ID': 'int', 'AvgYield': 'float:9.6', 'AvgProtein': 'float:9.6',
         #                                                         'Nitrogen': 'float:9.6'}
-        if filename != '':
+        if filename != "":
             filestring = filename
         else:
             filestring = self.filename
-        schema = {'geometry': 'Polygon', 'properties': shapefile_schema}
+        schema = {"geometry": "Polygon", "properties": shapefile_schema}
         crs = from_epsg(4326)
-        with fiona.open(filestring + '.shp', 'w', driver='ESRI Shapefile', crs=crs, schema=schema) as output:
-            prop = {'ID': 0} #, 'AvgYield': 0, 'AvgProtein': 0, 'Nitrogen': 100}
+        with fiona.open(
+            filestring + ".shp", "w", driver="ESRI Shapefile", crs=crs, schema=schema
+        ) as output:
+            prop = {"ID": 0}  # , 'AvgYield': 0, 'AvgProtein': 0, 'Nitrogen': 100}
             # poly = field_.field_shape - MultiPolygon(field_.cell_polys) #field_.field_shape -
-            output.write({'geometry': mapping(field_.field_shape), 'properties': prop})
+            output.write({"geometry": mapping(field_.field_shape), "properties": prop})
             for geom in geometries:
-                prop = {'ID': geom.sorted_index} #, 'AvgYield': geom.yield_, 'AvgProtein': geom.pro_, 'Nitrogen': geom.nitrogen}
-                output.write({'geometry': mapping(geom.true_bounds), 'properties': prop})
+                prop = {
+                    "ID": geom.sorted_index
+                }  # , 'AvgYield': geom.yield_, 'AvgProtein': geom.pro_, 'Nitrogen': geom.nitrogen}
+                output.write({"geometry": mapping(geom.true_bounds), "properties": prop})
 
 
 class WKTFiles:
@@ -110,7 +114,7 @@ class WKTFiles:
         cells = []
 
         filepath, file_extension = os.path.splitext(str(self.filename))
-        if file_extension == '.csv':
+        if file_extension == ".csv":
             with open(self.filename) as file_input:
                 reader = csv.reader(file_input)
                 wktindex = 0
@@ -143,29 +147,53 @@ class WKTFiles:
         First line -- general field shape geometry with base rate nitrogen.
         Following lines -- Grid cells with assigned values
         """
-        with open('./app/static/map_downloads/' + new_filename + '.csv', 'w', newline='') as csvfile:
-            fieldnames = ['WKT', 'id', 'yield', 'yield_bin', 'protein', 'protein_bin', 'nitrogen']
+        with open(
+            "./app/static/map_downloads/" + new_filename + ".csv", "w", newline=""
+        ) as csvfile:
+            fieldnames = ["WKT", "id", "yield", "yield_bin", "protein", "protein_bin", "nitrogen"]
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
             # writing horizontal lines
             id_val = 1
-            writer.writerow({'WKT': field_shape, 'id': id_val, 'yield': 0, 'yield_bin': 0,
-                             'protein': 0, 'protein_bin': 0, 'nitrogen': base_nitrogen})
+            writer.writerow(
+                {
+                    "WKT": field_shape,
+                    "id": id_val,
+                    "yield": 0,
+                    "yield_bin": 0,
+                    "protein": 0,
+                    "protein_bin": 0,
+                    "nitrogen": base_nitrogen,
+                }
+            )
             id_val = id_val + 1
             for cell in _map:
-                writer.writerow({'WKT': cell.true_bounds, 'id': id_val, 'yield': cell.yield_, 'yield_bin':
-                                cell.yield_bin, 'protein': cell.pro_, 'protein_bin': cell.pro_bin,
-                                 'nitrogen': cell.nitrogen})
+                writer.writerow(
+                    {
+                        "WKT": cell.true_bounds,
+                        "id": id_val,
+                        "yield": cell.yield_,
+                        "yield_bin": cell.yield_bin,
+                        "protein": cell.pro_,
+                        "protein_bin": cell.pro_bin,
+                        "nitrogen": cell.nitrogen,
+                    }
+                )
                 id_val += 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     current_working_dir = os.getcwd()
-    path = re.search(r'^(.*?[\\/]FEA)', current_working_dir)
+    path = re.search(r"^(.*?[\\/]FEA)", current_working_dir)
     path = path.group()
 
-    field_names = ['uw', 'blumenhof']
+    field_names = ["uw", "blumenhof"]
     shape_reader = ShapeFiles()
     for fieldname in field_names:
-        field = pickle.load(open(path + '/utilities/saved_fields/'+ fieldname +'.pickle', 'rb'))
-        shape_reader.write_field_to_shape_file(field.cell_list, field, {'ID': 'int'}, path + '/utilities/saved_fields/' + fieldname +'_grid')
+        field = pickle.load(open(path + "/utilities/saved_fields/" + fieldname + ".pickle", "rb"))
+        shape_reader.write_field_to_shape_file(
+            field.cell_list,
+            field,
+            {"ID": "int"},
+            path + "/utilities/saved_fields/" + fieldname + "_grid",
+        )

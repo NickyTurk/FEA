@@ -15,6 +15,7 @@ def output_callback(output_file, fea, fea_run):
     output_file.write(f" , , {fea_run}, {fea.global_fitness}\n")
     output_file.flush()
 
+
 def average_factors(fa: FactorArchitecture):
     print(len(fa.factors))
     size = 0
@@ -23,37 +24,36 @@ def average_factors(fa: FactorArchitecture):
     print(size / len(fa.factors))
     return len(fa.factors), size / len(fa.factors)
 
-if __name__ == '__main__':
 
+if __name__ == "__main__":
     # arguments are used to pass through which function to use, the relevant shift data file, and the matrix data file if present
     if len(sys.argv) == 4:
-        outputcsv = open(f'./MeetRandom/Experiment_{dim}_f{int(sys.argv[1])}.csv', 'a')
+        outputcsv = open(f"./MeetRandom/Experiment_{dim}_f{int(sys.argv[1])}.csv", "a")
         f = Function(int(sys.argv[1]), shift_data_file=sys.argv[2], matrix_data_file=sys.argv[3])
     elif len(sys.argv) == 3:
-        outputcsv = open(f'./MeetRandom/Experiment_{dim}_f{int(sys.argv[1])}.csv', 'a')
+        outputcsv = open(f"./MeetRandom/Experiment_{dim}_f{int(sys.argv[1])}.csv", "a")
         f = Function(int(sys.argv[1]), shift_data_file=sys.argv[2])
     else:
         # Option to manually adjust file names if you don't want to use cmdline args, currently looking at CEC2018 Function 20
         f = Function(20, shift_data_file="f20_o.txt")
-        outputcsv = open('MeetRandom/Experiment_1000_f20_thing.csv', 'a')
+        outputcsv = open("MeetRandom/Experiment_1000_f20_thing.csv", "a")
     print(f.function_to_call)
 
-    dg_file = open(f'MeetRandom/Graph4_{f.function_to_call}_thing.csv', 'a')
+    dg_file = open(f"MeetRandom/Graph4_{f.function_to_call}_thing.csv", "a")
 
     dim = 1000
     dg_epsilon = 0.001
 
     k = "epsilon, pop_size, Thing, Thing Fac, Thing Runs, Thing PSO"
-    outputcsv.write(k + '\n')
+    outputcsv.write(k + "\n")
     s = time.time()
     print(dg_epsilon)
 
     # Load factorarchitecture from text file and save object
     f.evals = 0
     thing = FactorArchitecture(dim=dim)
-    thing.load_txt_architecture('arch', 1000)
-    thing.save_architecture(f'MeetRandom/{f.function_to_call}_thing')
-
+    thing.load_txt_architecture("arch", 1000)
+    thing.save_architecture(f"MeetRandom/{f.function_to_call}_thing")
 
     """
     DIFFERENT ARCHITECTURES
@@ -90,7 +90,7 @@ if __name__ == '__main__':
 
     for pop_size in [10]:
         for trial in range(1):
-            outputcsv.write(f'{dg_epsilon},{pop_size},')
+            outputcsv.write(f"{dg_epsilon},{pop_size},")
             outputcsv.flush()
 
             fa = FactorArchitecture()
@@ -104,7 +104,9 @@ if __name__ == '__main__':
             fea_run, pso_runs = fea.run()
             print(f"DG, \t\t{fea.global_fitness}\n")
 
-            outputcsv.write(f'{fea.global_fitness},{len(fa.factors)},{fea_run},{sum(pso_runs) / len(pso_runs)}\n')
+            outputcsv.write(
+                f"{fea.global_fitness},{len(fa.factors)},{fea_run},{sum(pso_runs) / len(pso_runs)}\n"
+            )
             outputcsv.flush()
 
         """

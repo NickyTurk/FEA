@@ -3,7 +3,9 @@ import random
 import pickle
 import numpy as np
 from pygam import GammaGAM
-from predictionalgorithms.CNN_yieldpredictor.PredictorStrategy.PredictorInterface import PredictorInterface
+from predictionalgorithms.CNN_yieldpredictor.PredictorStrategy.PredictorInterface import (
+    PredictorInterface,
+)
 
 
 class GAMStrategy(PredictorInterface):
@@ -15,24 +17,31 @@ class GAMStrategy(PredictorInterface):
         self.folder_models = None
         self.nr_models = 50
 
-    def defineModel(self, device, nbands, windowSize, outputSize=1, method='GAM'):
+    def defineModel(self, device, nbands, windowSize, outputSize=1, method="GAM"):
         """Override model declaration method"""
         self.method = method
         self.output_size = outputSize
         self.device = device
 
-    def trainModel(self, trainx, train_y, batch_size, device, epochs, filepath, printProcess, beta_, yscale):
+    def trainModel(
+        self, trainx, train_y, batch_size, device, epochs, filepath, printProcess, beta_, yscale
+    ):
         np.random.seed(seed=7)  # Initialize seed to get reproducible results
         random.seed(7)
 
         # Separate 90% of the data for training
-        trainx = trainx[0:int(len(trainx) * 90 / 100), :, :, :, :]
-        train_y = train_y[0:int(len(train_y) * 90 / 100), :, :]
+        trainx = trainx[0 : int(len(trainx) * 90 / 100), :, :, :, :]
+        train_y = train_y[0 : int(len(train_y) * 90 / 100), :, :]
 
         # Vectorize data (4-D to 1-D)
         trainx = trainx.transpose((0, 3, 4, 1, 2))
-        trainx = np.reshape(trainx, (trainx.shape[0] * trainx.shape[1] * trainx.shape[2] * trainx.shape[3],
-                                     trainx.shape[4]))
+        trainx = np.reshape(
+            trainx,
+            (
+                trainx.shape[0] * trainx.shape[1] * trainx.shape[2] * trainx.shape[3],
+                trainx.shape[4],
+            ),
+        )
         train_y = np.reshape(train_y, (train_y.shape[0] * train_y.shape[1] * train_y.shape[2]))
         # Remove repetitions
         trainx, kept_indices = np.unique(trainx, axis=0, return_index=True)
@@ -46,7 +55,7 @@ class GAMStrategy(PredictorInterface):
         self.model.gridsearch(trainx, train_y)
 
         # Save model
-        with open(filepath, 'wb') as fil:
+        with open(filepath, "wb") as fil:
             pickle.dump(self.model, fil)
 
     def predictSamples(self, datasample, means, stds, batch_size, device):
@@ -68,5 +77,5 @@ class GAMStrategy(PredictorInterface):
 
     def loadModelStrategy(self, path):
         # Load weight models
-        with open(path, 'rb') as f:
+        with open(path, "rb") as f:
             self.model = pickle.load(f)

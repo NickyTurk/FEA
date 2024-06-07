@@ -7,7 +7,7 @@ import numpy as np
 from collections import namedtuple
 from shortuuid import uuid
 
-PopulationMember = namedtuple('PopulationMember', ['variables', 'fitness', 'solid'], defaults=[0])
+PopulationMember = namedtuple("PopulationMember", ["variables", "fitness", "solid"], defaults=[0])
 
 
 def delete_multiple_elements(list_object, indices):
@@ -50,15 +50,15 @@ def compare_solutions(solution1, solution2):
 
         if o1 < o2:
             dominate1 = True
-                
+
             if dominate2:
                 return 0
         elif o1 > o2:
             dominate2 = True
-            
+
             if dominate1:
                 return 0
-        
+
     if dominate1 == dominate2:
         return 0
     elif dominate1:
@@ -69,12 +69,14 @@ def compare_solutions(solution1, solution2):
 
 def add_method(cls):
     def decorator(func):
-        @wraps(func) 
-        def wrapper(self, *args, **kwargs): 
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):
             return func(*args, **kwargs)
+
         setattr(cls, func.__name__, wrapper)
         # Note we are not binding func, but wrapper which accepts self but does exactly the same as func
-        return func # returning func means func can still be used normally
+        return func  # returning func means func can still be used normally
+
     return decorator
 
 
@@ -84,9 +86,11 @@ def memo(f):
     @wraps(f)
     def wrap(*arg):
         if arg not in cache:
-            cache['arg'] = f(*arg)
-            return cache['arg']
+            cache["arg"] = f(*arg)
+            return cache["arg"]
+
     return wrap
+
 
 # def project():
 #     return partial(

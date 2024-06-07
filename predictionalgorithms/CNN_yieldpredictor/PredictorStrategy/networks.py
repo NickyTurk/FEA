@@ -26,50 +26,106 @@ class Hyper3DNetLiteReg(nn.Module, ABC):
 
         self.conv_layer1 = nn.Sequential(
             nn.Conv3d(in_channels=img_shape[0], out_channels=nfilters, kernel_size=3, padding=1),
-            nn.ReLU(), nn.BatchNorm3d(nfilters))
+            nn.ReLU(),
+            nn.BatchNorm3d(nfilters),
+        )
         self.conv_layer2 = nn.Sequential(
             nn.Conv3d(in_channels=nfilters, out_channels=nfilters, kernel_size=3, padding=1),
-            nn.ReLU(), nn.BatchNorm3d(nfilters))
+            nn.ReLU(),
+            nn.BatchNorm3d(nfilters),
+        )
         self.conv_layer3 = nn.Sequential(
             nn.Conv3d(in_channels=nfilters * 2, out_channels=nfilters, kernel_size=3, padding=1),
-            nn.ReLU(), nn.BatchNorm3d(nfilters))
+            nn.ReLU(),
+            nn.BatchNorm3d(nfilters),
+        )
         # self.drop0 = nn.Dropout(p=0.5)
         self.conv_layer4 = nn.Sequential(
             nn.Conv3d(in_channels=nfilters * 3, out_channels=nfilters, kernel_size=3, padding=1),
-            nn.ReLU(), nn.BatchNorm3d(nfilters))
+            nn.ReLU(),
+            nn.BatchNorm3d(nfilters),
+        )
 
         self.drop = nn.Dropout(p=0.5)
 
         self.sepconv1 = nn.Sequential(
-            nn.Conv2d(in_channels=nfilters * 4 * img_shape[1], out_channels=nfilters * 4 * img_shape[1],
-                      kernel_size=3, padding=1, groups=nfilters * 4 * img_shape[1]), nn.ReLU(),
-            nn.Conv2d(in_channels=nfilters * 4 * img_shape[1], out_channels=512,
-                      kernel_size=1, padding=0), nn.ReLU(), nn.BatchNorm2d(512))
-        self.sepconv2 = nn.Sequential(nn.Conv2d(in_channels=512, out_channels=512,
-                                                kernel_size=3, padding=1, stride=stride, groups=512), nn.ReLU(),
-                                      nn.Conv2d(in_channels=512, out_channels=320,
-                                                kernel_size=1, padding=0), nn.ReLU(), nn.BatchNorm2d(320))
+            nn.Conv2d(
+                in_channels=nfilters * 4 * img_shape[1],
+                out_channels=nfilters * 4 * img_shape[1],
+                kernel_size=3,
+                padding=1,
+                groups=nfilters * 4 * img_shape[1],
+            ),
+            nn.ReLU(),
+            nn.Conv2d(
+                in_channels=nfilters * 4 * img_shape[1], out_channels=512, kernel_size=1, padding=0
+            ),
+            nn.ReLU(),
+            nn.BatchNorm2d(512),
+        )
+        self.sepconv2 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=512,
+                out_channels=512,
+                kernel_size=3,
+                padding=1,
+                stride=stride,
+                groups=512,
+            ),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=512, out_channels=320, kernel_size=1, padding=0),
+            nn.ReLU(),
+            nn.BatchNorm2d(320),
+        )
         self.drop2 = nn.Dropout(p=0.1)
-        self.sepconv3 = nn.Sequential(nn.Conv2d(in_channels=320, out_channels=320,
-                                                kernel_size=3, padding=1, stride=stride, groups=320), nn.ReLU(),
-                                      nn.Conv2d(in_channels=320, out_channels=256,
-                                                kernel_size=1, padding=0), nn.ReLU(), nn.BatchNorm2d(256))
+        self.sepconv3 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=320,
+                out_channels=320,
+                kernel_size=3,
+                padding=1,
+                stride=stride,
+                groups=320,
+            ),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=320, out_channels=256, kernel_size=1, padding=0),
+            nn.ReLU(),
+            nn.BatchNorm2d(256),
+        )
         self.drop3 = nn.Dropout(p=0.1)
-        self.sepconv4 = nn.Sequential(nn.Conv2d(in_channels=256, out_channels=256,
-                                                kernel_size=3, padding=1, stride=stride, groups=256), nn.ReLU(),
-                                      nn.Conv2d(in_channels=256, out_channels=128,
-                                                kernel_size=1, padding=0), nn.ReLU(), nn.BatchNorm2d(128))
-        self.sepconv5 = nn.Sequential(nn.Conv2d(in_channels=128, out_channels=32,
-                                                kernel_size=3, padding=1), nn.ReLU(), nn.BatchNorm2d(32))
+        self.sepconv4 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=256,
+                out_channels=256,
+                kernel_size=3,
+                padding=1,
+                stride=stride,
+                groups=256,
+            ),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=256, out_channels=128, kernel_size=1, padding=0),
+            nn.ReLU(),
+            nn.BatchNorm2d(128),
+        )
+        self.sepconv5 = nn.Sequential(
+            nn.Conv2d(in_channels=128, out_channels=32, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.BatchNorm2d(32),
+        )
 
         # This layer is used in case the outputSize is 1
         if output_size == 1:
-            self.out = nn.Sequential(nn.Conv2d(in_channels=32, out_channels=1,
-                                               kernel_size=3, padding=padding), nn.ReLU())
+            self.out = nn.Sequential(
+                nn.Conv2d(in_channels=32, out_channels=1, kernel_size=3, padding=padding), nn.ReLU()
+            )
             self.fc = nn.Linear(9, output_channels)
         else:
-            self.out = nn.Sequential(nn.Conv2d(in_channels=32, out_channels=output_channels,
-                                               kernel_size=3, padding=padding), nn.ReLU())
+            self.out = nn.Sequential(
+                nn.Conv2d(
+                    in_channels=32, out_channels=output_channels, kernel_size=3, padding=padding
+                ),
+                nn.ReLU(),
+            )
 
     def forward(self, x, device):
         # print(device)
@@ -117,16 +173,32 @@ class Russello(nn.Module, ABC):
         nfilters = 64
         self.conv_layer1 = nn.Sequential(
             nn.Conv3d(in_channels=img_shape[0], out_channels=nfilters, kernel_size=3, padding=1),
-            nn.BatchNorm3d(nfilters), nn.ReLU())
+            nn.BatchNorm3d(nfilters),
+            nn.ReLU(),
+        )
         self.conv_layer2 = nn.Sequential(
             nn.Conv3d(in_channels=nfilters, out_channels=nfilters * 2, kernel_size=3, padding=1),
-            nn.BatchNorm3d(nfilters * 2), nn.ReLU())
+            nn.BatchNorm3d(nfilters * 2),
+            nn.ReLU(),
+        )
         self.conv_layer3 = nn.Sequential(
-            nn.Conv3d(in_channels=nfilters * 2, out_channels=nfilters * 4, kernel_size=3, padding=1),
-            nn.BatchNorm3d(nfilters * 4), nn.ReLU())
+            nn.Conv3d(
+                in_channels=nfilters * 2, out_channels=nfilters * 4, kernel_size=3, padding=1
+            ),
+            nn.BatchNorm3d(nfilters * 4),
+            nn.ReLU(),
+        )
         self.conv_layer4 = nn.Sequential(
-            nn.Conv3d(in_channels=nfilters * 4, out_channels=nfilters * 8, kernel_size=3, padding=1, stride=2),
-            nn.BatchNorm3d(nfilters * 8), nn.ReLU())
+            nn.Conv3d(
+                in_channels=nfilters * 4,
+                out_channels=nfilters * 8,
+                kernel_size=3,
+                padding=1,
+                stride=2,
+            ),
+            nn.BatchNorm3d(nfilters * 8),
+            nn.ReLU(),
+        )
 
         self.drop = nn.Dropout(p=0.2)
 
@@ -167,11 +239,17 @@ class CNNLF(nn.Module, ABC):
         self.multi_stream_dropout = nn.ModuleList()
 
         for stream in range(self.img_shape[1]):
-            self.multi_stream_conv.append(nn.Sequential(nn.Conv2d(in_channels=1, out_channels=8, kernel_size=3,
-                                                                  padding=1), nn.BatchNorm2d(8), nn.ReLU()))
+            self.multi_stream_conv.append(
+                nn.Sequential(
+                    nn.Conv2d(in_channels=1, out_channels=8, kernel_size=3, padding=1),
+                    nn.BatchNorm2d(8),
+                    nn.ReLU(),
+                )
+            )
             self.multi_stream_dropout.append(nn.Dropout(p=0.2))
-            self.multi_stream_linear1.append(nn.Sequential(nn.Linear(8 * self.img_shape[2] * self.img_shape[3], 16),
-                                                           nn.ReLU()))
+            self.multi_stream_linear1.append(
+                nn.Sequential(nn.Linear(8 * self.img_shape[2] * self.img_shape[3], 16), nn.ReLU())
+            )
             self.multi_stream_linear2.append(nn.Linear(16, 1))
         # Fusion step
         self.fc = nn.Linear(self.img_shape[1], 1)
@@ -183,7 +261,9 @@ class CNNLF(nn.Module, ABC):
         streams = []
         for stream in range(self.img_shape[1]):
             # Apply convolutional layer
-            conv = self.multi_stream_conv[stream](index_select(x, 1, Tensor([stream]).to(device).long()))
+            conv = self.multi_stream_conv[stream](
+                index_select(x, 1, Tensor([stream]).to(device).long())
+            )
             # Flatten
             conv = conv.flatten(start_dim=1, end_dim=3)
             conv = self.multi_stream_dropout[stream](conv)
@@ -230,9 +310,9 @@ class LinearModel(nn.Module, ABC):
         # Reshape x
         x = x.reshape(x.shape[0] * x.shape[1] * x.shape[2], x.shape[3], x.shape[4])
         # Expand Theta to match the number of elements in a batch
-        theta = (self.theta.view(1,
-                                 self.theta.shape[0],
-                                 self.theta.shape[1])).expand(B * self.nodes, self.theta.shape[0], self.theta.shape[1])
+        theta = (self.theta.view(1, self.theta.shape[0], self.theta.shape[1])).expand(
+            B * self.nodes, self.theta.shape[0], self.theta.shape[1]
+        )
         H = matmul(theta, x)
         # Reshape to the original shape
         H = H.reshape(B, self.nodes, 1)
@@ -270,7 +350,7 @@ class CDAutoEncoder(nn.Module, ABC):
 
         if self.training:
             # Add noise, but use the original lossless input as the target.
-            x_noisy = x * (Variable(x.data.new(x.size()).normal_(0, 0.01)) > -.1).type_as(x)
+            x_noisy = x * (Variable(x.data.new(x.size()).normal_(0, 0.01)) > -0.1).type_as(x)
             y = self.forward_pass(x_noisy)
             x_reconstruct = self.backward_pass(y)
             loss = self.criterion(x_reconstruct, Variable(x.data, requires_grad=False))

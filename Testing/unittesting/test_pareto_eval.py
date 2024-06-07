@@ -13,8 +13,7 @@ class TestEvaluationMetrics(unittest.TestCase):
 
     def test_spread_indicator(self):
         pass
-        #self.assertAlmostEqual()
-
+        # self.assertAlmostEqual()
 
     def test_pymoo_dominance(self):
         fitnesses = np.array([np.array([0.0, 0.0]), np.array([1.0, 1.0]), np.array([0.0, 1.0])])
@@ -43,5 +42,6 @@ class TestEvaluationMetrics(unittest.TestCase):
         self.assertEqual(0, compare_solutions(s1, s3))
         self.assertEqual(0, compare_solutions(s3, s1))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

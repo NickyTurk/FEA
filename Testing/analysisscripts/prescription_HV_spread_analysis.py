@@ -8,7 +8,7 @@ from utilities.multifilereader import *
 # TODO: Generalize
 
 
-field_names = ['henrys']
+field_names = ["henrys"]
 methods = ["NSGA2", "CCNSGA2", "FNSGA2"]
 iterations = []
 alg_stats = dict()
@@ -20,31 +20,38 @@ for field_name in field_names:
     for method in methods:
         print(method)
         alg_stats[field_name][method] = dict()
-        experiments = [x for x in experiment_filenames if '\\'+method + '_' in x and field_name in x.lower()]
+        experiments = [
+            x for x in experiment_filenames if "\\" + method + "_" in x and field_name in x.lower()
+        ]
         print(experiments)
         if experiments:
             for experiment in experiments:
-                feamoo = pickle.load(open(experiment, 'rb'))
+                feamoo = pickle.load(open(experiment, "rb"))
                 # print(feamoo.iteration_stats[-1])
                 # print(feamoo.nondom_archive)
                 try:
-                    alg_stats[field_name][method]['iterations'] = [stats['FEA_run'] for i, stats in
-                                                                enumerate(feamoo.iteration_stats) if i != 0]
+                    alg_stats[field_name][method]["iterations"] = [
+                        stats["FEA_run"] for i, stats in enumerate(feamoo.iteration_stats) if i != 0
+                    ]
                 except KeyError:
-                    alg_stats[field_name][method]['iterations'] = [stats['GA_run'] for i, stats in
-                                                                enumerate(feamoo.iteration_stats) if i != 0]
-                alg_stats[field_name][method]['diversity'] = [stats['diversity'] for i, stats in
-                                                            enumerate(feamoo.iteration_stats) if i != 0]
-                alg_stats[field_name][method]['hv'] = [stats['hypervolume'] for i, stats in enumerate(feamoo.iteration_stats) if
-                                                    i != 0]
-                alg_stats[field_name][method]['nd'] = [stats['ND_size'] for i, stats in enumerate(feamoo.iteration_stats) if
-                                                    i != 0]
+                    alg_stats[field_name][method]["iterations"] = [
+                        stats["GA_run"] for i, stats in enumerate(feamoo.iteration_stats) if i != 0
+                    ]
+                alg_stats[field_name][method]["diversity"] = [
+                    stats["diversity"] for i, stats in enumerate(feamoo.iteration_stats) if i != 0
+                ]
+                alg_stats[field_name][method]["hv"] = [
+                    stats["hypervolume"] for i, stats in enumerate(feamoo.iteration_stats) if i != 0
+                ]
+                alg_stats[field_name][method]["nd"] = [
+                    stats["ND_size"] for i, stats in enumerate(feamoo.iteration_stats) if i != 0
+                ]
         else:
             break
 
-stat_names = ['hv', 'diversity', 'nd']
+stat_names = ["hv", "diversity", "nd"]
 
-stat_name = 'hv'
+stat_name = "hv"
 # ccea = list(alg_stats['henrys']['CCEAMOO'][stat_name])
 # nsga = list(alg_stats['henrys']['NSGA2'][stat_name])
 # fea = list(alg_stats['henrys']['FEAMOO'][stat_name])

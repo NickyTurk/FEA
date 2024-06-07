@@ -20,22 +20,24 @@ This needs to be done so the CSV file can be used by the CNN or RF to predict yi
 """
 
 current_working_dir = os.getcwd()
-path = re.search(r'^(.*?[\\/]FEA)',current_working_dir)
+path = re.search(r"^(.*?[\\/]FEA)", current_working_dir)
 path = path.group()
 
-aggregated_data_files = ["../../../Documents/Work/OFPE/Data/Henrys/wood_henrys_10m_yld_2016-2020_UPDATE.csv",
-                         "../../../Documents/Work/OFPE/Data/Sec35West/broyles_sec35west_10m_yld_2016-2020_UPDATE.csv",
-                         "../../../Documents/Work/OFPE/Data/Sec35Mid/broyles_sec35mid_10m_yld_2016-2020_UPDATE.csv"]  # "../../../Documents/Work/OFPE/Data/Henrys/wood_henrys_10m_yld_2016-2020_UPDATE.csv"]
+aggregated_data_files = [
+    "../../../Documents/Work/OFPE/Data/Henrys/wood_henrys_10m_yld_2016-2020_UPDATE.csv",
+    "../../../Documents/Work/OFPE/Data/Sec35West/broyles_sec35west_10m_yld_2016-2020_UPDATE.csv",
+    "../../../Documents/Work/OFPE/Data/Sec35Mid/broyles_sec35mid_10m_yld_2016-2020_UPDATE.csv",
+]  # "../../../Documents/Work/OFPE/Data/Henrys/wood_henrys_10m_yld_2016-2020_UPDATE.csv"]
 field_files = ["../utilities/saved_fields/Henrys.pickle"]
 field_names = ["henrys"]
 
-if __name__ == '__main__':
-    objectives = ['jumps', 'fertilizer_rate', 'NR']
+if __name__ == "__main__":
+    objectives = ["jumps", "fertilizer_rate", "NR"]
 
     for fieldfile, agg_file, name in zip(field_files, aggregated_data_files, field_names):
         mf = MultiFileReader(name)
         experiment_filenames = mf.path_to_files
-        field = pickle.load(open(fieldfile, 'rb'))
+        field = pickle.load(open(fieldfile, "rb"))
         # print(field.latlong_crs, field.aa_crs, field.field_crs)
         # project_to_latlong = Transformer.from_crs('epsg:32612', field.latlong_crs)  # 32629, 32612 # 'epsg:32612'
         # df = pd.read_csv(agg_file)
@@ -50,10 +52,10 @@ if __name__ == '__main__':
         nondom_archive = []
         filenames = [x for x in experiment_filenames if name in x.lower()]
         for experiment in filenames:
-            feamoo = pickle.load(open(experiment, 'rb'))
+            feamoo = pickle.load(open(experiment, "rb"))
             # print(feamoo.iteration_stats[-1])
             nondom_archive.extend(feamoo.nondom_archive)
-            field_method_name = re.search(r'.*\/FEAMOO\/(.*)_trial', experiment)
+            field_method_name = re.search(r".*\/FEAMOO\/(.*)_trial", experiment)
 
         find_center_obj = []
         try:
@@ -63,8 +65,14 @@ if __name__ == '__main__':
             fitnesses = np.array([np.array(x.fitness) for x in nondom_archive])
             nondom_indeces = find_non_dominated(fitnesses)
         nondom_archive = [fitnesses[i] for i in nondom_indeces]
-        for i,obj in enumerate(objectives):
-            filename_to_write = '../../MOO_final_prescriptions/' + name + '_combined_prescription_' + obj + '_objective_runs.csv'
+        for i, obj in enumerate(objectives):
+            filename_to_write = (
+                "../../MOO_final_prescriptions/"
+                + name
+                + "_combined_prescription_"
+                + obj
+                + "_objective_runs.csv"
+            )
             nondom_archive.sort(key=lambda test_list: test_list[i])
             prescription = nondom_archive[0]
             find_center_obj.append(np.array(prescription.objective_values))

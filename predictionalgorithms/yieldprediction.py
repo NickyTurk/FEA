@@ -17,8 +17,19 @@ class YieldPredictor:
     I was having a lot of issues with the projections of the data, which all need to be in lat-lon to be processed,
     but farmers often have their data projected in a specific coordinate system, which creates a lot of issues.
     """
-    def __init__(self, field, agg_data_file, trained_model, data_headers=None, nitrogen_header='n_lbs_ac', prescription=None,
-                 cnn_bool=False, weeds_model=None, weeds_headers=None):
+
+    def __init__(
+        self,
+        field,
+        agg_data_file,
+        trained_model,
+        data_headers=None,
+        nitrogen_header="n_lbs_ac",
+        prescription=None,
+        cnn_bool=False,
+        weeds_model=None,
+        weeds_headers=None,
+    ):
         df = pd.read_csv(agg_data_file)
         self.headers = {c: i for i, c in enumerate(df.columns)}
         self.nitrogen_header = nitrogen_header
@@ -29,22 +40,23 @@ class YieldPredictor:
         self.weeds_headers = weeds_headers
         if self.data_headers:
             self.adjusted_data_headers = copy.deepcopy(self.data_headers)
-            self.adjusted_data_headers.append('cell_index')
+            self.adjusted_data_headers.append("cell_index")
         self.field = field
         self.gridcell_size = self.field.cell_list[0].gridcell_size / 43560
         self.model = trained_model
         self.cnn_bool = cnn_bool
         self.weeds_model = weeds_model
         self.variables = []
-        self.cell_predictions = {"average":dict(), "stdev":dict()}
+        self.cell_predictions = {"average": dict(), "stdev": dict()}
 
         if not cnn_bool:
             # creating dataframe to adjust
-            if 'cell_index' in self.dps.columns.to_list():
+            if "cell_index" in self.dps.columns.to_list():
                 self.full_df = self.dps
             else:
-                self.full_df = create_indexed_dataframe(field=field, headers=self.headers,
-                                                    dps=self.dps, transform_to_latlon=True)
+                self.full_df = create_indexed_dataframe(
+                    field=field, headers=self.headers, dps=self.dps, transform_to_latlon=True
+                )
             # self.data_headers.append('cell_index')
             self.nitrogen_dataframe = self.full_df.loc[:, data_headers]
             if self.weeds_model:
@@ -67,13 +79,19 @@ class YieldPredictor:
         if not isinstance(self.model, list):
             if not cnn:
                 for i, cell_N in enumerate(self.variables):
-                    self.full_df.loc[self.full_df['cell_index'] == i].loc[:, self.nitrogen_header] = cell_N
+                    self.full_df.loc[self.full_df["cell_index"] == i].loc[
+                        :, self.nitrogen_header
+                    ] = cell_N
                     self.nitrogen_dataframe = self.full_df.loc[:, self.data_headers]
                     if self.weeds_model:
                         self.weeds_dataframe = self.full_df.loc[:, self.weeds_headers]
             else:
                 for i, cell_N in enumerate(self.variables):
-                    center_ids = list(self.model.centers[self.model.centers.loc[:,'cell_index'] == i]['point_index'])
+                    center_ids = list(
+                        self.model.centers[self.model.centers.loc[:, "cell_index"] == i][
+                            "point_index"
+                        ]
+                    )
                     for j in range(len(self.model.patches)):
                         if j in center_ids:
                             nr = self.model.patches[j, 0, 0, :]
@@ -92,16 +110,23 @@ class YieldPredictor:
         2. How many cells should we use for experimental rates?
         """
         if cnn:
-            stats_path = 'C:\\Users\\f24n127\\Documents\\Work\\OFPETool-master\\static\\uploads\\stats\\' + self.field.field_name + '_statistics.npy'
+            stats_path = (
+                "C:\\Users\\f24n127\\Documents\\Work\\OFPETool-master\\static\\uploads\\stats\\"
+                + self.field.field_name
+                + "_statistics.npy"
+            )
             [maxs, mins, maxY, minY] = np.load(stats_path, allow_pickle=True)
 
-            yield_predictions = self.model.model.predictSamples(datasample=self.model.patches, maxs=maxs, mins=mins,
-                                                                batch_size=256)
+            yield_predictions = self.model.model.predictSamples(
+                datasample=self.model.patches, maxs=maxs, mins=mins, batch_size=256
+            )
 
             actual_yield = 0
             if len(yield_predictions) > len(self.field.cell_list):
                 for i in range(len(self.field.cell_list)):
-                    center_ids = self.model.centers.loc[self.model.centers['cell_index'] == i]['point_index']
+                    center_ids = self.model.centers.loc[self.model.centers["cell_index"] == i][
+                        "point_index"
+                    ]
                     cell_pred = np.take(yield_predictions, center_ids, axis=0)
                     cell_pred = cell_pred[~(np.isnan(cell_pred))]
                     if len(cell_pred) > 0:
@@ -127,12 +152,14 @@ class YieldPredictor:
             adjusted_nitrogen_dataframe = self.full_df.loc[:, self.adjusted_data_headers]
             yield_predictions = self.model.predict(self.nitrogen_dataframe)
 
-            adjusted_nitrogen_dataframe.loc[:, 'predicted'] = yield_predictions
+            adjusted_nitrogen_dataframe.loc[:, "predicted"] = yield_predictions
             actual_yield = 0
             for i in range(len(self.field.cell_list)):
-                cell_pred = adjusted_nitrogen_dataframe.loc[adjusted_nitrogen_dataframe['cell_index'] == i]
-                avg = np.mean(cell_pred['predicted'])
-                stdev = np.std(cell_pred['predicted'])
+                cell_pred = adjusted_nitrogen_dataframe.loc[
+                    adjusted_nitrogen_dataframe["cell_index"] == i
+                ]
+                avg = np.mean(cell_pred["predicted"])
+                stdev = np.std(cell_pred["predicted"])
                 self.cell_predictions["average"][i] = avg
                 self.cell_predictions["stdev"][i] = stdev
                 if not np.isnan(avg):
@@ -153,19 +180,22 @@ def get_points_in_cell(gridcell, dps):
     ur_x, ur_y = gridcell.upperright_x, gridcell.upperright_y
     # Get all points in the cell
     try:
-        datapoints = dps[(dps['y'] >= bl_x) &
-                         (dps['y'] <= ur_x) &
-                         (dps['x'] <= ur_y) &
-                         (dps['x'] >= bl_y)].values.tolist()
+        datapoints = dps[
+            (dps["y"] >= bl_x) & (dps["y"] <= ur_x) & (dps["x"] <= ur_y) & (dps["x"] >= bl_y)
+        ].values.tolist()
     except KeyError:
-         datapoints = dps[(dps[1] >= bl_x) &
-                                (dps[1] <= ur_x) &
-                                (dps[0] <= ur_y) &
-                                (dps[0] >= bl_y)]
+        datapoints = dps[(dps[1] >= bl_x) & (dps[1] <= ur_x) & (dps[0] <= ur_y) & (dps[0] >= bl_y)]
     return datapoints
 
 
-def create_indexed_dataframe(dps, field, headers=None, transform_to_latlon=False, transform_from_latlon=False, epsg_string='epsg:32612'):
+def create_indexed_dataframe(
+    dps,
+    field,
+    headers=None,
+    transform_to_latlon=False,
+    transform_from_latlon=False,
+    epsg_string="epsg:32612",
+):
     """
     Method to assign cell index to each datapoint, includes ability to transform data from and to latlong coordinate system.
 
@@ -180,8 +210,8 @@ def create_indexed_dataframe(dps, field, headers=None, transform_to_latlon=False
     project_from_latlong = Transformer.from_crs(field.latlong_crs, epsg_string)
     project_to_latlong = Transformer.from_crs(epsg_string, field.latlong_crs)  # 'epsg:32612')
     if headers:
-        x_int = headers['x']
-        y_int = headers['y']
+        x_int = headers["x"]
+        y_int = headers["y"]
     else:
         x_int = 0
         y_int = 1
@@ -189,15 +219,23 @@ def create_indexed_dataframe(dps, field, headers=None, transform_to_latlon=False
     if transform_to_latlon:
         try:
             xy = np.array(
-                [np.array(project_to_latlong.transform(x, y)) for x, y in zip(np.array(dps['x']), np.array(dps['y']))])
-            dps.loc[:, 'x'] = xy[:, 0]
-            dps.loc[:, 'y'] = xy[:, 1]
+                [
+                    np.array(project_to_latlong.transform(x, y))
+                    for x, y in zip(np.array(dps["x"]), np.array(dps["y"]))
+                ]
+            )
+            dps.loc[:, "x"] = xy[:, 0]
+            dps.loc[:, "y"] = xy[:, 1]
         except KeyError:
             xy = np.array(
-                [np.array(project_to_latlong.transform(x, y)) for x, y in zip(np.array(dps[0]), np.array(dps[1]))])
-            dps.loc[:,0] = xy[:, 0]
-            dps.loc[:,1] = xy[:, 1]
-    dps.loc[:, 'point_index'] = np.arange(0, len(dps))
+                [
+                    np.array(project_to_latlong.transform(x, y))
+                    for x, y in zip(np.array(dps[0]), np.array(dps[1]))
+                ]
+            )
+            dps.loc[:, 0] = xy[:, 0]
+            dps.loc[:, 1] = xy[:, 1]
+    dps.loc[:, "point_index"] = np.arange(0, len(dps))
     #
     # np_dps = dps.to_numpy()
     for i, gridcell in enumerate(field.cell_list):
@@ -207,38 +245,59 @@ def create_indexed_dataframe(dps, field, headers=None, transform_to_latlon=False
         if len(points_in_cell) > 0:
             cell_df = pd.DataFrame(points_in_cell)
             #            cell_df.loc[:, n_int] = gridcell.nitrogen
-            cell_df.loc[:, 'cell_index'] = i
+            cell_df.loc[:, "cell_index"] = i
             all_points_df = pd.concat([cell_df, all_points_df])
 
     if transform_from_latlon:
         xy = np.array(
-            [np.array(project_from_latlong.transform(x, y)) for x, y in
-             zip(all_points_df[x_int], all_points_df[y_int])])
+            [
+                np.array(project_from_latlong.transform(x, y))
+                for x, y in zip(all_points_df[x_int], all_points_df[y_int])
+            ]
+        )
         all_points_df.loc[:, x_int] = xy[:, 0]
         all_points_df.loc[:, y_int] = xy[:, 1]
     if headers:
-        headers['point_index'] = -1
-        headers['cell_index'] = -1
+        headers["point_index"] = -1
+        headers["cell_index"] = -1
         all_points_df.columns = headers
     all_points_df.sort_values(by=all_points_df.columns[2], inplace=True)
     return all_points_df
 
 
-if __name__ == '__main__':
-    agg_file = "C:/Users/f24n127/Documents/Work/Ag/Data/broyles_sec35mid_2016_yl_aggreg_20181112.csv"
+if __name__ == "__main__":
+    agg_file = (
+        "C:/Users/f24n127/Documents/Work/Ag/Data/broyles_sec35mid_2016_yl_aggreg_20181112.csv"
+    )
     df = pd.read_csv(agg_file)
-    y_labels = df['yl_2016']
-    data_to_use = ['x', 'y', 'n_lbs_ac', 'elev_m', 'slope_deg', 'ndvi_2012', 'ndvi_2014', 'ndvi_2015', 'yl14_nn_bu_ac',
-                   'n15_lbs_ac', 'n14_lbs_ac']
+    y_labels = df["yl_2016"]
+    data_to_use = [
+        "x",
+        "y",
+        "n_lbs_ac",
+        "elev_m",
+        "slope_deg",
+        "ndvi_2012",
+        "ndvi_2014",
+        "ndvi_2015",
+        "yl14_nn_bu_ac",
+        "n15_lbs_ac",
+        "n14_lbs_ac",
+    ]
     x_data = df[data_to_use]
     rf = RandomForestRegressor()
     rf.fit(x_data, y_labels)
 
     field_file = "../utilities/saved_fields/sec35mid.pickle"
-    field = pickle.load(open(field_file, 'rb'))
+    field = pickle.load(open(field_file, "rb"))
     field.fixed_costs = 1000
     random_global_variables = random.choices([80, 100, 120, 140], k=len(field.cell_list))
     pr = Prescription(variables=random_global_variables, field=field)
-    yp = YieldPredictor(prescription=pr, field=field, agg_data_file=agg_file, trained_model=rf,
-                        data_headers=data_to_use)
+    yp = YieldPredictor(
+        prescription=pr,
+        field=field,
+        agg_data_file=agg_file,
+        trained_model=rf,
+        data_headers=data_to_use,
+    )
     yp.calculate_yield()

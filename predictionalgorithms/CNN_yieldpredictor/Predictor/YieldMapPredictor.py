@@ -9,11 +9,11 @@ from predictionalgorithms.CNN_yieldpredictor.Predictor.DataLoader import loadDat
 from scipy.interpolate import splrep, splev
 from predictionalgorithms.CNN_yieldpredictor.PredictorStrategy.PredictorModel import PredictorModel
 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"""""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """
+""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """""
 Static Functions
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """""
+""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """"""
 
 
 def clear_border(map_in, r_value):
@@ -26,18 +26,25 @@ def clear_border(map_in, r_value):
     return map_in
 
 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"""""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """
+""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """""
 Main Class Definition
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """""
+""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """"""
 
 
 class YieldMapPredictor:
     """Class used to predict an entire yield map using on a previously trained model."""
 
-    def __init__(self, field: str, training_years: list, pred_year: int, data_mode="AggRADARPrec",
-                 cov=None, filename=None):
+    def __init__(
+        self,
+        field: str,
+        training_years: list,
+        pred_year: int,
+        data_mode="AggRADARPrec",
+        cov=None,
+        filename=None,
+    ):
         """
         @param filename: Path containing the data (CSV)
         @param field: Name of the specific field that will be analyzed.
@@ -71,12 +78,18 @@ class YieldMapPredictor:
         self.mins = None
         self.maxY = None
         self.minY = None
-        self.patches =  None
+        self.patches = None
         self.centers = None
 
         # Initialize data loader object
-        self.dataLoader = DataLoader.DataLoader(filename=filename, field=field, training_years=training_years,
-                                                pred_year=pred_year, mode=data_mode, cov=cov)
+        self.dataLoader = DataLoader.DataLoader(
+            filename=filename,
+            field=field,
+            training_years=training_years,
+            pred_year=pred_year,
+            mode=data_mode,
+            cov=cov,
+        )
 
     def init_model(self, modelType: str):
         """Initialize  ML model."""
@@ -84,34 +97,46 @@ class YieldMapPredictor:
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         # Set input window size. If the model is a CNN, the input is 2D
-        if modelType in ['Hyper3DNet', 'Hyper3DNetQD', 'Russello', 'CNNLF']:
+        if modelType in ["Hyper3DNet", "Hyper3DNetQD", "Russello", "CNNLF"]:
             self.windowSize = 5
         else:
             self.windowSize = 1
             self.outputSize = 1
         # Set output window size. If the model is Hyper3DNet, the output is 2D
-        if 'Hyper3DNet' in modelType:
+        if "Hyper3DNet" in modelType:
             self.outputSize = 5
         else:
             self.outputSize = 1
 
-        return PredictorModel(self.modelType, self.device, self.nbands, self.windowSize, self.outputSize)
+        return PredictorModel(
+            self.modelType, self.device, self.nbands, self.windowSize, self.outputSize
+        )
 
     def load_pred_data(self, objective, modifyNRate=None, clearBorder=True):
         """Load and prepare the data that will be used for prediction"""
         # Load the entire yield map and the features of the selected year
-        self.data, self.cellids, self.coords, self.simple_coords = self.dataLoader.load_raster(objective=objective)
+        self.data, self.cellids, self.coords, self.simple_coords = self.dataLoader.load_raster(
+            objective=objective
+        )
         self.nbands = self.data.shape[2]  # Stores the number of features in the dataset.
-        self.prev_n = self.data[:, :, 0].copy()  # Save for plotting later in case new prescription maps are used.
+        self.prev_n = self.data[
+            :, :, 0
+        ].copy()  # Save for plotting later in case new prescription maps are used.
 
         # Modify N map using an uniform N rate
         if modifyNRate is not None:
-            self.modifyPrescription(method='uniform', n_rate=modifyNRate)
+            self.modifyPrescription(method="uniform", n_rate=modifyNRate)
 
         # Obtain a binary mask of the field (mask==1: field, mask==0: out of the field)
-        self.mask_field = (self.data[:, :, 2] * 0).astype(np.uint8)  # The elevation raster is used as a reference.
-        self.mask_field[np.where(self.data[:, :, 2] != 0)] = 1  # There is field where the value is different than 0
-        self.mask_field[np.where(self.data[:, :, 0] == -1)] = 0  # Remove from analysis points with missing N values
+        self.mask_field = (self.data[:, :, 2] * 0).astype(
+            np.uint8
+        )  # The elevation raster is used as a reference.
+        self.mask_field[
+            np.where(self.data[:, :, 2] != 0)
+        ] = 1  # There is field where the value is different than 0
+        self.mask_field[
+            np.where(self.data[:, :, 0] == -1)
+        ] = 0  # Remove from analysis points with missing N values
         if clearBorder:
             self.mask_field = clear_border(self.mask_field, 0)
 
@@ -123,9 +148,14 @@ class YieldMapPredictor:
         centers = []
 
         # Slide the window through the entire field
-        for x in range(int((self.windowSize - 1) / 2), self.data.shape[0] - int((self.windowSize - 1) / 2), 1):
-            for y in range(int((self.windowSize - 1) / 2), self.data.shape[1] - int((self.windowSize - 1) / 2),
-                           1):
+        for x in range(
+            int((self.windowSize - 1) / 2), self.data.shape[0] - int((self.windowSize - 1) / 2), 1
+        ):
+            for y in range(
+                int((self.windowSize - 1) / 2),
+                self.data.shape[1] - int((self.windowSize - 1) / 2),
+                1,
+            ):
                 # Define min and max coordinates of the patch around point (x, y)
                 xmin = x - int((self.windowSize - 1) / 2)
                 xmax = x + int((self.windowSize - 1) / 2) + 1
@@ -147,52 +177,76 @@ class YieldMapPredictor:
                 bottom = False
                 # Add rightmost patch
                 if (ymax < self.data.shape[1]) and ((ymax + 1) > self.data.shape[1]):
-                    patch = self.data[xmin:xmax, self.data.shape[1] - self.windowSize:, :]
-                    print("Saving block at position X: " + str(x) + ", Y: " +
-                          str(int(self.data.shape[1] - 0.5 - self.windowSize / 2)))
+                    patch = self.data[xmin:xmax, self.data.shape[1] - self.windowSize :, :]
+                    print(
+                        "Saving block at position X: "
+                        + str(x)
+                        + ", Y: "
+                        + str(int(self.data.shape[1] - 0.5 - self.windowSize / 2))
+                    )
                     patches.append(patch)
                     centers.append((x, int(self.data.shape[1] - 0.5 - self.windowSize / 2)))
                     right = True
 
                 # Add bottom patch
                 if (xmax < self.data.shape[0]) and ((xmax + 1) > self.data.shape[0]):
-                    patch = self.data[self.data.shape[0] - self.windowSize:, ymin:ymax, :]
-                    print("Saving block at position X: " + str(int(self.data.shape[0] - 0.5 - self.windowSize / 2)) +
-                          ", Y: " + str(y))
+                    patch = self.data[self.data.shape[0] - self.windowSize :, ymin:ymax, :]
+                    print(
+                        "Saving block at position X: "
+                        + str(int(self.data.shape[0] - 0.5 - self.windowSize / 2))
+                        + ", Y: "
+                        + str(y)
+                    )
                     patches.append(patch)
                     centers.append((int(self.data.shape[0] - 0.5 - self.windowSize / 2), y))
                     bottom = True
 
                 # Add rightmost bottom patch
                 if right and bottom:
-                    patch = self.data[self.data.shape[0] - self.windowSize:, self.data.shape[1] - self.windowSize:, :]
-                    print("Saving block at position X: " + str(int(self.data.shape[0] - 0.5 - self.windowSize / 2)) +
-                          ", Y: " + str(int(self.data.shape[1] - 0.5 - self.windowSize / 2)))
+                    patch = self.data[
+                        self.data.shape[0] - self.windowSize :,
+                        self.data.shape[1] - self.windowSize :,
+                        :,
+                    ]
+                    print(
+                        "Saving block at position X: "
+                        + str(int(self.data.shape[0] - 0.5 - self.windowSize / 2))
+                        + ", Y: "
+                        + str(int(self.data.shape[1] - 0.5 - self.windowSize / 2))
+                    )
                     patches.append(patch)
-                    centers.append((int(self.data.shape[0] - 0.5 - self.windowSize / 2),
-                                    int(self.data.shape[1] - 0.5 - self.windowSize / 2)))
+                    centers.append(
+                        (
+                            int(self.data.shape[0] - 0.5 - self.windowSize / 2),
+                            int(self.data.shape[1] - 0.5 - self.windowSize / 2),
+                        )
+                    )
 
         patches = np.array(patches)
         # Reshape data as 4-D TENSOR
-        patches = np.reshape(patches, (patches.shape[0], patches.shape[1], patches.shape[2], patches.shape[3], 1))
+        patches = np.reshape(
+            patches, (patches.shape[0], patches.shape[1], patches.shape[2], patches.shape[3], 1)
+        )
         # Transpose dimensions to fit Pytorch order
         patches = patches.transpose((0, 4, 3, 1, 2))
 
         return patches, centers
 
-    def modifyPrescription(self, presc_path=None, method='uniform', n_rate=None):
+    def modifyPrescription(self, presc_path=None, method="uniform", n_rate=None):
         """Used a modified prescription map before predicting yield.
         @param presc_path: Path of the prescription map.
         @param method: Options: 'FEAMOO', 'CCEAMOO', 'NSGA2', 'uniform'.
         @param n_rate: If method='uniform', specify the uniform nitrogen rate that will be applied to the entire field.
         """
-        if method == 'uniform':
+        if method == "uniform":
             # Set a prescription map with uniform values of nitrogen
             n_map = self.data[:, :, 0] * 0
             n_map[self.mask_field == 1] = n_rate
         else:
             # Load data
-            n_map, _, _ = DataLoader.loadData(path=presc_path, cov=['N'], field=self.field, read_column=True)
+            n_map, _, _ = DataLoader.loadData(
+                path=presc_path, cov=["N"], field=self.field, read_column=True
+            )
             n_map = n_map[:, :, 0]
 
             # Points outside the boundary should be assigned the base-rate nitrogen
@@ -201,8 +255,15 @@ class YieldMapPredictor:
         # Replace nitrogen map
         self.data[:, :, 0] = n_map
 
-    def trainPreviousYears(self, batch_size=96, epochs=500, modelType='Hyper3DNet', print_process=True, objective='yld',
-                           beta_=None):
+    def trainPreviousYears(
+        self,
+        batch_size=96,
+        epochs=500,
+        modelType="Hyper3DNet",
+        print_process=True,
+        objective="yld",
+        beta_=None,
+    ):
         """Train using all the data from the selected years.
         @param batch_size: Size of the mini-batches used for training (used for the CNNs).
         @param epochs: Number pf epochs used for training (used for the CNNs).
@@ -225,21 +286,61 @@ class YieldMapPredictor:
         train_y, self.maxY, self.minY = utils.minMaxScale(train_y)
 
         self.model = self.init_model(modelType=modelType)  # Initialize ML model
-        self.path_model = 'output/' + 'Model-' + modelType + "-" + self.field + "--Objective-" + objective + \
-                          '/' + modelType + "-" + self.field + "--Objective-" + objective
+        self.path_model = (
+            "output/"
+            + "Model-"
+            + modelType
+            + "-"
+            + self.field
+            + "--Objective-"
+            + objective
+            + "/"
+            + modelType
+            + "-"
+            + self.field
+            + "--Objective-"
+            + objective
+        )
         if not os.path.exists(os.path.dirname(self.path_model)):
             os.mkdir(os.path.dirname(self.path_model))
 
         # Save statistics
-        np.save('output/' + 'Model-' + modelType + "-" + self.field + "--Objective-" + objective + '/' +
-                self.field + '_statistics.npy', [self.maxs, self.mins, self.maxY, self.minY])
+        np.save(
+            "output/"
+            + "Model-"
+            + modelType
+            + "-"
+            + self.field
+            + "--Objective-"
+            + objective
+            + "/"
+            + self.field
+            + "_statistics.npy",
+            [self.maxs, self.mins, self.maxY, self.minY],
+        )
 
         # Train the model using the current training-validation split
-        return self.model.trainPrevious(trainx, train_y, batch_size, epochs, self.path_model, print_process,
-                                        beta_=beta_, yscale=[self.maxY, self.minY])
+        return self.model.trainPrevious(
+            trainx,
+            train_y,
+            batch_size,
+            epochs,
+            self.path_model,
+            print_process,
+            beta_=beta_,
+            yscale=[self.maxY, self.minY],
+        )
 
-    def predict(self, uncertainty=False, stats_path=None, model_path=None, modelType='Hyper3DNet',
-                     objective='yld', Nrate=None, clearBorder=False):
+    def predict(
+        self,
+        uncertainty=False,
+        stats_path=None,
+        model_path=None,
+        modelType="Hyper3DNet",
+        objective="yld",
+        Nrate=None,
+        clearBorder=False,
+    ):
         """Predict the yield map using a sliding window.
         @param uncertainty: If True, calculate and return prediction intervals.
         @param stats_path: Path that contains the statistics of the training set.
@@ -248,21 +349,39 @@ class YieldMapPredictor:
                           'Russello', 'CNNLF', 'SAE', 'RF', 'GAM', and 'MLRegression'.
         @param objective: Name of the target. Default: 'yld' (Yield).
         @param Nrate: If not None, it is the uniform N rate used for prediction.
-        @param clearBorder: If True, remove the predictions from the borders to avoid uncertain results"""
+        @param clearBorder: If True, remove the predictions from the borders to avoid uncertain results
+        """
 
-        self.load_pred_data(objective=objective, modifyNRate=Nrate, clearBorder=clearBorder)  # Load prediction data
+        self.load_pred_data(
+            objective=objective, modifyNRate=Nrate, clearBorder=clearBorder
+        )  # Load prediction data
 
         # Load model if there is one
         self.model = self.init_model(modelType=modelType)  # Initialize ML model
         print("Loading model...")
         if model_path is None:
             # If the model and the statistics are not provided, check if they are in the temp file
-            self.path_model = 'output/' + 'Model-' + modelType + "-" + self.field + "--Objective-" + objective + \
-                          '/' + modelType + "-" + self.field + "--Objective-" + objective
+            self.path_model = (
+                "output/"
+                + "Model-"
+                + modelType
+                + "-"
+                + self.field
+                + "--Objective-"
+                + objective
+                + "/"
+                + modelType
+                + "-"
+                + self.field
+                + "--Objective-"
+                + objective
+            )
             if os.path.exists(self.path_model):
                 self.model.loadModel(path=self.path_model)
             else:
-                sys.exit("There is no trained model saved. You need to execute the trainPreviousYear method first.")
+                sys.exit(
+                    "There is no trained model saved. You need to execute the trainPreviousYear method first."
+                )
         else:
             self.path_model = model_path
             self.model.loadModel(path=model_path)
@@ -270,10 +389,22 @@ class YieldMapPredictor:
         # In case the statistics are not provided, read the training set to calculate the statistics
         if stats_path is None:
             # Try to check if there's a file in the temp folder with the statistics of the field
-            stats_path = 'output/' + 'Model-' + modelType + "-" + self.field + "--Objective-" + objective + \
-                         '/' + self.field + '_statistics.npy'
+            stats_path = (
+                "output/"
+                + "Model-"
+                + modelType
+                + "-"
+                + self.field
+                + "--Objective-"
+                + objective
+                + "/"
+                + self.field
+                + "_statistics.npy"
+            )
             if os.path.exists(stats_path):
-                [self.maxs, self.mins, self.maxY, self.minY] = np.load(stats_path, allow_pickle=True)
+                [self.maxs, self.mins, self.maxY, self.minY] = np.load(
+                    stats_path, allow_pickle=True
+                )
             else:  # Or calculate them
                 # Load training data of the previous years
                 trainx, train_y = self.dataLoader.create_training_set()
@@ -285,12 +416,14 @@ class YieldMapPredictor:
         else:
             if os.path.exists(stats_path):
                 # Read statistics from file
-                [self.maxs, self.mins, self.maxY, self.minY] = np.load(stats_path, allow_pickle=True)
+                [self.maxs, self.mins, self.maxY, self.minY] = np.load(
+                    stats_path, allow_pickle=True
+                )
             else:
                 sys.exit("There provided path does not exist.")
 
         # Remove areas affected by fire in sec35middle
-        if self.field == 'sec35middle':
+        if self.field == "sec35middle":
             self.mask_field[83:106, 46:] = 0
             self.mask_field[102:116, 43:60] = 0
         self.coords[self.mask_field == 0] = None
@@ -302,27 +435,45 @@ class YieldMapPredictor:
         uncPatches = None
         if uncertainty:
             yieldPatches, uncPatches = np.array(
-                self.model.predictSamplesUncertainty(datasample=patches, maxs=self.maxs,
-                                                     mins=self.mins, batch_size=256,
-                                                     MC_samples=50))
+                self.model.predictSamplesUncertainty(
+                    datasample=patches,
+                    maxs=self.maxs,
+                    mins=self.mins,
+                    batch_size=256,
+                    MC_samples=50,
+                )
+            )
         else:
-            yieldPatches = np.array(self.model.predictSamples(datasample=patches, maxs=self.maxs,
-                                                              mins=self.mins, batch_size=256))
+            yieldPatches = np.array(
+                self.model.predictSamples(
+                    datasample=patches, maxs=self.maxs, mins=self.mins, batch_size=256
+                )
+            )
 
         # ####################################################################
         # Reconstruct map one block at a time. Check if there is overlapping.
         # ####################################################################
         yield_map = np.zeros((self.data.shape[0], self.data.shape[1]))  # Initialize empty yield map
-        PI_map = np.zeros((self.data.shape[0], self.data.shape[1]))  # Initialize empty confidence map
-        temp_yield_map = np.frompyfunc(list, 0, 1)(np.empty((self.data.shape[0], self.data.shape[1]), dtype=object))
+        PI_map = np.zeros(
+            (self.data.shape[0], self.data.shape[1])
+        )  # Initialize empty confidence map
+        temp_yield_map = np.frompyfunc(list, 0, 1)(
+            np.empty((self.data.shape[0], self.data.shape[1]), dtype=object)
+        )
         # Initialize variables for when the upper and lower bounds are given instead of the predicted yield
         y_u, y_l, temp_y_u, temp_y_l, temp_y_p = None, None, None, None, None
-        if modelType == 'Hyper3DNetQD':
+        if modelType == "Hyper3DNetQD":
             y_u = np.zeros((self.data.shape[0], self.data.shape[1]))  # Store upper bounds
             y_l = np.zeros((self.data.shape[0], self.data.shape[1]))  # Store lower bounds
-            temp_y_u = np.frompyfunc(list, 0, 1)(np.empty((self.data.shape[0], self.data.shape[1]), dtype=object))
-            temp_y_l = np.frompyfunc(list, 0, 1)(np.empty((self.data.shape[0], self.data.shape[1]), dtype=object))
-            temp_y_p = np.frompyfunc(list, 0, 1)(np.empty((self.data.shape[0], self.data.shape[1]), dtype=object))
+            temp_y_u = np.frompyfunc(list, 0, 1)(
+                np.empty((self.data.shape[0], self.data.shape[1]), dtype=object)
+            )
+            temp_y_l = np.frompyfunc(list, 0, 1)(
+                np.empty((self.data.shape[0], self.data.shape[1]), dtype=object)
+            )
+            temp_y_p = np.frompyfunc(list, 0, 1)(
+                np.empty((self.data.shape[0], self.data.shape[1]), dtype=object)
+            )
 
         for i, ypatch in enumerate(yieldPatches):
             # Get original coordinates of the center of ypatch
@@ -332,42 +483,52 @@ class YieldMapPredictor:
             ymin = y - int((self.outputSize - 1) / 2)
             # Put ypatch in temp_map considering its original position
             if self.outputSize == 1:
-                if modelType in ['MLRegression', 'AdaBoost', 'SAE', 'RF', 'GAM']:
+                if modelType in ["MLRegression", "AdaBoost", "SAE", "RF", "GAM"]:
                     temp_yield_map[xmin, ymin].append(ypatch)
                     if uncertainty:
                         PI_map[xmin, ymin] = uncPatches[i]
                 else:
-                    if modelType == 'Hyper3DNetQD':
+                    if modelType == "Hyper3DNetQD":
                         temp_y_u[xmin, ymin] += list(ypatch[0, :, :])
                         temp_y_l[xmin, ymin] += list(ypatch[1, :, :])
                         temp_y_p[xmin, ymin] += list(ypatch[2, :, :])
                     else:
-                        if str(type(ypatch[0])) == '<class \'numpy.float64\'>':
+                        if str(type(ypatch[0])) == "<class 'numpy.float64'>":
                             temp_yield_map[xmin, ymin].append(ypatch)
                         else:
                             temp_yield_map[xmin, ymin] += list(ypatch[0, :])
             else:
                 for patch_x in range(ypatch.shape[0]):
                     for patch_y in range(ypatch.shape[1]):
-                        if modelType == 'Hyper3DNetQD':
-                            if str(type(ypatch[patch_x, patch_y])) == '<class \'numpy.float64\'>':
+                        if modelType == "Hyper3DNetQD":
+                            if str(type(ypatch[patch_x, patch_y])) == "<class 'numpy.float64'>":
                                 temp_y_u[xmin + patch_x, ymin + patch_y].append(ypatch[0])
                                 temp_y_l[xmin + patch_x, ymin + patch_y].append(ypatch[1])
                                 temp_y_p[xmin + patch_x, ymin + patch_y].append(ypatch[2])
                             else:
-                                temp_y_u[xmin + patch_x, ymin + patch_y] += list(ypatch[0, patch_x, patch_y])
-                                temp_y_l[xmin + patch_x, ymin + patch_y] += list(ypatch[1, patch_x, patch_y])
-                                temp_y_p[xmin + patch_x, ymin + patch_y] += list(ypatch[2, patch_x, patch_y])
+                                temp_y_u[xmin + patch_x, ymin + patch_y] += list(
+                                    ypatch[0, patch_x, patch_y]
+                                )
+                                temp_y_l[xmin + patch_x, ymin + patch_y] += list(
+                                    ypatch[1, patch_x, patch_y]
+                                )
+                                temp_y_p[xmin + patch_x, ymin + patch_y] += list(
+                                    ypatch[2, patch_x, patch_y]
+                                )
                         else:
-                            if str(type(ypatch[patch_x, patch_y])) == '<class \'numpy.float64\'>':
-                                temp_yield_map[xmin + patch_x, ymin + patch_y].append(ypatch[patch_x, patch_y])
+                            if str(type(ypatch[patch_x, patch_y])) == "<class 'numpy.float64'>":
+                                temp_yield_map[xmin + patch_x, ymin + patch_y].append(
+                                    ypatch[patch_x, patch_y]
+                                )
                             else:
-                                temp_yield_map[xmin + patch_x, ymin + patch_y] += list(ypatch[patch_x, patch_y])
+                                temp_yield_map[xmin + patch_x, ymin + patch_y] += list(
+                                    ypatch[patch_x, patch_y]
+                                )
 
         # Average overlapping regions
         for i in range(self.data.shape[0]):
             for j in range(self.data.shape[1]):
-                if modelType == 'Hyper3DNetQD':
+                if modelType == "Hyper3DNetQD":
                     if not temp_y_u[i, j]:
                         continue
                     # Calculate mean upper and lower bounds
@@ -387,7 +548,7 @@ class YieldMapPredictor:
                     # Calculate mean
                     yield_map[i, j] = np.mean(temp_vec)
                     # Obtain the standard deviation of each pixel for CNNs methods using MCDropout
-                    if uncertainty and (modelType in ['Hyper3DNet', 'Russello', 'CNNLF']):
+                    if uncertainty and (modelType in ["Hyper3DNet", "Russello", "CNNLF"]):
                         PI_map[i, j] = np.std(temp_vec)  # This is the model uncertainty (variance)
 
         # Discard results that are outside the field
@@ -397,15 +558,19 @@ class YieldMapPredictor:
         PI_map = np.multiply(PI_map, self.mask_field)
 
         # If using MCDropout, add the data noise variance
-        if uncertainty and modelType not in ['MLRegression', 'Hyper3DNetQD']:
+        if uncertainty and modelType not in ["MLRegression", "Hyper3DNetQD"]:
             # Load validation MSE
-            with open(self.path_model + '_validationMSE', 'rb') as f:
+            with open(self.path_model + "_validationMSE", "rb") as f:
                 val_MSE = pickle.load(f)
-            PI_map = np.sqrt(PI_map ** 2 + val_MSE)
+            PI_map = np.sqrt(PI_map**2 + val_MSE)
 
         # Save maps as shapefiles
-        coords = np.reshape(self.coords, (self.coords.shape[0] * self.coords.shape[1]))  # Vectorize coordinates map
-        yield_vector = np.reshape(yield_map, (yield_map.shape[0] * yield_map.shape[1]))  # Vectorize yield map
+        coords = np.reshape(
+            self.coords, (self.coords.shape[0] * self.coords.shape[1])
+        )  # Vectorize coordinates map
+        yield_vector = np.reshape(
+            yield_map, (yield_map.shape[0] * yield_map.shape[1])
+        )  # Vectorize yield map
         yield_vector = [y for y, cr in zip(yield_vector, coords) if cr is not None]
         if modelType == "Hyper3DNetQD":
             yu_vector = np.reshape(y_u, (y_u.shape[0] * y_u.shape[1]))  # Vectorize upper bound map
@@ -416,7 +581,7 @@ class YieldMapPredictor:
         else:
             results = [yield_vector]
         coords = [cr for cr in coords if cr is not None]
-        shapepath = (os.path.dirname(self.path_model) + '_Shapefile').replace('Model-', '')
+        shapepath = (os.path.dirname(self.path_model) + "_Shapefile").replace("Model-", "")
         utils.createShapefile(coords=coords, columns=results, filepath=shapepath, obj=objective)
 
         # Return yield map
@@ -487,48 +652,91 @@ class YieldMapPredictor:
 
                     # Check where the derivative is higher or equal than pN
                     eonrs = np.where(dP >= pN)[0]
-                    EONR[x, y] = eonrs[-1]  # Keep the last point with derivative higher than pN (max yield)
+                    EONR[x, y] = eonrs[
+                        -1
+                    ]  # Keep the last point with derivative higher than pN (max yield)
         return EONR
 
 
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     #####################################################
     # Corn Field Simulation
     #####################################################
-    filepath = 'C:\\Users\\w63x712\\Documents\\Machine_Learning\\OFPE\\Data\\CSV_Files\\sim_data.csv'
-    fieldname = ''
-    cvars = ['N', 'par1', 'par2', 'par3', 'par4', 'par5', 'par6', 'par7', 'par8', 'par9', 'par10', 'par11', 'par12',
-             'par13', 'par14']
+    filepath = (
+        "C:\\Users\\w63x712\\Documents\\Machine_Learning\\OFPE\\Data\\CSV_Files\\sim_data.csv"
+    )
+    fieldname = ""
+    cvars = [
+        "N",
+        "par1",
+        "par2",
+        "par3",
+        "par4",
+        "par5",
+        "par6",
+        "par7",
+        "par8",
+        "par9",
+        "par10",
+        "par11",
+        "par12",
+        "par13",
+        "par14",
+    ]
     modelname = "Hyper3DNet"
-    goal = 'yld'
+    goal = "yld"
     # 10-fold cross validation
     RMSE, RMSE_EONR = [], []
     prediction, target = None, None
     for nt in range(10):
-        print("************************************************************************************************")
+        print(
+            "************************************************************************************************"
+        )
         print("Fold " + str(nt + 1) + " / 10")
-        print("************************************************************************************************")
+        print(
+            "************************************************************************************************"
+        )
         tyears = list(np.arange(1, 11))
         tyears.remove(10 - nt)
         pyear = 10 - nt
-        predictor = YieldMapPredictor(filename=filepath, field=fieldname, training_years=tyears, pred_year=pyear,
-                                      cov=cvars)
+        predictor = YieldMapPredictor(
+            filename=filepath, field=fieldname, training_years=tyears, pred_year=pyear, cov=cvars
+        )
         # Train and validate
         # predictor.trainPreviousYears(epochs=500, batch_size=64, modelType=modelname, objective=goal)
-        prediction = np.clip(predictor.predict(modelType=modelname, objective=goal), a_min=0, a_max=2E4)
+        prediction = np.clip(
+            predictor.predict(modelType=modelname, objective=goal), a_min=0, a_max=2e4
+        )
         # Compare to the ground-truth and calculate the RMSE
-        target, _, _, _ = loadData(path=filepath, field=fieldname, year=10 - nt, cov=cvars, inpaint=True,
-                                   inpaint_features=False, base_N=120, test=False, obj=goal)
-        RMSE.append(utils.mse(prediction, target) ** .5)
+        target, _, _, _ = loadData(
+            path=filepath,
+            field=fieldname,
+            year=10 - nt,
+            cov=cvars,
+            inpaint=True,
+            inpaint_features=False,
+            base_N=120,
+            test=False,
+            obj=goal,
+        )
+        RMSE.append(utils.mse(prediction, target) ** 0.5)
         print("Validation RMSE = " + str(RMSE[nt]))
 
         # Estimate the EONR and compare it to the ground-truth
         EONR_est = predictor.EONR(pC=0.246063, pN=2.204624, n_min=0, n_max=260, n_samples=260)
         # Compare to the ground-truth and calculate the RMSE
-        EONR_target, _, _, _ = loadData(path=filepath, field=fieldname, year=10 - nt, cov=cvars, inpaint=True,
-                                        inpaint_features=False, base_N=120, test=False, obj='EONR')
-        RMSE_EONR.append(utils.mse(EONR_est, EONR_target) ** .5)
+        EONR_target, _, _, _ = loadData(
+            path=filepath,
+            field=fieldname,
+            year=10 - nt,
+            cov=cvars,
+            inpaint=True,
+            inpaint_features=False,
+            base_N=120,
+            test=False,
+            obj="EONR",
+        )
+        RMSE_EONR.append(utils.mse(EONR_est, EONR_target) ** 0.5)
         print("EONR Validation RMSE = " + str(RMSE_EONR[nt]))
 
     # Plot lat results for reference

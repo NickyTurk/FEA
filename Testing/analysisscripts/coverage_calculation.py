@@ -8,11 +8,13 @@ import numpy as np
 from pymoo.util.nds.non_dominated_sorting import find_non_dominated
 from itertools import combinations
 
-algorithms = ['NSGA2', 'NSGA3']  # MOEAD, SPEA2
+algorithms = ["NSGA2", "NSGA3"]  # MOEAD, SPEA2
 objs = [10]
-problems = ['WFG7']  # ['DTLZ1', 'DTLZ2', 'DTLZ3', 'DTLZ4', 'DTLZ5', 'DTLZ6'] #, 'WFG1', 'WFG2', 'WFG3', 'WFG4', 'WFG5', 'WFG7']
-comparing = [['NSGA2', 'FactorArchive_k_04_l_05'],  ['NSGA3', '4partitions']]
-overlap = .6
+problems = [
+    "WFG7"
+]  # ['DTLZ1', 'DTLZ2', 'DTLZ3', 'DTLZ4', 'DTLZ5', 'DTLZ6'] #, 'WFG1', 'WFG2', 'WFG3', 'WFG4', 'WFG5', 'WFG7']
+comparing = [["NSGA2", "FactorArchive_k_04_l_05"], ["NSGA3", "4partitions"]]
+overlap = 0.6
 # comparing = [['NSGA2', 'FactorArchive_k_05_l_02'], ['NSGA2', 'FactorArchive_k_05_l_03'], ['NSGA2', 'FactorArchive_k_05_l_04'],['NSGA2', 'FactorArchive_k_05_l_05'],
 #              ['NSGA2', 'FactorArchive_k_04_l_02'], ['NSGA2', 'FactorArchive_k_04_l_03'], ['NSGA2', 'FactorArchive_k_04_l_04'],['NSGA2', 'FactorArchive_k_04_l_05'],
 #              ['NSGA2', 'FactorArchive_k_025_l_02'], ['NSGA2', 'FactorArchive_k_025_l_03'], ['NSGA2', 'FactorArchive_k_025_l_04'],['NSGA2', 'FactorArchive_k_025_l_05']]
@@ -27,33 +29,42 @@ for problem in problems:
         average_len = dict()
         alg_list = []
         for compare in comparing:
-            full_compare = compare[0] + '_' + compare[1]
+            full_compare = compare[0] + "_" + compare[1]
             alg_list.append(full_compare)
             average_AC[full_compare] = []
             average_len[full_compare] = []
-        file_regex = r'_' + problem + r'_(.*)' + str(obj) + r'_objectives_'
-        stored_files = MultiFileReader(file_regex, dir= "C:\\Users\\amy_l\\PycharmProjects\\FEA\\results\\factorarchive\\" + problem + "\\")
+        file_regex = r"_" + problem + r"_(.*)" + str(obj) + r"_objectives_"
+        stored_files = MultiFileReader(
+            file_regex,
+            dir="C:\\Users\\amy_l\\PycharmProjects\\FEA\\results\\factorarchive\\" + problem + "\\",
+        )
         experiment_filenames = stored_files.path_to_files
         for kfold in range(20):
             total_front = []
             lengths = dict()
             for compare in comparing:
-                full_compare = compare[0] + '_' + compare[1]
-                experiments = [x for x in experiment_filenames if compare[0] in x and compare[1] in x]  # and 'PBI' not in x
+                full_compare = compare[0] + "_" + compare[1]
+                experiments = [
+                    x for x in experiment_filenames if compare[0] in x and compare[1] in x
+                ]  # and 'PBI' not in x
                 if experiments:
                     rand_int = random.randint(0, len(experiments) - 1)
                     experiment = experiments[rand_int]
                     try:
-                        results = pickle.load(open(experiment, 'rb'))
+                        results = pickle.load(open(experiment, "rb"))
                     except EOFError:
-                        print('issues with file: ', experiment)
+                        print("issues with file: ", experiment)
                         continue
                     if isinstance(results, ObjectiveArchive):
-                        archive = results.find_archive_overlap(nr_archives_overlapping=archive_overlap)
+                        archive = results.find_archive_overlap(
+                            nr_archives_overlapping=archive_overlap
+                        )
                         total_front.extend(np.array([np.array(x.fitness) for x in archive]))
                     elif isinstance(results, MOEA):
                         try:
-                            archive = results.nondom_archive.find_archive_overlap(nr_archives_overlapping=archive_overlap)
+                            archive = results.nondom_archive.find_archive_overlap(
+                                nr_archives_overlapping=archive_overlap
+                            )
                         except AttributeError:
                             archive = results.nondom_archive
                         total_front.extend(np.array([np.array(x.fitness) for x in archive]))
@@ -78,7 +89,7 @@ for problem in problems:
                         lb += lengths[alg_list[i - 1]]
                     except KeyError:
                         print("no results")
-                #print('params: ', compare, ' with upper and lower: ', ub, lb, "length = ", lengths[compare])
+                # print('params: ', compare, ' with upper and lower: ', ub, lb, "length = ", lengths[compare])
                 AC = len([x for x in indeces if lb <= x < ub]) / len(indeces)
                 average_AC[compare].append(AC)
         for name, AC in average_AC.items():

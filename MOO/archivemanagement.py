@@ -14,7 +14,15 @@ from utilities.util import delete_multiple_elements, PopulationMember
 
 
 class ObjectiveArchive:
-    def __init__(self, nr_obj, dimensions, percent_best=.25, percent_diversity=.5, max_archive_size=100, per_objective_size=True):
+    def __init__(
+        self,
+        nr_obj,
+        dimensions,
+        percent_best=0.25,
+        percent_diversity=0.5,
+        max_archive_size=100,
+        per_objective_size=True,
+    ):
         """
 
         :param nr_obj:
@@ -71,7 +79,12 @@ class ObjectiveArchive:
                 2*k diversity
         """
         if isinstance(found_nondom_solutions, Result):
-            found_nondom_solutions = [PopulationMember(variable, fitness, solid=index) for index, (variable, fitness) in enumerate(zip(found_nondom_solutions.X, found_nondom_solutions.F))]
+            found_nondom_solutions = [
+                PopulationMember(variable, fitness, solid=index)
+                for index, (variable, fitness) in enumerate(
+                    zip(found_nondom_solutions.X, found_nondom_solutions.F)
+                )
+            ]
         for obj_idx in range(self.nr_obj):
             if self.archive[obj_idx]:
                 objective_solutions = [x for x in self.archive[obj_idx]]
@@ -82,14 +95,19 @@ class ObjectiveArchive:
                 objective_solutions = [objective_solutions[i] for i in nondom_indeces]
             else:
                 objective_solutions = [x for x in found_nondom_solutions]
-            found_best_solutions, remaining_solutions = self.keep_best_solutions(objective_solutions, obj_idx, k=self.k)
+            found_best_solutions, remaining_solutions = self.keep_best_solutions(
+                objective_solutions, obj_idx, k=self.k
+            )
             nr_solutions = len(found_best_solutions)
             self.archive[obj_idx] = [x for x in found_best_solutions]
             self.archive[obj_idx].extend(
-                     self.diversify_archive(remaining_solutions[:nr_solutions], int(nr_solutions*self.l))) #[:int(len(remaining_solutions)/2)], int(len(remaining_solutions)/4)))
+                self.diversify_archive(
+                    remaining_solutions[:nr_solutions], int(nr_solutions * self.l)
+                )
+            )  # [:int(len(remaining_solutions)/2)], int(len(remaining_solutions)/4)))
             # print("final archive length for objective ", str(obj_idx), len(self.archive[obj_idx]))
 
-    def keep_best_solutions(self, found_nondom_solutions, current_objective, k=.25):
+    def keep_best_solutions(self, found_nondom_solutions, current_objective, k=0.25):
         """
         Find "best" solutions for a specific objective.
         1. Sort solutions according to objective
@@ -100,9 +118,11 @@ class ObjectiveArchive:
         :param current_objective:
         :return: found "best" solutions and remaining solutions
         """
-        solutions = [x for x in sorted(found_nondom_solutions, key=lambda x: x.fitness[current_objective])]
+        solutions = [
+            x for x in sorted(found_nondom_solutions, key=lambda x: x.fitness[current_objective])
+        ]
         solutions_length = len(solutions)
-        end_index = int(solutions_length*k)
+        end_index = int(solutions_length * k)
         best_solutions = [x for x in solutions[:end_index]]
         del solutions[:end_index]
         return best_solutions, solutions
@@ -122,14 +142,14 @@ class ObjectiveArchive:
 
         # get solutions that are the most varied in terms of fitness/objective space
         fitness_solutions = [sol.fitness for sol in solutions]
-        fitness_sol_indeces = self.get_diversity_indeces(fitness_solutions, int(nr_to_select/2))
+        fitness_sol_indeces = self.get_diversity_indeces(fitness_solutions, int(nr_to_select / 2))
         diverse_solutions.extend([solutions[i] for i in fitness_sol_indeces])
         # delete found solutions to avoid duplicates in objective archive
         delete_multiple_elements(solutions, fitness_sol_indeces)
 
         # get solutions that are the most varied in terms of variable/solution space
         var_solutions = [sol.variables for sol in solutions]
-        var_sol_indeces = self.get_diversity_indeces(var_solutions, int(nr_to_select/2))
+        var_sol_indeces = self.get_diversity_indeces(var_solutions, int(nr_to_select / 2))
         diverse_solutions.extend([solutions[i] for i in var_sol_indeces])
 
         return diverse_solutions
@@ -146,7 +166,9 @@ class ObjectiveArchive:
             overlapping_members.extend([x for x in unique_arch])
         count_overlap = pd.Series(overlapping_members).value_counts()
         count_overlap = count_overlap.to_dict()
-        more_than_four = [solid for solid, count in count_overlap.items() if count > nr_archives_overlapping]
+        more_than_four = [
+            solid for solid, count in count_overlap.items() if count > nr_archives_overlapping
+        ]
         nd_archive = self.flatten_archive()
         final_selected_members = []
         seen = []
@@ -175,9 +197,11 @@ class ObjectiveArchive:
         """
         if len(solutions) > nr_to_select:
             # create mapping from condensed matrix to solution indeces
-            condensed_matrix_indeces = list(itertools.combinations(list(range(0, len(solutions))), 2))
+            condensed_matrix_indeces = list(
+                itertools.combinations(list(range(0, len(solutions))), 2)
+            )
             # use scipy pdist function to get dissimilarity matrix, scipy returns a "reduced matrix"
-            dissim_matrix_fitness = pdist(solutions, 'cosine')
+            dissim_matrix_fitness = pdist(solutions, "cosine")
             # get indeces of max values from reduced matrix
             max_indeces = np.argpartition(dissim_matrix_fitness, -nr_to_select)[-nr_to_select:]
             # map the max indeces to the solution indeces, this returns a list of pairs of indeces
@@ -200,13 +224,13 @@ class ObjectiveArchive:
         :param sol_length: total number of solutions
         :return: index in reduced matrix
         """
-        first = ((sol_length * (sol_length - 1)) / 2)
+        first = (sol_length * (sol_length - 1)) / 2
         idx_length = sol_length - i
-        second = ((idx_length * (idx_length - 1)) / 2)
+        second = (idx_length * (idx_length - 1)) / 2
         index = first - second + (j - i - 1)
         return index
-    
-    
+
+
 def environmental_solution_selection_nsga2(archive, sol_size):
     fitnesses = np.array([np.array(x.fitness) for x in archive])
     fronts = fast_non_dominated_sort(fitnesses)
@@ -215,18 +239,17 @@ def environmental_solution_selection_nsga2(archive, sol_size):
     for front in fronts:
         if len(front) + len(solution_set) < sol_size:
             solution_set.extend([x for x in front])
-            i=i+1
+            i = i + 1
         else:
             break
     if len(solution_set) < sol_size:
         front_fitness = np.array([np.array(archive[idx].fitness) for idx in fronts[i]])
-        size_to_add = sol_size-len(solution_set)
+        size_to_add = sol_size - len(solution_set)
         crowd_dist = calc_crowding_distance(front_fitness)
         sorted_front = [x for y, x in sorted(zip(crowd_dist, fronts[i]))]
         solution_set.extend([x for x in sorted_front[:size_to_add]])
     return [archive[i] for i in solution_set]
 
-    
 
 """
 METHOD IF ARCHIVE IS OF FIXED SIZE:

@@ -16,12 +16,14 @@ import numpy as np
 Get HV and spread stats for MOO based on however many experimental runs were completed.
 """
 
-problems =  ['henrys']
-algorithms = ['SNSGA2', 'CCNSGA2', 'FNSGA2']  # , 'SPEA2', 'MOEAD', 'MOEADPBI']
+problems = ["henrys"]
+algorithms = ["SNSGA2", "CCNSGA2", "FNSGA2"]  # , 'SPEA2', 'MOEAD', 'MOEADPBI']
 nr_objs = [3]
-parameters = [''] #, 'population_500', 'linear_100_100', 'linear_100_80', 'classic_random_100', 'classic_random_overlap_100_100','diff_grouping_MOO'
-file_regex = 'henrys'
-directory_to_search = 'D:\\Prescriptions\\RF_optimized\\'
+parameters = [
+    ""
+]  # , 'population_500', 'linear_100_100', 'linear_100_80', 'classic_random_100', 'classic_random_overlap_100_100','diff_grouping_MOO'
+file_regex = "henrys"
+directory_to_search = "D:\\Prescriptions\\RF_optimized\\"
 import csv
 
 # field names
@@ -43,9 +45,9 @@ for n_obj in nr_objs:
         total_nondom_pop = []
 
         for alg in algorithms:
-            print('************************************************\n', alg, problem, n_obj)
+            print("************************************************\n", alg, problem, n_obj)
             for param in parameters:
-                full_alg_name = alg + '_' + param
+                full_alg_name = alg + "_" + param
                 algdecomp.append(full_alg_name)
                 # file_regex = alg + r'_(.*)' + problem + r'_(.*)' + re.escape(str(n_obj)) + r'_objectives_(.*)'
                 stored_files = MultiFileReader(file_regex=file_regex, dir=directory_to_search)
@@ -60,12 +62,14 @@ for n_obj in nr_objs:
                 if len(experiments) != 0:
                     for file in experiments:
                         try:
-                            object = pickle.load(open(file, 'rb'))
+                            object = pickle.load(open(file, "rb"))
                         except EOFError:
                             continue
-                            #print("error in file: ", file)
-                        if alg == 'MOEAD':
-                            arch = np.array([np.array(sol.fitness) for sol in object.nondom_archive])
+                            # print("error in file: ", file)
+                        if alg == "MOEAD":
+                            arch = np.array(
+                                [np.array(sol.fitness) for sol in object.nondom_archive]
+                            )
                             if np.any(arch < 0):
                                 continue
                         amount += 1
@@ -73,34 +77,54 @@ for n_obj in nr_objs:
                             if isinstance(object, MOEA):
                                 print("MOEA")
                                 normalized_archive = np.array(
-                                    [np.array(sol.fitness) / reference_point for sol in object.nondom_archive])
+                                    [
+                                        np.array(sol.fitness) / reference_point
+                                        for sol in object.nondom_archive
+                                    ]
+                                )
                             elif isinstance(object, ObjectiveArchive):
                                 normalized_archive = np.array(
-                                    [np.array(sol.fitness) / reference_point for sol in object.flatten_archive()])
+                                    [
+                                        np.array(sol.fitness) / reference_point
+                                        for sol in object.flatten_archive()
+                                    ]
+                                )
                             elif isinstance(object, Result):
                                 normalized_archive = np.array(
-                                    [np.array(sol) / reference_point for sol in object.F])
+                                    [np.array(sol) / reference_point for sol in object.F]
+                                )
                             else:
                                 normalized_archive = np.array(
-                                    [np.array(sol) / reference_point for sol in object])
-                            new_div = po.calculate_diversity(normalized_archive,
-                                                             normalized=True)  # , minmax=[[0, maxval] for maxval in reference_point])
+                                    [np.array(sol) / reference_point for sol in object]
+                                )
+                            new_div = po.calculate_diversity(
+                                normalized_archive, normalized=True
+                            )  # , minmax=[[0, maxval] for maxval in reference_point])
                             new_hv = wfg(normalized_archive, np.ones(n_obj))
                             ND_size = ND_size + len(normalized_archive)
                         else:
-                            new_div = object.iteration_stats[-1]['diversity']
-                            new_hv = object.iteration_stats[-1]['hypervolume']
+                            new_div = object.iteration_stats[-1]["diversity"]
+                            new_hv = object.iteration_stats[-1]["hypervolume"]
                         t_test_pop[full_alg_name]["spread"].append(new_div)
                         t_test_pop[full_alg_name]["HV"].append(new_hv)
-                        ND_size = ND_size + object.iteration_stats[-1]['ND_size']
+                        ND_size = ND_size + object.iteration_stats[-1]["ND_size"]
                     hv_value = np.sum(t_test_pop[full_alg_name]["HV"]) / amount
                     hv_stddev = np.std(t_test_pop[full_alg_name]["HV"])
-                    ND_size = ND_size/amount
+                    ND_size = ND_size / amount
                     spread = np.sum(t_test_pop[full_alg_name]["spread"]) / amount
                     sprd_stddev = np.std(t_test_pop[full_alg_name]["spread"])
                     # rows.append([problem, str(n_obj), name, decomp, str(hv_value), str(hv_stddev), str(spread), str(sprd_stddev) ,str(ND_size), str(amount)])
-                    print('hv: ', hv_value, hv_stddev, 'nd: ', ND_size, 'spread: ', spread, sprd_stddev) #'hv: ', hv_value, hv_stddev, 'nd: ', ND_size, , 'spread: ', spread, sprd_stddev
-            print('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
+                    print(
+                        "hv: ",
+                        hv_value,
+                        hv_stddev,
+                        "nd: ",
+                        ND_size,
+                        "spread: ",
+                        spread,
+                        sprd_stddev,
+                    )  #'hv: ', hv_value, hv_stddev, 'nd: ', ND_size, , 'spread: ', spread, sprd_stddev
+            print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n")
         # print(kruskal(*t_test_pop["spread"]))
         # print(kruskal(*t_test_pop["HV"]))
         # param_perm = combinations(algdecomp, 2)

@@ -1,4 +1,5 @@
 import random
+
 # -o uid=$(id -u), gid=$(id -g)
 
 import numpy as np
@@ -13,9 +14,19 @@ class Prescription:
     organic maps: optimizes net return and looks at weed minimization: needs work
     """
 
-    def __init__(self, variables=None, field=None, factor=None, index=-1, normalize_objectives=False, optimized=False,
-                 organic=False, yield_predictor=None,
-                 applicator_cost=1, yield_price=5.40):
+    def __init__(
+        self,
+        variables=None,
+        field=None,
+        factor=None,
+        index=-1,
+        normalize_objectives=False,
+        optimized=False,
+        organic=False,
+        yield_predictor=None,
+        applicator_cost=1,
+        yield_price=5.40,
+    ):
         """
         self.variables should be a list of GRIDCELL objects
             -> the size of the factor group if using FEA
@@ -74,16 +85,23 @@ class Prescription:
         self.organic = organic
         self.normalize = normalize_objectives
         self.yield_predictor = yield_predictor
-        self.applicator_cost = applicator_cost  # cost in dollars for fertilizer based on application measure
-        self.yield_price = yield_price  # dollars made per unit, e.g. bushels per acre of winter wheat
+        self.applicator_cost = (
+            applicator_cost  # cost in dollars for fertilizer based on application measure
+        )
+        self.yield_price = (
+            yield_price  # dollars made per unit, e.g. bushels per acre of winter wheat
+        )
         # if not self.optimized:
         #     self.objective_values = (self.strat, self.jumps, self.fertilizer_rate)
         #     self.objectives = [self.maximize_stratification, self.minimize_jumps,
         #                        self.minimize_overall_fertilizer_rate]
         # else:
         self.objective_values = (self.jumps, self.fertilizer_rate, self.net_return)
-        self.objectives = [self.minimize_jumps,
-                           self.minimize_overall_fertilizer_rate, self.optimize_yld]
+        self.objectives = [
+            self.minimize_jumps,
+            self.minimize_overall_fertilizer_rate,
+            self.optimize_yld,
+        ]
         self.n_obj = len(self.objectives)
         self.factor = factor
         self.ref_point = [1, 1, 1]
@@ -102,15 +120,17 @@ class Prescription:
         return hash(string)
 
     def __gt__(self, other):
-        if all(x >= y for x, y in zip(self.objective_values, other.objective_values)) \
-                and any(x > y for x, y in zip(self.objective_values, other.objective_values)):
+        if all(x >= y for x, y in zip(self.objective_values, other.objective_values)) and any(
+            x > y for x, y in zip(self.objective_values, other.objective_values)
+        ):
             return True
         else:
             return False
 
     def __le__(self, other):
-        if all(x <= y for x, y in zip(self.objective_values, other.objective_values)) \
-                and any(x < y for x, y in zip(self.objective_values, other.objective_values)):
+        if all(x <= y for x, y in zip(self.objective_values, other.objective_values)) and any(
+            x < y for x, y in zip(self.objective_values, other.objective_values)
+        ):
             return True
         else:
             return False
@@ -146,16 +166,25 @@ class Prescription:
         else:
             self.complete_variables = self.variables
         if self.optimized:
-            self.overall_fitness, self.jumps, self.fertilizer_rate, self.net_return = self.calculate_optimal_fitness(
-                self.complete_variables, cont_bool)
+            (
+                self.overall_fitness,
+                self.jumps,
+                self.fertilizer_rate,
+                self.net_return,
+            ) = self.calculate_optimal_fitness(self.complete_variables, cont_bool)
             self.objective_values = (self.jumps, self.fertilizer_rate, self.net_return)
         elif self.organic:
             self.overall_fitness, self.weeds_rate, self.net_return = self.calculate_organic_fitness(
-                self.complete_variables)
+                self.complete_variables
+            )
             self.objective_values = (self.weeds_rate, self.net_return)
         else:
-            self.overall_fitness, self.jumps, self.strat, self.fertilizer_rate \
-                = self.calculate_experimental_fitness(self.complete_variables)
+            (
+                self.overall_fitness,
+                self.jumps,
+                self.strat,
+                self.fertilizer_rate,
+            ) = self.calculate_experimental_fitness(self.complete_variables)
             self.objective_values = (self.jumps, self.fertilizer_rate, self.strat)
 
     def set_field(self, field):
@@ -212,9 +241,13 @@ class Prescription:
                 else:
                     jump_diff += abs(c.nitrogen - solution[i + 1].nitrogen)
         if continuous:
-            final_jumps = jump_diff / (max(self.field.fertilizer_list_1) * (len(self.field.cell_list) - 1))
+            final_jumps = jump_diff / (
+                max(self.field.fertilizer_list_1) * (len(self.field.cell_list) - 1)
+            )
         else:
-            final_jumps = jump_diff / ((len(self.field.fertilizer_list_1) - 1) * (len(self.field.cell_list) - 1))
+            final_jumps = jump_diff / (
+                (len(self.field.fertilizer_list_1) - 1) * (len(self.field.cell_list) - 1)
+            )
         return final_jumps
 
     def maximize_stratification(self, solution):
@@ -223,7 +256,9 @@ class Prescription:
         tries to optimize even spread of fertilizer rates across cells with yield and protein bins
         """
         stratification_diff = 0
-        nitrogen_counts = np.zeros((len(self.field.fertilizer_list_1), self.field.total_ylpro_bins), dtype=int)
+        nitrogen_counts = np.zeros(
+            (len(self.field.fertilizer_list_1), self.field.total_ylpro_bins), dtype=int
+        )
 
         for i, c in enumerate(solution):
             # Count nitrogen values across yield and protein bin combinations
@@ -236,8 +271,10 @@ class Prescription:
         for ylpro_index, yl_pro_counts in enumerate(np.transpose(nitrogen_counts)):
             overall_strat_curr_bin = 0
             for nitrogen_index, count in enumerate(yl_pro_counts):
-                curr_strat = abs(self.field.expected_nitrogen_strat[ylpro_index][0] - count) - \
-                             self.field.expected_nitrogen_strat[ylpro_index][1]
+                curr_strat = (
+                    abs(self.field.expected_nitrogen_strat[ylpro_index][0] - count)
+                    - self.field.expected_nitrogen_strat[ylpro_index][1]
+                )
                 overall_strat_curr_bin = overall_strat_curr_bin + curr_strat
             stratification_diff = stratification_diff + overall_strat_curr_bin
 
@@ -260,16 +297,22 @@ class Prescription:
         predicted_yield = self.yield_predictor.calculate_yield(cnn=self.yield_predictor.cnn_bool)
         # P = base_price + ()
         applicator = sum([c.nitrogen * self.gridcell_size for c in solution])
-        net_return = predicted_yield * self.yield_price - (applicator * self.applicator_cost) - self.field.fixed_costs
+        net_return = (
+            predicted_yield * self.yield_price
+            - (applicator * self.applicator_cost)
+            - self.field.fixed_costs
+        )
         return -net_return
 
-    def overlay_experimental_plots(self, experiment_percentage=.2, method="stdev"):
+    def overlay_experimental_plots(self, experiment_percentage=0.2, method="stdev"):
         """
         Overlay experimental rates
         :param experiment_percentage: how much of the field to select
         :param method: how to select the cells
         """
-        cells_to_experiment = self.select_experimental_plots(experiment_percentage=experiment_percentage, method=method)
+        cells_to_experiment = self.select_experimental_plots(
+            experiment_percentage=experiment_percentage, method=method
+        )
         self.assign_experimental_rates(cells_to_experiment)
 
     def select_experimental_plots(self, experiment_percentage, method="stdev"):
@@ -281,10 +324,14 @@ class Prescription:
         """
         to_select = round(len(self.field.cell_list) * experiment_percentage)
         if method == "stdev":
-            stdev_sorted = sorted(self.yield_predictor.cell_prediction["stdev"].items(), key=lambda x: x[1])
+            stdev_sorted = sorted(
+                self.yield_predictor.cell_prediction["stdev"].items(), key=lambda x: x[1]
+            )
             cell_ids = stdev_sorted[-to_select:][0]
         elif method == "lowyield":
-            yield_sorted = sorted(self.yield_predictor.cell_prediction["average"].items(), key=lambda x: x[1])
+            yield_sorted = sorted(
+                self.yield_predictor.cell_prediction["average"].items(), key=lambda x: x[1]
+            )
             cell_ids = yield_sorted[-to_select:][0]
         else:
             cell_ids = random.sample(range(len(self.field.cell_list)), k=to_select)
@@ -302,10 +349,14 @@ class Prescription:
             fert_list = [cell.nitrogen for cell in self.complete_variables]
             max_prescribed_fertilizer = max(fert_list)
             min_prescribed_fertilizer = min(fert_list)
-            intervals = [[0, min_prescribed_fertilizer], [max_prescribed_fertilizer, max_overall_fertilizer]]
+            intervals = [
+                [0, min_prescribed_fertilizer],
+                [max_prescribed_fertilizer, max_overall_fertilizer],
+            ]
             for id in cell_ids:
                 self.complete_variables[id].nitrogen = random.uniform(
-                    *random.choices(intervals, weights=[r[1] - r[0] for r in intervals])[0])
+                    *random.choices(intervals, weights=[r[1] - r[0] for r in intervals])[0]
+                )
 
     def minimize_weeds(self):
         """

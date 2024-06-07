@@ -15,8 +15,17 @@ class MOFEA:
     Multi-Objective Factored Evolutionary Algorithm.
     Adjusts compete and share steps to create a set of non-dominated solutions, called the archive, which creates an approximate Pareto front.
     """
-    def __init__(self, fea_iterations, dimensions, factor_architecture=None, base_alg=None,
-                 combinatorial_options=None, value_range=[0, 1], ref_point=None):
+
+    def __init__(
+        self,
+        fea_iterations,
+        dimensions,
+        factor_architecture=None,
+        base_alg=None,
+        combinatorial_options=None,
+        value_range=[0, 1],
+        ref_point=None,
+    ):
         self.combinatorial_options = combinatorial_options
         self.value_range = value_range
         self.dim = dimensions
@@ -33,7 +42,7 @@ class MOFEA:
         self.calc_iter_stats = False
 
         current_working_dir = os.getcwd()
-        path = re.search(r'^(.*?[\\/]FEA)', current_working_dir)
+        path = re.search(r"^(.*?[\\/]FEA)", current_working_dir)
         self.path = path.group()
 
     def set_iteration_stats(self, fea_run):
@@ -50,8 +59,8 @@ class MOFEA:
         if self.worst_fitness_ref is not None and self.calc_iter_stats:
             po = ParetoOptimization(obj_size=len(self.worst_fitness_ref))
             eval_dict = po.evaluate_solution(self.nondom_archive, self.worst_fitness_ref)
-        eval_dict['FEA_run'] = fea_run
-        eval_dict['ND_size'] = len(self.nondom_archive)
+        eval_dict["FEA_run"] = fea_run
+        eval_dict["ND_size"] = len(self.nondom_archive)
         self.iteration_stats.append(eval_dict)
 
     def initialize_moo_subpopulations(self, factors=None):
@@ -68,18 +77,25 @@ class MOFEA:
         if self.combinatorial_options:
             random_global_variables = random.choices(self.combinatorial_options, k=self.dim)
         else:
-            random_global_variables = [random.uniform(self.value_range[0], self.value_range[1]) for x in
-                                       range(self.dim)]
+            random_global_variables = [
+                random.uniform(self.value_range[0], self.value_range[1]) for x in range(self.dim)
+            ]
         objs = self.base_algorithm(dimensions=self.dim).calc_fitness(random_global_variables)
         random_global_solution = PopulationMember(random_global_variables, objs)
         self.global_solutions.append(random_global_solution)
-        return [self.base_algorithm(dimensions=len(factor),
-                                    combinatorial_values=self.combinatorial_options, value_range=self.value_range,
-                                    factor=factor, global_solution=random_global_solution) for factor in
-                self.factor_architecture.factors]
+        return [
+            self.base_algorithm(
+                dimensions=len(factor),
+                combinatorial_values=self.combinatorial_options,
+                value_range=self.value_range,
+                factor=factor,
+                global_solution=random_global_solution,
+            )
+            for factor in self.factor_architecture.factors
+        ]
 
     def run(self):
-        '''
+        """
         For each subpopulation:
             Optimize along all objectives
             Apply non-dominated sorting strategy
@@ -88,17 +104,17 @@ class MOFEA:
         -> or ignore compete and create set of solutions based on overlapping variables: improves diversity? Check this with diversity measure
         -> spread different non-domination solutions across different subpopulations, i.e., different subpopulations have different global solutions: this should also improve diversity along the PF?
         @return: eval_dict {HV, diversity, ND_size, FEA_run}
-        '''
+        """
         self.subpopulations = self.initialize_moo_subpopulations()
         change_in_nondom_size = []
         old_archive_length = 0
         fea_run = 0
         while fea_run != self.fea_runs:  # len(change_in_nondom_size) < 4 and
             for s, alg in enumerate(self.subpopulations):
-                print('Subpopulation: ', s, alg.dimensions, type(alg))
+                print("Subpopulation: ", s, alg.dimensions, type(alg))
                 alg.run(fea_run=fea_run)
             self.compete()
-            if fea_run != self.fea_runs-1:
+            if fea_run != self.fea_runs - 1:
                 self.share_solution()
             if len(self.nondom_archive) == old_archive_length:
                 change_in_nondom_size.append(True)
@@ -110,10 +126,10 @@ class MOFEA:
             print("eval dict", self.iteration_stats[-1])
             # [print(s.objective_values) for s in self.nondom_archive]
             # [print(i, ': ', s.objective_values) for i,s in enumerate(self.iteration_stats[fea_run+1]['global solutions'])]
-            fea_run = fea_run+1
-            #file = open(self.path+"/results/checkpoints/latest_run.p", "wb")
-            #pickle.dump(self, file)
-            #file.close()
+            fea_run = fea_run + 1
+            # file = open(self.path+"/results/checkpoints/latest_run.p", "wb")
+            # pickle.dump(self, file)
+            # file.close()
 
     def compete(self):
         """
@@ -169,8 +185,10 @@ class MOFEA:
                             new_solutions.append(vars)
         print("end compete")
         # Recalculate fitnesses for new solutions
-        new_solutions = [PopulationMember(vars, self.base_algorithm(dimensions=self.dim).calc_fitness(vars)) for vars in
-                         new_solutions]
+        new_solutions = [
+            PopulationMember(vars, self.base_algorithm(dimensions=self.dim).calc_fitness(vars))
+            for vars in new_solutions
+        ]
         # Reassert non-dominance
         nondom_indeces = find_non_dominated(np.array([np.array(x.fitness) for x in new_solutions]))
         # Assign current iteration of global solutions based on non-dominance
@@ -182,7 +200,7 @@ class MOFEA:
     def share_solution(self):
         """
         Share non-dominated solutions from the archive created in the compete step.
-        Each subpopulation is randomly assigned a non-dominated solution 
+        Each subpopulation is randomly assigned a non-dominated solution
         (without replacement until all solutions have been assigned to at least one subpop).
         """
         print("share")
@@ -203,14 +221,19 @@ class MOFEA:
                     else:
                         to_pick = [s for s in self.nondom_archive]
             else:
-                print('there are no elements in the global solutions list.')
+                print("there are no elements in the global solutions list.")
                 raise IndexError
             # update fitnesses
             alg.global_solution = gs
-            alg.curr_population = [PopulationMember(p.variables,
-                                                    self.base_algorithm().calc_fitness(p.variables, alg.global_solution,
-                                                                                       alg.factor)) for p in
-                                   alg.curr_population]
+            alg.curr_population = [
+                PopulationMember(
+                    p.variables,
+                    self.base_algorithm().calc_fitness(
+                        p.variables, alg.global_solution, alg.factor
+                    ),
+                )
+                for p in alg.curr_population
+            ]
             # set best solution and replace worst solution with global solution across FEA
             alg.replace_worst_solution(self.global_solutions)
 
@@ -231,7 +254,7 @@ class MOFEA:
             if s.fitness not in seen:
                 seen.add(s.fitness)
                 nondom_archive.append(s)
-        #ADD-ON to reduce non-dom archive size
+        # ADD-ON to reduce non-dom archive size
         # if reduce_archive and len(nondom_archive) > 1000:
         #     fitnesses = np.array([np.array(x.fitness) for x in population])
         #     distances = calc_crowding_distance(fitnesses)

@@ -5,9 +5,11 @@ from copy import deepcopy, copy
 
 
 class Particle(object):
-    def __init__(self, function, dim, position=None, factor=None, global_solution=None, lbest_pos=None):
+    def __init__(
+        self, function, dim, position=None, factor=None, global_solution=None, lbest_pos=None
+    ):
         self.f = function
-        self.lbest_fitness = float('inf')
+        self.lbest_fitness = float("inf")
         self.dim = dim
         self.factor = factor
         if position is None:
@@ -36,8 +38,14 @@ class Particle(object):
         return (self.position == other.position).all()
 
     def __str__(self):
-        return ' '.join(
-            ['Particle with current fitness:', str(self.fitness), 'and best fitness:', str(self.lbest_fitness)])
+        return " ".join(
+            [
+                "Particle with current fitness:",
+                str(self.fitness),
+                "and best fitness:",
+                str(self.lbest_fitness),
+            ]
+        )
 
     def set_fitness(self, fit):
         self.fitness = fit
@@ -102,20 +110,33 @@ class Particle(object):
 
 
 class PSO(object):
-    def __init__(self, generations, population_size, function, dim, factor=None, global_solution=None, omega=0.729, phi=1.49618):
+    def __init__(
+        self,
+        generations,
+        population_size,
+        function,
+        dim,
+        factor=None,
+        global_solution=None,
+        omega=0.729,
+        phi=1.49618,
+    ):
         self.pop_size = population_size
-        self.pop = [Particle(function, dim, factor=factor, global_solution=global_solution) for x in range(population_size)]
+        self.pop = [
+            Particle(function, dim, factor=factor, global_solution=global_solution)
+            for x in range(population_size)
+        ]
         pos = [p.position for p in self.pop]
-        with open('pso2.o', 'a') as file:
+        with open("pso2.o", "a") as file:
             file.write(str(pos))
-            file.write('\n')
+            file.write("\n")
 
         self.omega = omega
         self.phi = phi
         self.f = function
         self.dim = dim
         pbest_particle = Particle(function, dim, factor=factor, global_solution=global_solution)
-        pbest_particle.set_fitness(float('inf'))
+        pbest_particle.set_fitness(float("inf"))
         self.pbest_history = [pbest_particle]
         self.gbest = pbest_particle
         self.v_max = abs((function.ubound - function.lbound))
@@ -125,9 +146,15 @@ class PSO(object):
         self.global_solution = global_solution
 
     def find_current_best(self):
-        sorted_ = sorted(np.array(self.pop), key=attrgetter('fitness'))
-        return Particle(self.f, self.dim, position=sorted_[0].position, factor=self.factor,
-                 global_solution=self.global_solution, lbest_pos=sorted_[0].lbest_position)
+        sorted_ = sorted(np.array(self.pop), key=attrgetter("fitness"))
+        return Particle(
+            self.f,
+            self.dim,
+            position=sorted_[0].position,
+            factor=self.factor,
+            global_solution=self.global_solution,
+            lbest_pos=sorted_[0].lbest_position,
+        )
 
     def find_local_best(self):
         pass
@@ -149,14 +176,22 @@ class PSO(object):
     def replace_worst_solution(self, global_solution):
         # find worst particle
         self.global_solution = np.array([x for x in global_solution])
-        self.pop.sort(key=attrgetter('fitness'))
-        print('replacing')
+        self.pop.sort(key=attrgetter("fitness"))
+        print("replacing")
         print(self.pop[-1], self.pop[0])
-        partial_solution = [x for i, x in enumerate(global_solution) if i in self.factor] # if i in self.factor
+        partial_solution = [
+            x for i, x in enumerate(global_solution) if i in self.factor
+        ]  # if i in self.factor
         self.pop[-1].set_position(partial_solution)
         self.pop[-1].set_fitness(self.f.run(self.global_solution))
-        curr_best = Particle(self.f, self.dim, position=self.pop[0].position, factor=self.factor,
-                 global_solution=self.global_solution, lbest_pos=self.pop[0].lbest_position)
+        curr_best = Particle(
+            self.f,
+            self.dim,
+            position=self.pop[0].position,
+            factor=self.factor,
+            global_solution=self.global_solution,
+            lbest_pos=self.pop[0].lbest_position,
+        )
         random.shuffle(self.pop)
         if curr_best.fitness < self.gbest.fitness:
             self.gbest = curr_best
@@ -169,7 +204,7 @@ class PSO(object):
         return self.gbest.position
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from optimizationproblems.continuous_functions import Function
 
     f = Function(function_number=1, shift_data_file="f01_o.txt")
